@@ -196,6 +196,70 @@
     max-width: 100%;
 }
 
+#Utilities-ModelDownloader-Tab .enhanced-downloader-manual {
+    width: 100%;
+}
+
+#Utilities-ModelDownloader-Tab .enhanced-downloader-manual-inner {
+    border: 1px solid var(--light-border);
+    border-radius: 0.75rem;
+    background: var(--background2, rgba(255, 255, 255, 0.02));
+    padding: 0.75rem 0.9rem;
+}
+
+#Utilities-ModelDownloader-Tab .enhanced-downloader-manual-inner hr {
+    border-color: var(--light-border);
+}
+
+#Utilities-ModelDownloader-Tab .enhanced-downloader-manual-inner input,
+#Utilities-ModelDownloader-Tab .enhanced-downloader-manual-inner select {
+    border-radius: 0.5rem;
+}
+
+#Utilities-ModelDownloader-Tab .enhanced-downloader-manual-inner .basic-button {
+    border-radius: 0.5rem;
+}
+
+#Utilities-ModelDownloader-Tab .enhanced-downloader-meta-split {
+    display: grid;
+    grid-template-columns: 14rem 1fr;
+    gap: 0.75rem;
+    margin: 0.6rem 0 0.75rem;
+    padding: 0.6rem;
+    border: 1px solid var(--light-border);
+    border-radius: 0.75rem;
+    background: var(--background, rgba(255, 255, 255, 0.01));
+}
+
+#Utilities-ModelDownloader-Tab .enhanced-downloader-meta-split #model_downloader_imageside {
+    display: block;
+    width: 100%;
+    min-height: 10rem;
+    border-radius: 0.6rem;
+    overflow: hidden;
+}
+
+#Utilities-ModelDownloader-Tab .enhanced-downloader-meta-split #model_downloader_imageside img {
+    width: 100%;
+    height: auto;
+    border-radius: 0.6rem;
+}
+
+#Utilities-ModelDownloader-Tab .enhanced-downloader-meta-split #model_downloader_metadatazone {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: auto;
+}
+
+@media (max-width: 900px) {
+    #Utilities-ModelDownloader-Tab .enhanced-downloader-meta-split {
+        grid-template-columns: 1fr;
+    }
+}
+
 .enhanced-downloader-downloads-zone .active-model-download-card .card {
     margin: 0;
     border-radius: 0.5rem;

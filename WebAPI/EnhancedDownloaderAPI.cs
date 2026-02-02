@@ -4,6 +4,7 @@ using SwarmUI.Core;
 using SwarmUI.Text2Image;
 using SwarmUI.Utils;
 using SwarmUI.WebAPI;
+using System.Collections.Specialized;
 using System.Net.Http;
 using System.Web;
 
@@ -42,7 +43,7 @@ public static class EnhancedDownloaderAPI
 
     public static async Task<JObject> EnhancedDownloaderGetDownloadRoots(Session session)
     {
-        JObject roots = new();
+        JObject roots = [];
         foreach ((string key, T2IModelHandler handler) in Program.T2IModelSets)
         {
             roots[key] = handler.DownloadFolderPath ?? "";
@@ -79,15 +80,11 @@ public static class EnhancedDownloaderAPI
         }
 
         bool isQueryMode = !string.IsNullOrWhiteSpace(query);
-        string url = isQueryMode
-            ? $"https://civitai.com/api/v1/models?limit={limit}"
-            : $"https://civitai.com/api/v1/models?page={page}&limit={limit}";
-
+        string url = isQueryMode ? $"https://civitai.com/api/v1/models?limit={limit}" : $"https://civitai.com/api/v1/models?page={page}&limit={limit}";
         if (isQueryMode && !string.IsNullOrWhiteSpace(cursor))
         {
             url += $"&cursor={HttpUtility.UrlEncode(cursor)}";
         }
-
         if (isQueryMode)
         {
             url += $"&query={HttpUtility.UrlEncode(query)}";
@@ -105,16 +102,14 @@ public static class EnhancedDownloaderAPI
         {
             url += "&nsfw=true";
         }
-
         string civitaiApiKey = session.User.GetGenericData("civitai_api", "key");
         if (!string.IsNullOrEmpty(civitaiApiKey))
         {
             if (!url.Contains("?token=") && !url.Contains("&token="))
             {
-                url += "&token=" + SwarmUI.WebAPI.ModelsAPI.TokenTextLimiter.TrimToMatches(civitaiApiKey);
+                url += "&token=" + ModelsAPI.TokenTextLimiter.TrimToMatches(civitaiApiKey);
             }
         }
-
         string resp;
         try
         {
@@ -132,7 +127,6 @@ public static class EnhancedDownloaderAPI
             Logs.Warning($"EnhancedDownloader CivitAI search failed for '{url}': {ex.ReadableString()}");
             return new JObject() { ["error"] = "Failed to contact CivitAI." };
         }
-
         JObject data;
         try
         {
@@ -143,9 +137,8 @@ public static class EnhancedDownloaderAPI
             Logs.Warning($"EnhancedDownloader CivitAI search returned invalid JSON: {ex.ReadableString()}");
             return new JObject() { ["error"] = "CivitAI returned invalid data." };
         }
-
         JArray items = data["items"] as JArray ?? [];
-        JObject meta = data["metadata"] as JObject ?? new JObject();
+        JObject meta = data["metadata"] as JObject ?? [];
         int currentPage = meta.Value<int?>("currentPage") ?? page;
         int totalPages = meta.Value<int?>("totalPages") ?? 1;
         int totalItems = meta.Value<int?>("totalItems") ?? items.Count;
@@ -161,7 +154,7 @@ public static class EnhancedDownloaderAPI
                 try
                 {
                     Uri nextUri = new(nextPage);
-                    var qs = HttpUtility.ParseQueryString(nextUri.Query);
+                    NameValueCollection qs = HttpUtility.ParseQueryString(nextUri.Query);
                     nextCursor = qs.Get("cursor");
                 }
                 catch (Exception)
@@ -171,7 +164,6 @@ public static class EnhancedDownloaderAPI
             }
             }
         }
-
         JArray results = [];
         foreach (JObject item in items.OfType<JObject>())
         {
@@ -182,7 +174,6 @@ public static class EnhancedDownloaderAPI
             string creator = item["creator"] is JObject creatorObj ? (creatorObj.Value<string>("username") ?? "") : "";
             JObject stats = item["stats"] as JObject ?? new JObject();
             long downloads = stats.Value<long?>("downloadCount") ?? 0;
-
             JObject bestVersion = (item["modelVersions"] as JArray)?.OfType<JObject>()?.FirstOrDefault();
             long modelVersionId = bestVersion?.Value<long?>("id") ?? 0;
             string versionName = bestVersion?.Value<string>("name") ?? "";
@@ -205,13 +196,11 @@ public static class EnhancedDownloaderAPI
             string fileName = bestFile?.Value<string>("name") ?? "";
             long? fileSize = bestFile?.Value<long?>("sizeKB") is long sizeKb ? sizeKb * 1024 : null;
             string downloadId = downloadUrl.Contains('/') ? downloadUrl[(downloadUrl.LastIndexOf('/') + 1)..] : "";
-
             string image = "";
             if (bestVersion?["images"] is JArray imgs)
             {
-                image = imgs.OfType<JObject>()?.FirstOrDefault(i => (i.Value<string>("type") ?? "") == "image")?.Value<string>("url") ?? "";
+                image = imgs.OfType<JObject>()?.FirstOrDefault(i => (i.Value<string>("type") ?? "") is "image")?.Value<string>("url") ?? "";
             }
-
             results.Add(new JObject()
             {
                 ["modelId"] = modelId,
@@ -230,19 +219,14 @@ public static class EnhancedDownloaderAPI
                 ["fileSize"] = fileSize is null ? null : (JToken)fileSize
             });
         }
-
-        if (isQueryMode
-            && results.Count < limit
-            && !string.IsNullOrWhiteSpace(nextCursor)
-            && long.TryParse(nextCursor.Trim(), out long nextCursorAsId)
-            && results.OfType<JObject>().All(r => (r.Value<long?>("modelId") ?? 0) != nextCursorAsId))
+        if (isQueryMode && results.Count < limit && !string.IsNullOrWhiteSpace(nextCursor) && long.TryParse(nextCursor.Trim(), out long nextCursorAsId) && results.OfType<JObject>().All(r => (r.Value<long?>("modelId") ?? 0) != nextCursorAsId))
         {
             try
             {
                 string byIdUrl = $"https://civitai.com/api/v1/models/{nextCursorAsId}";
                 if (!string.IsNullOrEmpty(civitaiApiKey))
                 {
-                    byIdUrl += "?token=" + SwarmUI.WebAPI.ModelsAPI.TokenTextLimiter.TrimToMatches(civitaiApiKey);
+                    byIdUrl += "?token=" + ModelsAPI.TokenTextLimiter.TrimToMatches(civitaiApiKey);
                 }
                 using HttpResponseMessage byIdResp = await Utilities.UtilWebClient.GetAsync(byIdUrl);
                 string byIdText = await byIdResp.Content.ReadAsStringAsync();
@@ -265,9 +249,7 @@ public static class EnhancedDownloaderAPI
                         foreach (JObject f in versionFiles.OfType<JObject>())
                         {
                             string fname = f.Value<string>("name") ?? "";
-                            if (fname.EndsWith(".safetensors", StringComparison.OrdinalIgnoreCase)
-                                || fname.EndsWith(".sft", StringComparison.OrdinalIgnoreCase)
-                                || fname.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase))
+                            if (fname.EndsWith(".safetensors", StringComparison.OrdinalIgnoreCase) || fname.EndsWith(".sft", StringComparison.OrdinalIgnoreCase) || fname.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase))
                             {
                                 bestFile = f;
                                 break;
@@ -278,7 +260,6 @@ public static class EnhancedDownloaderAPI
                         string fileName = bestFile?.Value<string>("name") ?? "";
                         long? fileSize = bestFile?.Value<long?>("sizeKB") is long sizeKb ? sizeKb * 1024 : null;
                         string downloadId = downloadUrl.Contains('/') ? downloadUrl[(downloadUrl.LastIndexOf('/') + 1)..] : "";
-
                         string image = "";
                         if (bestVersion?["images"] is JArray imgs)
                         {
@@ -287,7 +268,6 @@ public static class EnhancedDownloaderAPI
                         string creator = modelObj["creator"] is JObject creatorObj ? (creatorObj.Value<string>("username") ?? "") : "";
                         JObject stats = modelObj["stats"] as JObject ?? new JObject();
                         long downloads = stats.Value<long?>("downloadCount") ?? 0;
-
                         results.Add(new JObject()
                         {
                             ["modelId"] = nextCursorAsId,
@@ -305,14 +285,13 @@ public static class EnhancedDownloaderAPI
                             ["fileName"] = fileName,
                             ["fileSize"] = fileSize is null ? null : (JToken)fileSize
                         });
-
                         nextCursor = null;
                     }
                 }
             }
             catch (Exception)
             {
-                // ignore - fallback to original results
+                Logs.Warning($"EnhancedDownloader CivitAI search by ID failed for '{nextCursorAsId}'.");
             }
         }
 

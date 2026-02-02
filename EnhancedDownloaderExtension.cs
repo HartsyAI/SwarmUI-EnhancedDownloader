@@ -12,9 +12,7 @@ public class EnhancedDownloaderExtension : Extension
     {
         ScriptFiles.Add("Assets/js/enhanced_downloader.js");
         StyleSheetFiles.Add("Assets/css/enhanced_downloader.css");
-
         EnhancedDownloaderAPI.Register();
-
         Logs.Verbose("SwarmUI-EnhancedDownloader extension loaded (scaffold).");
     }
 }

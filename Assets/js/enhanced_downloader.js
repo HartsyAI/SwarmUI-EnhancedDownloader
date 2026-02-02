@@ -60,6 +60,23 @@
         return false;
     }
 
+    function loadUrlIntoManualDownloader(url) {
+        try {
+            if (!window.modelDownloader || !modelDownloader.url || typeof modelDownloader.urlInput !== 'function') {
+                return false;
+            }
+            modelDownloader.url.value = `${url || ''}`;
+            modelDownloader.urlInput();
+            modelDownloader.url.focus();
+            modelDownloader.url.select();
+            modelDownloader.url.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
+
     async function loadDownloadRoots() {
         if (downloadRoots || typeof genericRequest !== 'function') {
             return;
@@ -346,6 +363,21 @@
             left.appendChild(main);
             right.appendChild(sidebar);
 
+            main.classList.add('enhanced-downloader-manual');
+            const mainInner = main.querySelector(':scope > div');
+            if (mainInner) {
+                mainInner.classList.add('enhanced-downloader-manual-inner');
+            }
+            const metaZone = document.getElementById('model_downloader_metadatazone');
+            const imgSide = document.getElementById('model_downloader_imageside');
+            if (metaZone && imgSide && !metaZone.closest('.enhanced-downloader-meta-split')) {
+                const split = document.createElement('div');
+                split.className = 'enhanced-downloader-meta-split';
+                metaZone.insertAdjacentElement('beforebegin', split);
+                split.appendChild(imgSide);
+                split.appendChild(metaZone);
+            }
+
             const leftInfo = document.createElement('div');
             leftInfo.className = 'enhanced-downloader-section-info';
             leftInfo.innerHTML = `
@@ -551,6 +583,7 @@
                 div.className = 'model-block model-block-hoverable enhanced-downloader-model-card';
                 const img = document.createElement('img');
                 img.src = item.image || 'imgs/model_placeholder.jpg';
+                img.title = 'Click to load into Manual Download';
                 div.appendChild(img);
                 const textBlock = document.createElement('div');
                 textBlock.className = 'model-descblock';
@@ -574,6 +607,12 @@
                     ${actionsHtml}
                 `;
                 div.appendChild(textBlock);
+
+                img.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    loadUrlIntoManualDownloader(openUrl);
+                });
 
                 const downloadBtnInline = textBlock.querySelector('.ed-model-download');
                 if (downloadBtnInline) {
