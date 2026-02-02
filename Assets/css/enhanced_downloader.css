@@ -202,6 +202,10 @@
     overflow: hidden;
     background: var(--background, inherit);
     border-color: var(--light-border);
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+    grid-template-rows: auto auto auto 1fr auto;
+    column-gap: 0.75rem;
 }
 
 .enhanced-downloader-downloads-zone:not(.enhanced-downloader-show-completed) .active-model-download-card .card {
@@ -218,20 +222,29 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    grid-column: 1 / -1;
 }
 
 .enhanced-downloader-downloads-zone .active-model-download-card .card-img-top {
-    max-height: 160px;
+    width: calc(10rem - 1.2rem);
+    height: calc(10rem - 1.2rem);
+    max-height: calc(10rem - 1.2rem);
     object-fit: cover;
+    border-radius: 0.4rem;
+    margin: 0.6rem;
+    grid-column: 1;
+    grid-row: 2 / span 4;
 }
 
 .enhanced-downloader-downloads-zone .active-model-download-card .lora_extractor_special {
     position: relative;
     height: 10px;
-    margin: 0.4rem 0.6rem 0.25rem;
+    margin: 0.6rem 0.75rem 0.25rem 0;
     border-radius: 999px;
     overflow: hidden;
     background: var(--background2, rgba(255, 255, 255, 0.06));
+    grid-column: 2;
+    grid-row: 2;
 }
 
 .enhanced-downloader-downloads-zone .active-model-download-card .image-preview-progress-overall,
@@ -241,10 +254,12 @@
 }
 
 .enhanced-downloader-downloads-zone .active-model-download-card .status-text {
-    padding: 0.35rem 0.6rem 0.55rem;
+    padding: 0.35rem 0.75rem 0.25rem 0;
     color: var(--text-soft);
     font-size: 90%;
     line-height: 1.25;
+    grid-column: 2;
+    grid-row: 3 / span 2;
 }
 
 .enhanced-downloader-downloads-zone .active-model-download-card .status-text button.basic-button {
@@ -252,8 +267,22 @@
 }
 
 .enhanced-downloader-downloads-zone .active-model-download-card .card > button.basic-button {
-    margin: 0 0.6rem 0.6rem;
-    width: calc(100% - 1.2rem);
+    margin: 0.25rem 0.75rem 0.75rem 0;
+    width: auto;
+    grid-column: 2;
+    grid-row: 5;
+}
+
+@media (max-width: 900px) {
+    .enhanced-downloader-downloads-zone .active-model-download-card .card {
+        grid-template-columns: 8.5rem 1fr;
+        column-gap: 0.6rem;
+    }
+    .enhanced-downloader-downloads-zone .active-model-download-card .card-img-top {
+        width: calc(8.5rem - 1.2rem);
+        height: calc(8.5rem - 1.2rem);
+        max-height: calc(8.5rem - 1.2rem);
+    }
 }
 
 .enhanced-downloader-browser-card {
@@ -337,6 +366,18 @@
     line-clamp: 4;
     -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
+}
+
+.enhanced-downloader-browser-results .enhanced-downloader-model-card .ed-model-actions {
+    margin-top: auto;
+    padding-top: 0.5rem;
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.enhanced-downloader-browser-results .enhanced-downloader-model-card .ed-model-actions .basic-button {
+    text-decoration: none;
 }
 
 @media (max-width: 900px) {

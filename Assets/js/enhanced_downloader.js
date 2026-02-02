@@ -43,6 +43,23 @@
         }
     }
 
+    async function tryCopyText(text) {
+        const val = (text ?? '').toString();
+        if (!val) {
+            return false;
+        }
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(val);
+                return true;
+            }
+        }
+        catch {
+            // ignore
+        }
+        return false;
+    }
+
     async function loadDownloadRoots() {
         if (downloadRoots || typeof genericRequest !== 'function') {
             return;
@@ -543,13 +560,25 @@
                 const openUrl = `https://civitai.com/models/${encodeURIComponent(item.modelId)}?modelVersionId=${encodeURIComponent(item.modelVersionId)}`;
                 const descText = stripHtmlToText(item.description || '');
                 const descHtml = descText ? `<div class="ed-model-desc">${escapeHtml(descText)}</div>` : '';
+                const actionsHtml = `
+                    <div class="ed-model-actions">
+                        <button type="button" class="basic-button enhanced-downloader-smallbtn ed-model-download"><span class="translate">Download</span></button>
+                        <a class="basic-button enhanced-downloader-smallbtn ed-model-open" href="${openUrl}" target="_blank" rel="noreferrer"><span class="translate">Open</span></a>
+                    </div>
+                `;
                 textBlock.innerHTML = `
                     <b>${escapeHtml(item.name || '')}</b>
                     ${item.versionName ? `<br>${escapeHtml(item.versionName)}` : ''}
                     <br>${escapeHtml(item.type || '')}${baseStr ? ` | ${baseStr}` : ''}${creatorStr ? ` | ${creatorStr}` : ''}${downloadsStr ? ` | ${downloadsStr} downloads` : ''}
                     ${descHtml}
+                    ${actionsHtml}
                 `;
                 div.appendChild(textBlock);
+
+                const downloadBtnInline = textBlock.querySelector('.ed-model-download');
+                if (downloadBtnInline) {
+                    downloadBtnInline.onclick = () => doDownload(item.modelId, item.modelVersionId, item.type);
+                }
 
                 const popoverId = `enhanced-downloader-civitai-${renderId}`;
                 const menuDiv = createDiv(`popover_${popoverId}`, 'sui-popover sui_popover_model');
@@ -567,6 +596,33 @@
                 btnOpen.target = '_blank';
                 btnOpen.rel = 'noreferrer';
                 menuDiv.appendChild(btnOpen);
+
+                const addCopy = (label, value) => {
+                    const btn = document.createElement('div');
+                    btn.className = 'sui_popover_model_button';
+                    btn.innerText = label;
+                    btn.onclick = async () => {
+                        await tryCopyText(value);
+                    };
+                    menuDiv.appendChild(btn);
+                };
+
+                addCopy('Copy Model Link', openUrl);
+                if (item.downloadUrl) {
+                    addCopy('Copy Download Link', item.downloadUrl);
+                }
+                if (item.modelId) {
+                    addCopy('Copy Model ID', `${item.modelId}`);
+                }
+                if (item.modelVersionId) {
+                    addCopy('Copy Version ID', `${item.modelVersionId}`);
+                }
+                if (item.fileName) {
+                    addCopy('Copy Filename', `${item.fileName}`);
+                }
+                if (item.fileSize) {
+                    addCopy('Copy File Size (bytes)', `${item.fileSize}`);
+                }
 
                 results.appendChild(menuDiv);
 
