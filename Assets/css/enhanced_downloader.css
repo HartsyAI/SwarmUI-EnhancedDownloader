@@ -3,3 +3,177 @@
 .enhanced-downloader-root {
     display: none;
 }
+
+.enhanced-downloader-smallbtn {
+    padding: 0.15rem 0.5rem;
+    font-size: 90%;
+    margin-left: 0.25rem;
+}
+
+.enhanced-downloader-url-actions {
+    display: inline-flex;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+}
+
+.enhanced-downloader-new-folder {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: 0.5rem;
+}
+
+.enhanced-downloader-new-folder-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.enhanced-downloader-folder-preview {
+    color: var(--text-soft);
+    font-size: 90%;
+    margin-top: 0.25rem;
+}
+
+.enhanced-downloader-destination {
+    margin-top: 0.5rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--light-border);
+    border-radius: 0.5rem;
+    background: var(--background2, rgba(255, 255, 255, 0.03));
+}
+
+.enhanced-downloader-destination-label {
+    font-size: 85%;
+    color: var(--text-soft);
+    margin-bottom: 0.15rem;
+}
+
+.enhanced-downloader-destination-path {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 90%;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.enhanced-downloader-destination-crumbs {
+    margin-top: 0.35rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.enhanced-downloader-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.4rem;
+    font-size: 80%;
+    border-radius: 999px;
+    border: 1px solid var(--light-border);
+    color: var(--text-soft);
+    background: var(--background, rgba(255, 255, 255, 0.02));
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.enhanced-downloader-downloads-card {
+    margin-top: 1rem;
+}
+
+.enhanced-downloader-downloads-controls {
+    float: right;
+    font-weight: normal;
+    font-size: 90%;
+    color: var(--text-soft);
+}
+
+.enhanced-downloader-toggle {
+    cursor: pointer;
+    user-select: none;
+}
+
+.enhanced-downloader-downloads-body {
+    padding: 0.5rem;
+}
+
+.enhanced-downloader-downloads-zone {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+@media (min-width: 1100px) {
+    .enhanced-downloader-downloads-zone {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+}
+
+.enhanced-downloader-downloads-zone .active-model-download-card {
+    width: 100%;
+}
+
+.enhanced-downloader-downloads-zone .active-model-download-card .card {
+    margin: 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: var(--background, inherit);
+    border-color: var(--light-border);
+}
+
+.enhanced-downloader-downloads-zone:not(.enhanced-downloader-show-completed) .active-model-download-card .card {
+    border-color: var(--light-border);
+}
+
+.enhanced-downloader-downloads-zone .active-model-download-card .card-header {
+    padding: 0.4rem 0.6rem;
+    font-size: 90%;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--background2, var(--background, inherit));
+    border-bottom: 1px solid var(--light-border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.enhanced-downloader-downloads-zone .active-model-download-card .card-img-top {
+    max-height: 160px;
+    object-fit: cover;
+}
+
+.enhanced-downloader-downloads-zone .active-model-download-card .lora_extractor_special {
+    position: relative;
+    height: 10px;
+    margin: 0.4rem 0.6rem 0.25rem;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--background2, rgba(255, 255, 255, 0.06));
+}
+
+.enhanced-downloader-downloads-zone .active-model-download-card .image-preview-progress-overall,
+.enhanced-downloader-downloads-zone .active-model-download-card .image-preview-progress-current {
+    height: 100%;
+    border-radius: 999px;
+}
+
+.enhanced-downloader-downloads-zone .active-model-download-card .status-text {
+    padding: 0.35rem 0.6rem 0.55rem;
+    color: var(--text-soft);
+    font-size: 90%;
+    line-height: 1.25;
+}
+
+.enhanced-downloader-downloads-zone .active-model-download-card .status-text button.basic-button {
+    width: 100%;
+}
+
+.enhanced-downloader-downloads-zone .active-model-download-card .card > button.basic-button {
+    margin: 0 0.6rem 0.6rem;
+    width: calc(100% - 1.2rem);
+}

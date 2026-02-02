@@ -1,5 +1,7 @@
 using Newtonsoft.Json.Linq;
 using SwarmUI.Accounts;
+using SwarmUI.Core;
+using SwarmUI.Text2Image;
 using SwarmUI.Utils;
 using SwarmUI.WebAPI;
 
@@ -11,6 +13,7 @@ public static class EnhancedDownloaderAPI
     {
         API.RegisterAPICall(GetStatus, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
         API.RegisterAPICall(ListProviders, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
+        API.RegisterAPICall(EnhancedDownloaderGetDownloadRoots, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
     }
 
     public static async Task<JObject> GetStatus(Session session)
@@ -31,6 +34,20 @@ public static class EnhancedDownloaderAPI
                 "civitai",
                 "huggingface",
                 "hartsy")
+        };
+    }
+
+    public static async Task<JObject> EnhancedDownloaderGetDownloadRoots(Session session)
+    {
+        JObject roots = new();
+        foreach ((string key, T2IModelHandler handler) in Program.T2IModelSets)
+        {
+            roots[key] = handler.DownloadFolderPath ?? "";
+        }
+        return new JObject()
+        {
+            ["success"] = true,
+            ["roots"] = roots
         };
     }
 }
