@@ -118,6 +118,84 @@
     width: 100%;
 }
 
+#Utilities-ModelDownloader-Tab .enhanced-downloader-topcard .card-body {
+    padding-bottom: 0.75rem;
+}
+
+#Utilities-ModelDownloader-Tab .card-center-container {
+    width: 100%;
+    max-width: none;
+}
+
+#Utilities-ModelDownloader-Tab .model-downloader-section-wrapper {
+    width: 100%;
+}
+
+.enhanced-downloader-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    width: 100%;
+}
+
+@media (min-width: 1100px) {
+    .enhanced-downloader-layout {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+    }
+}
+
+.enhanced-downloader-section-info {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--light-border);
+    border-radius: 0.5rem;
+    background: var(--background2, rgba(255, 255, 255, 0.03));
+    color: var(--text-soft);
+    margin-bottom: 0.75rem;
+    text-align: center;
+    line-height: 1.25;
+}
+
+.enhanced-downloader-section-info .ed-info-title {
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.35rem;
+}
+
+.enhanced-downloader-section-info .ed-info-list {
+    text-align: left;
+    display: inline-block;
+    margin: 0;
+    padding-left: 1.1rem;
+    max-width: 58ch;
+    column-count: 1;
+    column-gap: 1.5rem;
+}
+
+.enhanced-downloader-section-info .ed-info-list li {
+    margin: 0.2rem 0;
+    break-inside: avoid;
+}
+
+.enhanced-downloader-section-info .ed-info-list b {
+    color: var(--text);
+}
+
+@media (min-width: 900px) {
+    .enhanced-downloader-section-info .ed-info-list {
+        max-width: 90ch;
+        column-count: 2;
+    }
+}
+
+#Utilities-ModelDownloader-Tab {
+    overflow-x: hidden;
+}
+
+#Utilities-ModelDownloader-Tab .auto-text-wide {
+    max-width: 100%;
+}
+
 .enhanced-downloader-downloads-zone .active-model-download-card .card {
     margin: 0;
     border-radius: 0.5rem;
@@ -176,4 +254,120 @@
 .enhanced-downloader-downloads-zone .active-model-download-card .card > button.basic-button {
     margin: 0 0.6rem 0.6rem;
     width: calc(100% - 1.2rem);
+}
+
+.enhanced-downloader-browser-card {
+    margin-top: 1rem;
+}
+
+.enhanced-downloader-browser-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.enhanced-downloader-browser-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.enhanced-downloader-browser-status {
+    margin-top: 0.5rem;
+    color: var(--text-soft);
+    font-size: 90%;
+}
+
+.enhanced-downloader-browser-results {
+    margin-top: 0.5rem;
+}
+
+.enhanced-downloader-browser-results {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: center;
+    gap: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    box-sizing: border-box;
+}
+
+.enhanced-downloader-browser-results .enhanced-downloader-model-card {
+    margin: 0;
+    width: 100%;
+}
+
+.enhanced-downloader-browser-results .enhanced-downloader-model-card.model-block {
+    height: 12.5rem;
+    display: flex;
+    white-space: normal;
+}
+
+.enhanced-downloader-browser-results .enhanced-downloader-model-card.model-block img {
+    width: 10.5rem;
+    height: 10.5rem;
+    max-height: 10.5rem;
+    margin: 0.9rem;
+    margin-bottom: 0;
+    object-fit: cover;
+}
+
+.enhanced-downloader-browser-results .enhanced-downloader-model-card .model-descblock {
+    width: auto;
+    height: auto;
+    flex: 1;
+    padding: 0.8rem 0.75rem 0.75rem 0;
+    box-sizing: border-box;
+}
+
+.enhanced-downloader-browser-results .enhanced-downloader-model-card .model-descblock {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.enhanced-downloader-browser-results .enhanced-downloader-model-card .ed-model-desc {
+    margin-top: 0.35rem;
+    color: var(--text-soft);
+    font-size: 90%;
+    line-height: 1.25;
+    overflow: hidden;
+    display: -webkit-box;
+    line-clamp: 4;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+}
+
+@media (max-width: 900px) {
+    .enhanced-downloader-browser-results {
+        grid-template-columns: 1fr;
+        gap: 0.6rem;
+        padding: 0.25rem 0;
+    }
+    .enhanced-downloader-browser-results .enhanced-downloader-model-card.model-block img {
+        width: 9rem;
+        height: 9rem;
+        max-height: 9rem;
+        margin: 0.6rem;
+    }
+}
+
+.enhanced-downloader-browser-results .model-block {
+    margin: 0;
+}
+
+.enhanced-downloader-browser-pager {
+    margin-top: 0.75rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.enhanced-downloader-browser-pager .ed-pageinfo {
+    color: var(--text-soft);
+    font-size: 90%;
+    min-width: 5rem;
+    text-align: center;
 }
