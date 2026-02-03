@@ -136,9 +136,10 @@
                 cursorStack: [],
                 hasNextCursor: false,
                 nextCursor: '',
-                // Page paging (CivitAI non-query)
+                // Page paging (CivitAI non-query, Hartsy)
                 page: 1,
                 totalPages: 1,
+                hasMore: false, // For providers that use hasMore instead of totalPages
                 // Last query/filters
                 lastQuery: '',
                 lastType: 'All',
@@ -152,21 +153,97 @@
                 if (!prov) {
                     return false;
                 }
+                // Hartsy uses page-based pagination
+                if (prov.id === 'hartsy') {
+                    return false;
+                }
                 if (prov.id !== 'civitai') {
                     return true;
                 }
                 return !!(state.lastQuery && state.lastQuery.trim().length);
             };
 
-            const updateProviderUI = () => {
+            // Store default CivitAI base model options
+            const defaultBaseModelOptions = [
+                { value: 'All', label: 'All' },
+                { value: 'SD 1.5', label: 'SD 1.5' },
+                { value: 'SDXL 1.0', label: 'SDXL 1.0' },
+                { value: 'Pony', label: 'Pony' },
+                { value: 'Illustrious', label: 'Illustrious' },
+                { value: 'Flux.1 D', label: 'Flux.1 D' }
+            ];
+
+            // Store default sort options
+            const defaultSortOptions = [
+                { value: 'Most Downloaded', label: 'Most Downloaded' },
+                { value: 'Newest', label: 'Newest' },
+                { value: 'Highest Rated', label: 'Highest Rated' }
+            ];
+
+            // Hartsy sort options
+            const hartsySortOptions = [
+                { value: 'popular', label: 'Most Popular' },
+                { value: 'newest', label: 'Newest' },
+                { value: 'downloads', label: 'Most Downloads' }
+            ];
+
+            const populateSelect = (selectEl, options, selectedValue) => {
+                const currentValue = selectedValue || selectEl.value;
+                selectEl.innerHTML = '';
+                for (const opt of options) {
+                    const optEl = document.createElement('option');
+                    optEl.value = opt.value;
+                    optEl.textContent = opt.label;
+                    if (opt.value === currentValue) {
+                        optEl.selected = true;
+                    }
+                    selectEl.appendChild(optEl);
+                }
+            };
+
+            const updateProviderUI = async () => {
                 const prov = getProvider(state.providerId);
                 const isFilterable = !!(prov && prov.supportsFilters);
                 const isNsfw = !!(prov && prov.supportsNsfw);
 
-                query.placeholder = (prov && prov.id === 'huggingface') ? 'Search Hugging Face...' : 'Search...';
-                type.disabled = !isFilterable;
+                // Set placeholder based on provider
+                if (prov && prov.id === 'huggingface') {
+                    query.placeholder = 'Search Hugging Face...';
+                } else if (prov && prov.id === 'hartsy') {
+                    query.placeholder = 'Search Hartsy...';
+                } else {
+                    query.placeholder = 'Search...';
+                }
+
+                // Handle type filter (CivitAI only)
+                type.disabled = !(prov && prov.id === 'civitai');
+
+                // Handle base model / architecture filter
                 baseModel.disabled = !isFilterable;
+                if (prov && prov.id === 'hartsy' && prov.getArchitectureOptions) {
+                    // Load Hartsy architectures dynamically
+                    try {
+                        const archOptions = await prov.getArchitectureOptions();
+                        const options = archOptions.map(a => ({ value: a, label: a }));
+                        populateSelect(baseModel, options, 'All');
+                    } catch (e) {
+                        console.warn('Failed to load Hartsy architecture options:', e);
+                        populateSelect(baseModel, [{ value: 'All', label: 'All' }], 'All');
+                    }
+                } else if (prov && prov.id === 'civitai') {
+                    // Restore CivitAI options
+                    populateSelect(baseModel, defaultBaseModelOptions, state.lastBaseModel || 'All');
+                }
+
+                // Handle sort options
                 sort.disabled = !isFilterable;
+                if (prov && prov.id === 'hartsy') {
+                    populateSelect(sort, hartsySortOptions, 'popular');
+                } else if (prov && prov.id === 'civitai') {
+                    populateSelect(sort, defaultSortOptions, state.lastSort || 'Most Downloaded');
+                }
+
+                // Handle NSFW toggle
                 nsfw.disabled = !isNsfw;
                 if (!isNsfw) {
                     nsfw.checked = false;
@@ -174,11 +251,18 @@
             };
 
             const updatePager = () => {
+                const prov = getProvider(state.providerId);
                 if (isProviderCursorPaged()) {
                     const pageIndex = (state.cursorStack.length + 1);
                     pageInfo.textContent = `Page ${pageIndex}`;
                     prev.disabled = state.cursorStack.length <= 0 || state.inflight;
                     next.disabled = !state.hasNextCursor || state.inflight;
+                }
+                else if (prov && prov.id === 'hartsy') {
+                    // Hartsy uses hasMore flag instead of totalPages
+                    pageInfo.textContent = `Page ${state.page}`;
+                    prev.disabled = state.page <= 1 || state.inflight;
+                    next.disabled = !state.hasMore || state.inflight;
                 }
                 else {
                     pageInfo.textContent = `Page ${state.page} / ${state.totalPages}`;
@@ -596,6 +680,7 @@
                         else {
                             state.page = resp.page || state.page;
                             state.totalPages = resp.totalPages || 1;
+                            state.hasMore = resp.hasMore || false;
                             state.hasNextCursor = false;
                             state.nextCursor = '';
                         }
@@ -613,9 +698,9 @@
                 updatePager();
             };
 
-            providerSelect.onchange = () => {
+            providerSelect.onchange = async () => {
                 state.providerId = providerSelect.value || state.providerId;
-                updateProviderUI();
+                await updateProviderUI();
                 runSearch(1);
             };
             searchBtn.onclick = () => runSearch(1);
@@ -645,6 +730,7 @@
                 }
             };
             next.onclick = () => {
+                const prov = getProvider(state.providerId);
                 if (isProviderCursorPaged()) {
                     if (!state.hasNextCursor || !state.nextCursor) {
                         return;
@@ -655,6 +741,13 @@
                     state.hasNextCursor = false;
                     runSearch(null);
                 }
+                else if (prov && prov.id === 'hartsy') {
+                    // Hartsy uses hasMore flag
+                    if (!state.hasMore) {
+                        return;
+                    }
+                    runSearch(state.page + 1);
+                }
                 else {
                     runSearch(Math.min(state.totalPages, state.page + 1));
                 }
@@ -664,9 +757,11 @@
             const rightCol = wrapper.querySelector('.enhanced-downloader-col-right');
             (rightCol || main).appendChild(card);
             applyTranslations(card);
-            updateProviderUI();
-            updatePager();
-            runSearch(1);
+            // Initialize UI (async but don't block)
+            updateProviderUI().then(() => {
+                updatePager();
+                runSearch(1);
+            });
             return true;
         }
     };

@@ -19,6 +19,8 @@ public static class EnhancedDownloaderAPI
         API.RegisterAPICall(EnhancedDownloaderHuggingFaceSearch, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHuggingFaceFiles, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHuggingFaceImage, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
+        API.RegisterAPICall(EnhancedDownloaderHartsySearch, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
+        API.RegisterAPICall(EnhancedDownloaderHartsyFilterOptions, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
     }
 
     public static async Task<JObject> GetStatus(Session session)
@@ -85,5 +87,21 @@ public static class EnhancedDownloaderAPI
     public static async Task<JObject> EnhancedDownloaderHuggingFaceImage(Session session, string modelId)
     {
         return await HuggingFaceProvider.Instance.GetPreviewImageAsync(session, modelId);
+    }
+
+    public static async Task<JObject> EnhancedDownloaderHartsySearch(Session session,
+        string query = "",
+        int page = 1,
+        int limit = 24,
+        string architecture = "",
+        string sort = "popular",
+        string tags = "")
+    {
+        return await HartsyProvider.Instance.SearchAsync(session, query, page, limit, architecture, sort, tags);
+    }
+
+    public static async Task<JObject> EnhancedDownloaderHartsyFilterOptions(Session session)
+    {
+        return await HartsyProvider.Instance.GetFilterOptionsAsync(session);
     }
 }
