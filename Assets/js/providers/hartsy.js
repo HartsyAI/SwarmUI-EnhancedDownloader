@@ -4,18 +4,26 @@
     window.EnhancedDownloader = window.EnhancedDownloader || {};
     window.EnhancedDownloader.Providers = window.EnhancedDownloader.Providers || {};
 
+    let filterOptionsCache = null;
+    let filterOptionsCacheTime = 0;
+    const filterOptionsCacheDuration = 5 * 60 * 1000;
+
+    const sortMapping = {
+        'Most Downloaded': 'downloads',
+        'Newest': 'newest',
+        'Highest Rated': 'popular',
+        'Most Popular': 'popular',
+        'popular': 'popular',
+        'newest': 'newest',
+        'downloads': 'downloads'
+    };
+
     window.EnhancedDownloader.Providers.hartsy = {
         id: 'hartsy',
         displayName: 'Hartsy',
         supportsFilters: true,
         supportsNsfw: false,
 
-        // Filter options cache
-        _filterOptionsCache: null,
-        _filterOptionsCacheTime: 0,
-        _filterOptionsCacheDuration: 5 * 60 * 1000, // 5 minutes
-
-        // Sort options for Hartsy
         sortOptions: [
             { value: 'popular', label: 'Most Popular' },
             { value: 'newest', label: 'Newest' },
@@ -32,58 +40,57 @@
                 page: params.page || 1,
                 limit: params.limit || 24,
                 architecture: params.baseModel || params.architecture || '',
-                sort: this.mapSort(params.sort),
+                sort: sortMapping[params.sort] || 'popular',
                 tags: params.tags || ''
             });
         },
 
         getFilterOptions: async function () {
             const now = Date.now();
-            if (this._filterOptionsCache && (now - this._filterOptionsCacheTime) < this._filterOptionsCacheDuration) {
-                return this._filterOptionsCache;
+            if (filterOptionsCache && (now - filterOptionsCacheTime) < filterOptionsCacheDuration) {
+                return filterOptionsCache;
             }
-
             const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
             if (!utils || !utils.genericRequestAsync) {
                 return { architectures: [], tags: [], uploadSources: [] };
             }
-
             try {
                 const resp = await utils.genericRequestAsync('EnhancedDownloaderHartsyFilterOptions', {});
                 if (resp && resp.success) {
-                    this._filterOptionsCache = {
+                    filterOptionsCache = {
                         architectures: resp.architectures || [],
                         tags: resp.tags || [],
                         uploadSources: resp.uploadSources || []
                     };
-                    this._filterOptionsCacheTime = now;
-                    return this._filterOptionsCache;
+                    filterOptionsCacheTime = now;
+                    return filterOptionsCache;
                 }
-            } catch (e) {
+            }
+            catch (e) {
                 console.warn('Failed to load Hartsy filter options:', e);
             }
-
             return { architectures: [], tags: [], uploadSources: [] };
         },
 
-        // Map UI sort values to Hartsy API values
-        mapSort: function (uiSort) {
-            const mapping = {
-                'Most Downloaded': 'downloads',
-                'Newest': 'newest',
-                'Highest Rated': 'popular',
-                'Most Popular': 'popular',
-                'popular': 'popular',
-                'newest': 'newest',
-                'downloads': 'downloads'
-            };
-            return mapping[uiSort] || 'popular';
-        },
-
-        // Get architecture options for dropdown (called by model browser)
         getArchitectureOptions: async function () {
             const options = await this.getFilterOptions();
             return ['All', ...(options.architectures || [])];
+        },
+
+        handleDownload: function (item) {
+            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            const bestUrl = item.downloadUrl || item.openUrl || '';
+            if (utils) {
+                utils.loadUrlIntoManualDownloader(bestUrl);
+            }
+        },
+
+        handleCardClick: function (item) {
+            this.handleDownload(item);
+        },
+
+        getPopoverExtras: function (item, menuDiv) {
+            // No extra popover items for Hartsy
         }
     };
 })();

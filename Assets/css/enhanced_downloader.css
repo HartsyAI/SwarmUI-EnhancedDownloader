@@ -1,8 +1,4 @@
-/* Placeholder: extension scaffold only. */
-
-.enhanced-downloader-root {
-    display: none;
-}
+/* Enhanced Downloader Extension Styles */
 
 .enhanced-downloader-smallbtn {
     padding: 0.15rem 0.5rem;
@@ -41,7 +37,7 @@
     padding: 0.45rem 0.6rem;
     border: 1px solid var(--light-border);
     border-radius: 0.5rem;
-    background: var(--background2, rgba(255, 255, 255, 0.03));
+    background: var(--background-soft);
 }
 
 .enhanced-downloader-destination-label {
@@ -74,7 +70,7 @@
     border-radius: 999px;
     border: 1px solid var(--light-border);
     color: var(--text-soft);
-    background: var(--background, rgba(255, 255, 255, 0.02));
+    background: var(--background);
     max-width: 100%;
     white-space: nowrap;
     overflow: hidden;
@@ -149,7 +145,7 @@
     padding: 0.6rem 0.75rem;
     border: 1px solid var(--light-border);
     border-radius: 0.5rem;
-    background: var(--background2, rgba(255, 255, 255, 0.03));
+    background: var(--background-soft);
     color: var(--text-soft);
     margin-bottom: 0.75rem;
     text-align: center;
@@ -203,7 +199,7 @@
 #Utilities-ModelDownloader-Tab .enhanced-downloader-manual-inner {
     border: 1px solid var(--light-border);
     border-radius: 0.75rem;
-    background: var(--background2, rgba(255, 255, 255, 0.02));
+    background: var(--background-soft);
     padding: 0.75rem 0.9rem;
 }
 
@@ -228,7 +224,7 @@
     padding: 0.6rem;
     border: 1px solid var(--light-border);
     border-radius: 0.75rem;
-    background: var(--background, rgba(255, 255, 255, 0.01));
+    background: var(--background);
 }
 
 #Utilities-ModelDownloader-Tab .enhanced-downloader-meta-split #model_downloader_imageside {
@@ -264,7 +260,7 @@
     margin: 0;
     border-radius: 0.5rem;
     overflow: hidden;
-    background: var(--background, inherit);
+    background: var(--background);
     border-color: var(--light-border);
     display: grid;
     grid-template-columns: 10rem 1fr;
@@ -281,7 +277,7 @@
     font-size: 90%;
     font-weight: 600;
     color: var(--text);
-    background: var(--background2, var(--background, inherit));
+    background: var(--background-soft);
     border-bottom: 1px solid var(--light-border);
     white-space: nowrap;
     overflow: hidden;
@@ -306,7 +302,7 @@
     margin: 0.6rem 0.75rem 0.25rem 0;
     border-radius: 999px;
     overflow: hidden;
-    background: var(--background2, rgba(255, 255, 255, 0.06));
+    background: var(--background-soft);
     grid-column: 2;
     grid-row: 2;
 }
@@ -374,9 +370,6 @@
 
 .enhanced-downloader-browser-results {
     margin-top: 0.5rem;
-}
-
-.enhanced-downloader-browser-results {
     width: 100%;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -412,9 +405,6 @@
     flex: 1;
     padding: 0.8rem 0.75rem 0.75rem 0;
     box-sizing: border-box;
-}
-
-.enhanced-downloader-browser-results .enhanced-downloader-model-card .model-descblock {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;

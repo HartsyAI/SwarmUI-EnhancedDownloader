@@ -2,7 +2,6 @@ using Newtonsoft.Json.Linq;
 using SwarmUI.Accounts;
 using SwarmUI.Core;
 using SwarmUI.Text2Image;
-using SwarmUI.Utils;
 using SwarmUI.WebAPI;
 using EnhancedDownloader.Providers;
 
@@ -10,9 +9,13 @@ namespace EnhancedDownloader;
 
 public static class EnhancedDownloaderAPI
 {
+    private static JObject _cachedDownloadRoots;
+    private static long _cachedDownloadRootsTimestamp;
+    private const long DownloadRootsCacheTtlMs = 30_000;
+    private static readonly object _rootsLock = new();
+
     public static void Register()
     {
-        API.RegisterAPICall(GetStatus, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
         API.RegisterAPICall(ListProviders, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
         API.RegisterAPICall(EnhancedDownloaderGetDownloadRoots, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
         API.RegisterAPICall(EnhancedDownloaderCivitaiSearch, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
@@ -23,18 +26,19 @@ public static class EnhancedDownloaderAPI
         API.RegisterAPICall(EnhancedDownloaderHartsyFilterOptions, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
     }
 
-    public static async Task<JObject> GetStatus(Session session)
-    {
-        return new JObject()
-        {
-            ["success"] = true,
-            ["status"] = "stub"
-        };
-    }
-
     public static async Task<JObject> ListProviders(Session session)
     {
-        JArray providers = new(EnhancedDownloaderProviderRegistry.ProviderIds);
+        JArray providers = [];
+        foreach (IEnhancedDownloaderProvider p in EnhancedDownloaderProviderRegistry.Providers)
+        {
+            providers.Add(new JObject()
+            {
+                ["id"] = p.ProviderId,
+                ["displayName"] = p.DisplayName,
+                ["supportsFilters"] = p.SupportsFilters,
+                ["supportsNsfw"] = p.SupportsNsfw
+            });
+        }
         return new JObject()
         {
             ["success"] = true,
@@ -44,42 +48,48 @@ public static class EnhancedDownloaderAPI
 
     public static async Task<JObject> EnhancedDownloaderGetDownloadRoots(Session session)
     {
-        JObject roots = new JObject();
-        foreach ((string key, T2IModelHandler handler) in Program.T2IModelSets)
+        if (_cachedDownloadRoots is not null && Environment.TickCount64 - _cachedDownloadRootsTimestamp < DownloadRootsCacheTtlMs)
         {
-            roots[key] = handler.DownloadFolderPath ?? "";
+            return _cachedDownloadRoots;
         }
-        return new JObject()
+        lock (_rootsLock)
         {
-            ["success"] = true,
-            ["roots"] = roots
-        };
+            if (_cachedDownloadRoots is not null && Environment.TickCount64 - _cachedDownloadRootsTimestamp < DownloadRootsCacheTtlMs)
+            {
+                return _cachedDownloadRoots;
+            }
+            JObject roots = new();
+            foreach ((string key, T2IModelHandler handler) in Program.T2IModelSets)
+            {
+                roots[key] = handler.DownloadFolderPath ?? "";
+            }
+            JObject result = new()
+            {
+                ["success"] = true,
+                ["roots"] = roots
+            };
+            _cachedDownloadRoots = result;
+            _cachedDownloadRootsTimestamp = Environment.TickCount64;
+            return result;
+        }
     }
 
     public static async Task<JObject> EnhancedDownloaderCivitaiSearch(Session session,
-        string query = "",
-        int page = 1,
-        int limit = 24,
-        string cursor = "",
-        string type = "",
-        string baseModel = "",
-        string sort = "Most Downloaded",
+        string query = "", int page = 1, int limit = 24, string cursor = "",
+        string type = "", string baseModel = "", string sort = "Most Downloaded",
         bool includeNsfw = false)
     {
         return await CivitAIProvider.Instance.SearchAsync(session, query, page, limit, cursor, type, baseModel, sort, includeNsfw);
     }
 
     public static async Task<JObject> EnhancedDownloaderHuggingFaceSearch(Session session,
-        string query = "",
-        int limit = 24,
-        string cursor = "")
+        string query = "", int limit = 24, string cursor = "")
     {
-        return await HuggingFaceProvider.Instance.SearchAsync(session, query, limit, cursor);
+        return await HuggingFaceProvider.Instance.SearchAsync(session, query, 1, limit, cursor);
     }
 
     public static async Task<JObject> EnhancedDownloaderHuggingFaceFiles(Session session,
-        string modelId,
-        int limit = 500)
+        string modelId, int limit = 500)
     {
         return await HuggingFaceProvider.Instance.ListFilesAsync(session, modelId, limit);
     }
@@ -90,14 +100,10 @@ public static class EnhancedDownloaderAPI
     }
 
     public static async Task<JObject> EnhancedDownloaderHartsySearch(Session session,
-        string query = "",
-        int page = 1,
-        int limit = 24,
-        string architecture = "",
-        string sort = "popular",
-        string tags = "")
+        string query = "", int page = 1, int limit = 24,
+        string architecture = "", string sort = "popular", string tags = "")
     {
-        return await HartsyProvider.Instance.SearchAsync(session, query, page, limit, architecture, sort, tags);
+        return await HartsyProvider.Instance.SearchAsync(session, query, page, limit, "", "", architecture, sort, false, tags);
     }
 
     public static async Task<JObject> EnhancedDownloaderHartsyFilterOptions(Session session)

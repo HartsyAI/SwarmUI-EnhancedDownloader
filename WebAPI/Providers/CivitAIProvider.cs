@@ -14,30 +14,26 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
     public static readonly CivitAIProvider Instance = new();
 
     public string ProviderId => "civitai";
+    public string DisplayName => "CivitAI";
+    public bool SupportsFilters => true;
+    public bool SupportsNsfw => true;
+
+    private static readonly ProviderCache SearchCache = new(TimeSpan.FromSeconds(60));
+    private static readonly SemaphoreSlim RateLimiter = new(3, 3);
+
+    private static readonly HashSet<string> AllowedSorts = ["Highest Rated", "Most Downloaded", "Newest"];
 
     public async Task<JObject> SearchAsync(Session session,
-        string query = "",
-        int page = 1,
-        int limit = 24,
-        string cursor = "",
-        string type = "",
-        string baseModel = "",
-        string sort = "Most Downloaded",
-        bool includeNsfw = false)
+        string query = "", int page = 1, int limit = 24, string cursor = "",
+        string type = "", string baseModel = "", string sort = "", bool includeNsfw = false)
     {
         if (includeNsfw && !session.User.HasPermission(EnhancedDownloaderExtension.PermEnhancedDownloaderNSFW))
         {
             includeNsfw = false;
         }
-
         page = Math.Clamp(page, 1, 500);
         limit = Math.Clamp(limit, 1, 100);
-        string sortClean = (sort ?? "").Trim();
-        HashSet<string> allowedSorts = ["Highest Rated", "Most Downloaded", "Newest"];
-        if (string.IsNullOrWhiteSpace(sortClean) || !allowedSorts.Contains(sortClean))
-        {
-            sortClean = "Most Downloaded";
-        }
+        string sortClean = AllowedSorts.Contains((sort ?? "").Trim()) ? sort.Trim() : "Most Downloaded";
         string typeClean = (type ?? "").Trim();
         if (typeClean == "ControlNet")
         {
@@ -45,65 +41,19 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         }
 
         bool isQueryMode = !string.IsNullOrWhiteSpace(query);
-        string url = isQueryMode ? $"https://civitai.com/api/v1/models?limit={limit}" : $"https://civitai.com/api/v1/models?page={page}&limit={limit}";
-        if (isQueryMode && !string.IsNullOrWhiteSpace(cursor))
+        string cacheKey = $"civitai:{query}:{page}:{limit}:{cursor}:{typeClean}:{baseModel}:{sortClean}:{includeNsfw}";
+        if (SearchCache.TryGet(cacheKey, out JObject cached))
         {
-            url += $"&cursor={HttpUtility.UrlEncode(cursor)}";
-        }
-        if (isQueryMode)
-        {
-            url += $"&query={HttpUtility.UrlEncode(query)}";
-        }
-        if (!string.IsNullOrWhiteSpace(typeClean) && typeClean != "All")
-        {
-            url += $"&types={HttpUtility.UrlEncode(typeClean)}";
-        }
-        if (!string.IsNullOrWhiteSpace(baseModel) && baseModel != "All")
-        {
-            url += $"&baseModels={HttpUtility.UrlEncode(baseModel)}";
-        }
-        url += $"&sort={HttpUtility.UrlEncode(sortClean)}";
-        if (includeNsfw)
-        {
-            url += "&nsfw=true";
+            return cached;
         }
 
         string civitaiApiKey = session.User.GetGenericData("civitai_api", "key");
-        if (!string.IsNullOrEmpty(civitaiApiKey))
-        {
-            if (!url.Contains("?token=") && !url.Contains("&token="))
-            {
-                url += "&token=" + ModelsAPI.TokenTextLimiter.TrimToMatches(civitaiApiKey);
-            }
-        }
+        string url = BuildSearchUrl(query, page, limit, cursor, typeClean, baseModel, sortClean, includeNsfw, civitaiApiKey, isQueryMode);
 
-        string resp;
-        try
+        JObject data = await FetchJsonAsync(url, "CivitAI search");
+        if (data.ContainsKey("error"))
         {
-            using HttpResponseMessage response = await Utilities.UtilWebClient.GetAsync(url);
-            resp = await response.Content.ReadAsStringAsync();
-            if (!response.IsSuccessStatusCode)
-            {
-                string trimmed = resp.Length > 500 ? resp[..500] : resp;
-                Logs.Warning($"EnhancedDownloader CivitAI search failed for '{url}': {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
-                return new JObject() { ["error"] = $"CivitAI error {(int)response.StatusCode}: {trimmed}" };
-            }
-        }
-        catch (Exception ex)
-        {
-            Logs.Warning($"EnhancedDownloader CivitAI search failed for '{url}': {ex.ReadableString()}");
-            return new JObject() { ["error"] = "Failed to contact CivitAI." };
-        }
-
-        JObject data;
-        try
-        {
-            data = resp.ParseToJson();
-        }
-        catch (Exception ex)
-        {
-            Logs.Warning($"EnhancedDownloader CivitAI search returned invalid JSON: {ex.ReadableString()}");
-            return new JObject() { ["error"] = "CivitAI returned invalid data." };
+            return data;
         }
 
         JArray items = data["items"] as JArray ?? [];
@@ -111,167 +61,29 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         int currentPage = meta.Value<int?>("currentPage") ?? page;
         int totalPages = meta.Value<int?>("totalPages") ?? 1;
         int totalItems = meta.Value<int?>("totalItems") ?? items.Count;
-        string nextCursor = null;
-        if (isQueryMode)
-        {
-            nextCursor = meta.Value<string>("nextCursor");
-            if (string.IsNullOrWhiteSpace(nextCursor))
-            {
-                string nextPage = meta.Value<string>("nextPage") ?? "";
-                if (!string.IsNullOrWhiteSpace(nextPage))
-                {
-                    try
-                    {
-                        Uri nextUri = new(nextPage);
-                        NameValueCollection qs = HttpUtility.ParseQueryString(nextUri.Query);
-                        nextCursor = qs.Get("cursor");
-                    }
-                    catch (Exception)
-                    {
-                        nextCursor = null;
-                    }
-                }
-            }
-        }
+        string nextCursor = isQueryMode ? ExtractNextCursor(meta) : null;
 
         JArray results = [];
         foreach (JObject item in items.OfType<JObject>())
         {
-            long modelId = item.Value<long?>("id") ?? 0;
-            string modelName = item.Value<string>("name") ?? "";
-            string modelType = item.Value<string>("type") ?? "";
-            string modelDesc = item.Value<string>("description") ?? "";
-            string creator = item["creator"] is JObject creatorObj ? (creatorObj.Value<string>("username") ?? "") : "";
-            JObject stats = item["stats"] as JObject ?? new JObject();
-            long downloads = stats.Value<long?>("downloadCount") ?? 0;
-            JObject bestVersion = (item["modelVersions"] as JArray)?.OfType<JObject>()?.FirstOrDefault();
-            long modelVersionId = bestVersion?.Value<long?>("id") ?? 0;
-            string versionName = bestVersion?.Value<string>("name") ?? "";
-            string versionBaseModel = bestVersion?.Value<string>("baseModel") ?? "";
-            JArray versionFiles = bestVersion?["files"] as JArray ?? [];
-            JObject bestFile = null;
-            foreach (JObject f in versionFiles.OfType<JObject>())
-            {
-                string fname = f.Value<string>("name") ?? "";
-                if (fname.EndsWith(".safetensors", StringComparison.OrdinalIgnoreCase)
-                    || fname.EndsWith(".sft", StringComparison.OrdinalIgnoreCase)
-                    || fname.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase))
-                {
-                    bestFile = f;
-                    break;
-                }
-            }
-            bestFile ??= versionFiles.OfType<JObject>().FirstOrDefault();
-            string downloadUrl = bestFile?.Value<string>("downloadUrl") ?? "";
-            string fileName = bestFile?.Value<string>("name") ?? "";
-            long? fileSize = bestFile?.Value<long?>("sizeKB") is long sizeKb ? sizeKb * 1024 : null;
-            string downloadId = downloadUrl.Contains('/') ? downloadUrl[(downloadUrl.LastIndexOf('/') + 1)..] : "";
-            string openUrl = modelId > 0 && modelVersionId > 0 ? $"https://civitai.com/models/{modelId}?modelVersionId={modelVersionId}" : (modelId > 0 ? $"https://civitai.com/models/{modelId}" : "");
-            string image = "";
-            if (bestVersion?["images"] is JArray imgs)
-            {
-                image = imgs.OfType<JObject>()?.FirstOrDefault(i => (i.Value<string>("type") ?? "") is "image")?.Value<string>("url") ?? "";
-            }
-            results.Add(new JObject()
-            {
-                ["modelId"] = modelId,
-                ["modelVersionId"] = modelVersionId,
-                ["name"] = modelName,
-                ["type"] = modelType,
-                ["description"] = modelDesc,
-                ["creator"] = creator,
-                ["downloads"] = downloads,
-                ["versionName"] = versionName,
-                ["baseModel"] = versionBaseModel,
-                ["image"] = image,
-                ["downloadUrl"] = downloadUrl,
-                ["downloadId"] = downloadId,
-                ["fileName"] = fileName,
-                ["fileSize"] = fileSize is null ? null : (JToken)fileSize,
-                ["openUrl"] = openUrl
-            });
+            JObject bestVersion = (item["modelVersions"] as JArray)?.OfType<JObject>().FirstOrDefault();
+            results.Add(ModelResultBuilder.FromCivitAI(item, bestVersion));
         }
 
-        // Workaround for CivitAI returning nextCursor as an ID that isn't present in the current page.
-        if (isQueryMode && results.Count < limit && !string.IsNullOrWhiteSpace(nextCursor) && long.TryParse(nextCursor.Trim(), out long nextCursorAsId) && results.OfType<JObject>().All(r => (r.Value<long?>("modelId") ?? 0) != nextCursorAsId))
+        // Workaround: CivitAI sometimes returns a nextCursor pointing to a model ID not in the current page.
+        if (isQueryMode && results.Count < limit && !string.IsNullOrWhiteSpace(nextCursor)
+            && long.TryParse(nextCursor.Trim(), out long nextCursorAsId)
+            && results.OfType<JObject>().All(r => (r.Value<long?>("modelId") ?? 0) != nextCursorAsId))
         {
-            try
+            JObject extra = await TryFetchCursorModel(nextCursorAsId, civitaiApiKey, query, typeClean);
+            if (extra is not null)
             {
-                string byIdUrl = $"https://civitai.com/api/v1/models/{nextCursorAsId}";
-                if (!string.IsNullOrEmpty(civitaiApiKey))
-                {
-                    byIdUrl += "?token=" + ModelsAPI.TokenTextLimiter.TrimToMatches(civitaiApiKey);
-                }
-                using HttpResponseMessage byIdResp = await Utilities.UtilWebClient.GetAsync(byIdUrl);
-                string byIdText = await byIdResp.Content.ReadAsStringAsync();
-                if (byIdResp.IsSuccessStatusCode)
-                {
-                    JObject modelObj = byIdText.ParseToJson();
-                    string modelName = modelObj.Value<string>("name") ?? "";
-                    string modelType = modelObj.Value<string>("type") ?? "";
-                    string modelDesc = modelObj.Value<string>("description") ?? "";
-                    bool matchesType = string.IsNullOrWhiteSpace(typeClean) || typeClean == "All" || string.Equals(modelType, typeClean, StringComparison.OrdinalIgnoreCase);
-                    bool matchesQuery = modelName.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase);
-                    if (matchesType && matchesQuery)
-                    {
-                        JObject bestVersion = (modelObj["modelVersions"] as JArray)?.OfType<JObject>()?.FirstOrDefault();
-                        long modelVersionId = bestVersion?.Value<long?>("id") ?? 0;
-                        string versionName = bestVersion?.Value<string>("name") ?? "";
-                        string versionBaseModel = bestVersion?.Value<string>("baseModel") ?? "";
-                        JArray versionFiles = bestVersion?["files"] as JArray ?? [];
-                        JObject bestFile = null;
-                        foreach (JObject f in versionFiles.OfType<JObject>())
-                        {
-                            string fname = f.Value<string>("name") ?? "";
-                            if (fname.EndsWith(".safetensors", StringComparison.OrdinalIgnoreCase) || fname.EndsWith(".sft", StringComparison.OrdinalIgnoreCase) || fname.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase))
-                            {
-                                bestFile = f;
-                                break;
-                            }
-                        }
-                        bestFile ??= versionFiles.OfType<JObject>().FirstOrDefault();
-                        string downloadUrl = bestFile?.Value<string>("downloadUrl") ?? "";
-                        string fileName = bestFile?.Value<string>("name") ?? "";
-                        long? fileSize = bestFile?.Value<long?>("sizeKB") is long sizeKb ? sizeKb * 1024 : null;
-                        string downloadId = downloadUrl.Contains('/') ? downloadUrl[(downloadUrl.LastIndexOf('/') + 1)..] : "";
-                        string openUrl = nextCursorAsId > 0 && modelVersionId > 0 ? $"https://civitai.com/models/{nextCursorAsId}?modelVersionId={modelVersionId}" : (nextCursorAsId > 0 ? $"https://civitai.com/models/{nextCursorAsId}" : "");
-                        string image = "";
-                        if (bestVersion?["images"] is JArray imgs)
-                        {
-                            image = imgs.OfType<JObject>()?.FirstOrDefault(i => (i.Value<string>("type") ?? "") == "image")?.Value<string>("url") ?? "";
-                        }
-                        string creator = modelObj["creator"] is JObject creatorObj ? (creatorObj.Value<string>("username") ?? "") : "";
-                        JObject stats = modelObj["stats"] as JObject ?? new JObject();
-                        long downloads = stats.Value<long?>("downloadCount") ?? 0;
-                        results.Add(new JObject()
-                        {
-                            ["modelId"] = nextCursorAsId,
-                            ["modelVersionId"] = modelVersionId,
-                            ["name"] = modelName,
-                            ["type"] = modelType,
-                            ["description"] = modelDesc,
-                            ["creator"] = creator,
-                            ["downloads"] = downloads,
-                            ["versionName"] = versionName,
-                            ["baseModel"] = versionBaseModel,
-                            ["image"] = image,
-                            ["downloadUrl"] = downloadUrl,
-                            ["downloadId"] = downloadId,
-                            ["fileName"] = fileName,
-                            ["fileSize"] = fileSize is null ? null : (JToken)fileSize,
-                            ["openUrl"] = openUrl
-                        });
-                        nextCursor = null;
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                Logs.Warning($"EnhancedDownloader CivitAI search by ID failed for '{nextCursorAsId}'.");
+                results.Add(extra);
+                nextCursor = null;
             }
         }
 
-        return new JObject()
+        JObject result = new()
         {
             ["success"] = true,
             ["mode"] = isQueryMode ? "cursor" : "page",
@@ -281,5 +93,127 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
             ["nextCursor"] = nextCursor,
             ["items"] = results
         };
+        SearchCache.Set(cacheKey, result);
+        return result;
+    }
+
+    private static string BuildSearchUrl(string query, int page, int limit, string cursor,
+        string type, string baseModel, string sort, bool includeNsfw, string apiKey, bool isQueryMode)
+    {
+        UrlBuilder builder = new("https://civitai.com/api/v1/models");
+        builder.Add("limit", limit);
+        if (!isQueryMode)
+        {
+            builder.Add("page", page);
+        }
+        if (isQueryMode && !string.IsNullOrWhiteSpace(cursor))
+        {
+            builder.Add("cursor", cursor);
+        }
+        if (isQueryMode)
+        {
+            builder.Add("query", query);
+        }
+        if (!string.IsNullOrWhiteSpace(type) && type != "All")
+        {
+            builder.Add("types", type);
+        }
+        if (!string.IsNullOrWhiteSpace(baseModel) && baseModel != "All")
+        {
+            builder.Add("baseModels", baseModel);
+        }
+        builder.Add("sort", sort);
+        if (includeNsfw)
+        {
+            builder.AddIf(true, "nsfw", true);
+        }
+        if (!string.IsNullOrEmpty(apiKey))
+        {
+            builder.Add("token", ModelsAPI.TokenTextLimiter.TrimToMatches(apiKey));
+        }
+        return builder.ToString();
+    }
+
+    private static string ExtractNextCursor(JObject meta)
+    {
+        string nextCursor = meta.Value<string>("nextCursor");
+        if (!string.IsNullOrWhiteSpace(nextCursor))
+        {
+            return nextCursor;
+        }
+        string nextPage = meta.Value<string>("nextPage") ?? "";
+        if (string.IsNullOrWhiteSpace(nextPage))
+        {
+            return null;
+        }
+        try
+        {
+            Uri nextUri = new(nextPage);
+            NameValueCollection qs = HttpUtility.ParseQueryString(nextUri.Query);
+            return qs.Get("cursor");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static async Task<JObject> FetchJsonAsync(string url, string label)
+    {
+        await RateLimiter.WaitAsync();
+        try
+        {
+            using HttpResponseMessage response = await Utilities.UtilWebClient.GetAsync(url);
+            string resp = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                string trimmed = resp.Length > 500 ? resp[..500] : resp;
+                Logs.Warning($"EnhancedDownloader {label} failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
+                return new JObject() { ["success"] = false, ["error"] = $"CivitAI error {(int)response.StatusCode}: {trimmed}" };
+            }
+            return resp.ParseToJson();
+        }
+        catch (Exception ex)
+        {
+            Logs.Warning($"EnhancedDownloader {label} failed: {ex.ReadableString()}");
+            return new JObject() { ["success"] = false, ["error"] = "Failed to contact CivitAI." };
+        }
+        finally
+        {
+            RateLimiter.Release();
+        }
+    }
+
+    private static async Task<JObject> TryFetchCursorModel(long modelId, string apiKey, string query, string type)
+    {
+        try
+        {
+            UrlBuilder builder = new($"https://civitai.com/api/v1/models/{modelId}");
+            if (!string.IsNullOrEmpty(apiKey))
+            {
+                builder.Add("token", ModelsAPI.TokenTextLimiter.TrimToMatches(apiKey));
+            }
+            JObject modelObj = await FetchJsonAsync(builder.ToString(), $"CivitAI by-ID {modelId}");
+            if (modelObj.ContainsKey("error"))
+            {
+                return null;
+            }
+            string modelName = modelObj.Value<string>("name") ?? "";
+            string modelType = modelObj.Value<string>("type") ?? "";
+            bool matchesType = string.IsNullOrWhiteSpace(type) || type == "All"
+                || string.Equals(modelType, type, StringComparison.OrdinalIgnoreCase);
+            bool matchesQuery = modelName.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase);
+            if (!matchesType || !matchesQuery)
+            {
+                return null;
+            }
+            JObject bestVersion = (modelObj["modelVersions"] as JArray)?.OfType<JObject>().FirstOrDefault();
+            return ModelResultBuilder.FromCivitAI(modelObj, bestVersion, modelId);
+        }
+        catch
+        {
+            Logs.Warning($"EnhancedDownloader CivitAI by-ID fetch failed for '{modelId}'.");
+            return null;
+        }
     }
 }

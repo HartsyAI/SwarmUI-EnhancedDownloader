@@ -2,6 +2,9 @@
     'use strict';
 
     const RECENTS_KEY = 'enhanced_downloader_recent_folders_v1';
+    const MAX_RECENT_FOLDERS = 12;
+    const DOM_READY_TIMEOUT_MS = 15000;
+    const DOM_RETRY_INTERVAL_MS = 100;
     let downloadRoots = null;
 
     async function loadDownloadRoots() {
@@ -39,7 +42,7 @@
         const cleaned = folderPath.trim();
         const without = recents.filter(x => x !== cleaned);
         without.unshift(cleaned);
-        localStorage.setItem(RECENTS_KEY, JSON.stringify(without.slice(0, 12)));
+        localStorage.setItem(RECENTS_KEY, JSON.stringify(without.slice(0, MAX_RECENT_FOLDERS)));
     }
 
     function injectRecentsIntoFolderSelect(select) {
@@ -376,70 +379,60 @@
         if (!window.ActiveModelDownload || !ActiveModelDownload.prototype || !ActiveModelDownload.prototype.download) {
             return;
         }
-        if (ActiveModelDownload.prototype.download._enhancedDownloaderWrapped401) {
+        if (ActiveModelDownload.prototype.download._ed401) {
             return;
         }
-        const orig = ActiveModelDownload.prototype.download;
-        const wrapped = function () {
-            const originalStatusText = this.statusText;
-            const originalSetBorder = this.setBorderColor;
-            const originalIsDone = this.isDone;
-            const originalDownload = orig.bind(this);
-            this.download = originalDownload;
-            try {
-                const oldStatus = this.statusText;
-                const oldIsDone = this.isDone;
-                const oldSetBorder = this.setBorderColor;
-                const oldCancel = this.cancelButton;
-                const that = this;
-                const oldMakeWSRequest = window.makeWSRequest;
-                if (typeof oldMakeWSRequest === 'function') {
-                    window.makeWSRequest = function (name, payload, onData, timeout, onError, onOpen) {
-                        if (name === 'DoModelDownloadWS' && typeof onError === 'function') {
-                            const wrappedErr = function (e) {
-                                if ((`${e}`.includes('401') || `${e}`.toLowerCase().includes('unauthorized'))) {
-                                    const link = `<a href="#" onclick="getRequiredElementById('usersettingstabbutton').click();getRequiredElementById('userinfotabbutton').click();">Open User Settings</a>`;
-                                    const hint = `This download returned <b>401 Unauthorized</b>. This usually means the file is gated and requires authentication (or an API key) for the selected provider.<br>${link} to configure credentials, then retry.`;
-                                    oldStatus.innerHTML = `Error: ${escapeHtml(e)}\n<br>${hint}<br><br><button class="basic-button" title="Restart the download" style="width:98%">Retry</button><br><br>`;
-                                    oldStatus.querySelector('button').onclick = () => {
-                                        that.download();
-                                    };
-                                    oldSetBorder.call(that, '#aa0000');
-                                    oldIsDone.call(that);
-                                    return;
-                                }
-                                return onError(e);
-                            };
-                            return oldMakeWSRequest(name, payload, onData, timeout, wrappedErr, onOpen);
+
+        let activeInstance = null;
+
+        // Permanently wrap makeWSRequest once to detect 401 on DoModelDownloadWS
+        if (typeof window.makeWSRequest === 'function' && !window.makeWSRequest._ed401) {
+            const origWS = window.makeWSRequest;
+            window.makeWSRequest = function (name, payload, onData, timeout, onError, onOpen) {
+                if (name === 'DoModelDownloadWS' && typeof onError === 'function' && activeInstance) {
+                    const inst = activeInstance;
+                    const wrappedErr = function (e) {
+                        if (`${e}`.includes('401') || `${e}`.toLowerCase().includes('unauthorized')) {
+                            const link = `<a href="#" onclick="getRequiredElementById('usersettingstabbutton').click();getRequiredElementById('userinfotabbutton').click();">Open User Settings</a>`;
+                            const hint = `This download returned <b>401 Unauthorized</b>. This usually means the file is gated and requires authentication (or an API key) for the selected provider.<br>${link} to configure credentials, then retry.`;
+                            inst.statusText.innerHTML = `Error: ${escapeHtml(e)}\n<br>${hint}<br><br><button class="basic-button" title="Restart the download" style="width:98%">Retry</button><br><br>`;
+                            inst.statusText.querySelector('button').onclick = () => inst.download();
+                            inst.setBorderColor('#aa0000');
+                            inst.isDone();
+                            return;
                         }
-                        return oldMakeWSRequest(name, payload, onData, timeout, onError, onOpen);
+                        return onError(e);
                     };
-                    try {
-                        return orig.call(that);
-                    }
-                    finally {
-                        window.makeWSRequest = oldMakeWSRequest;
-                    }
+                    return origWS(name, payload, onData, timeout, wrappedErr, onOpen);
                 }
+                return origWS(name, payload, onData, timeout, onError, onOpen);
+            };
+            window.makeWSRequest._ed401 = true;
+        }
+
+        // Lightweight prototype wrapper — just tracks the active download instance
+        const origDownload = ActiveModelDownload.prototype.download;
+        ActiveModelDownload.prototype.download = function () {
+            activeInstance = this;
+            try {
+                return origDownload.call(this);
             }
-            catch {
-                // ignore
+            finally {
+                activeInstance = null;
             }
-            return orig.call(this);
         };
-        wrapped._enhancedDownloaderWrapped401 = true;
-        ActiveModelDownload.prototype.download = wrapped;
+        ActiveModelDownload.prototype.download._ed401 = true;
     }
 
     async function enhancedDownloaderInit() {
         await loadDownloadRoots();
         enhanceModelDownloader401Message();
         const start = Date.now();
-        while (Date.now() - start < 15000) {
+        while (Date.now() - start < DOM_READY_TIMEOUT_MS) {
             if (tryEmbedDownloadsPanel() && tryEnhanceUrlUI() && tryEnhanceFolderUI() && tryEmbedCivitaiBrowserPanel()) {
                 break;
             }
-            await new Promise(r => setTimeout(r, 100));
+            await new Promise(r => setTimeout(r, DOM_RETRY_INTERVAL_MS));
         }
     }
 

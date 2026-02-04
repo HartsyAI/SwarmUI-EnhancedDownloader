@@ -18,10 +18,12 @@ public class EnhancedDownloaderExtension : Extension
         ScriptFiles.Add("Assets/js/providers/civitai.js");
         ScriptFiles.Add("Assets/js/providers/huggingface.js");
         ScriptFiles.Add("Assets/js/providers/hartsy.js");
+        ScriptFiles.Add("Assets/js/components/model_card.js");
+        ScriptFiles.Add("Assets/js/components/model_popover.js");
         ScriptFiles.Add("Assets/js/components/model_browser.js");
         ScriptFiles.Add("Assets/js/enhanced_downloader.js");
         StyleSheetFiles.Add("Assets/css/enhanced_downloader.css");
         EnhancedDownloaderAPI.Register();
-        Logs.Verbose("SwarmUI-EnhancedDownloader extension loaded (scaffold).");
+        Logs.Verbose("SwarmUI-EnhancedDownloader extension loaded.");
     }
 }
