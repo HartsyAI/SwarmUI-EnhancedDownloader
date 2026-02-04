@@ -20,6 +20,27 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
 
     public string ProviderId => "huggingface";
 
+    private static string EncodeModelIdForApi(string modelId)
+    {
+        modelId = (modelId ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(modelId))
+        {
+            return "";
+        }
+        // Hugging Face API expects the repo id in the path as `owner/repo`.
+        // Encoding the slash (%2F) causes 400 "Invalid repo name".
+        string[] parts = modelId.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+        {
+            return "";
+        }
+        for (int i = 0; i < parts.Length; i++)
+        {
+            parts[i] = HttpUtility.UrlEncode(parts[i]).Replace("+", "%20");
+        }
+        return string.Join("/", parts);
+    }
+
     private static string BuildResolveUrl(string modelId, string filename)
     {
         if (string.IsNullOrWhiteSpace(modelId) || string.IsNullOrWhiteSpace(filename))
@@ -229,7 +250,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         // If not present as a common root file, query model details to discover repo-local image files.
         try
         {
-            string url = $"https://huggingface.co/api/models/{HttpUtility.UrlEncode(modelId)}?full=true";
+            string url = $"https://huggingface.co/api/models/{EncodeModelIdForApi(modelId)}?full=true";
             using HttpResponseMessage response = await Utilities.UtilWebClient.GetAsync(url);
             string resp = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode)
@@ -548,7 +569,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         }
         limit = Math.Clamp(limit, 1, 5000);
 
-        string url = $"https://huggingface.co/api/models/{HttpUtility.UrlEncode(modelId)}?full=true";
+        string url = $"https://huggingface.co/api/models/{EncodeModelIdForApi(modelId)}?full=true";
         string resp;
         try
         {

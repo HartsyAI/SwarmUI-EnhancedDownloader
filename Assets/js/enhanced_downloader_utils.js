@@ -63,6 +63,33 @@
         }
     };
 
+    window.EnhancedDownloader.Utils.setManualDownloaderInfo = function setManualDownloaderInfo(infoHtml, rawMetadata, imageDataUrl) {
+        try {
+            if (!window.modelDownloader) {
+                return false;
+            }
+            const mz = modelDownloader.metadataZone;
+            const imgSide = modelDownloader.imageSide;
+            if (!mz || !imgSide) {
+                return false;
+            }
+            mz.innerHTML = infoHtml || '';
+            mz.dataset.raw = rawMetadata || '';
+            if (imageDataUrl) {
+                mz.dataset.image = imageDataUrl;
+                imgSide.innerHTML = `<img src="${imageDataUrl}"/>`;
+            }
+            else {
+                delete mz.dataset.image;
+                imgSide.innerHTML = '';
+            }
+            return true;
+        }
+        catch {
+            return false;
+        }
+    };
+
     window.EnhancedDownloader.Utils.getOrCreateNamespace = function getOrCreateNamespace(root, key) {
         if (!root[key]) {
             root[key] = {};

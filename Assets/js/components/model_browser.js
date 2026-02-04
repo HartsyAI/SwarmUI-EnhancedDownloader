@@ -362,6 +362,52 @@
                 return await p;
             };
 
+            const hfApplyToManualDownloader = async (item, bestDownloadUrl, openUrl) => {
+                try {
+                    if (!utils || typeof utils.setManualDownloaderInfo !== 'function') {
+                        return;
+                    }
+
+                    const title = `${item && item.name ? item.name : (item && item.modelId ? item.modelId : '')}`;
+                    const modelId = item && item.modelId ? `${item.modelId}` : '';
+                    const descText = utils.stripHtmlToText((item && item.description) ? item.description : '');
+                    const link = openUrl ? `${openUrl}` : '';
+
+                    const infoHtml = `
+                        <b>Hugging Face Metadata</b>
+                        ${title ? `<br><b>Model</b>: ${escapeHtml(title)}` : ''}
+                        ${modelId ? `<br><b>Model ID</b>: ${escapeHtml(modelId)}` : ''}
+                        ${link ? `<br><b>Link</b>: <a href="${link}" target="_blank" rel="noreferrer">${escapeHtml(link)}</a>` : ''}
+                        ${descText ? `<br><b>Description</b>: ${escapeHtml(descText)}` : ''}
+                    `;
+
+                    const rawMeta = JSON.stringify({
+                        'modelspec.title': title || modelId || '',
+                        'modelspec.description': link ? `From ${link}\n${descText || ''}` : (descText || ''),
+                        'modelspec.thumbnail': ''
+                    }, null, 2);
+
+                    // Swarm's urlInput() clears metadataZone for HF links; set URL first, then re-apply.
+                    utils.loadUrlIntoManualDownloader(bestDownloadUrl || openUrl);
+                    utils.setManualDownloaderInfo(infoHtml, rawMeta, '');
+
+                    if (modelId) {
+                        const img = await hfGetImage(modelId);
+                        if (img) {
+                            const rawMetaWithThumb = JSON.stringify({
+                                'modelspec.title': title || modelId || '',
+                                'modelspec.description': link ? `From ${link}\n${descText || ''}` : (descText || ''),
+                                'modelspec.thumbnail': img
+                            }, null, 2);
+                            utils.setManualDownloaderInfo(infoHtml, rawMetaWithThumb, img);
+                        }
+                    }
+                }
+                catch {
+                    // ignore
+                }
+            };
+
             const hfLoadIntoImg = (imgEl, modelId) => {
                 if (!imgEl || !modelId) {
                     return;
@@ -432,7 +478,12 @@
                     img.addEventListener('click', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        utils.loadUrlIntoManualDownloader(bestDownloadUrl || openUrl);
+                        if ((state.providerId || '') === 'huggingface') {
+                            hfApplyToManualDownloader(item, bestDownloadUrl, openUrl);
+                        }
+                        else {
+                            utils.loadUrlIntoManualDownloader(bestDownloadUrl || openUrl);
+                        }
                     });
 
                     const downloadBtnInline = textBlock.querySelector('.ed-model-download');
@@ -440,6 +491,9 @@
                         downloadBtnInline.onclick = () => {
                             if ((state.providerId || '') === 'civitai') {
                                 doCivitaiDownload(item.modelId, item.modelVersionId, item.type);
+                            }
+                            else if ((state.providerId || '') === 'huggingface') {
+                                hfApplyToManualDownloader(item, bestDownloadUrl, openUrl);
                             }
                             else {
                                 utils.loadUrlIntoManualDownloader(bestDownloadUrl || openUrl);
@@ -456,6 +510,9 @@
                     btnDownload.onclick = () => {
                         if ((state.providerId || '') === 'civitai') {
                             doCivitaiDownload(item.modelId, item.modelVersionId, item.type);
+                        }
+                        else if ((state.providerId || '') === 'huggingface') {
+                            hfApplyToManualDownloader(item, bestDownloadUrl, openUrl);
                         }
                         else {
                             utils.loadUrlIntoManualDownloader(bestDownloadUrl || openUrl);
@@ -505,7 +562,12 @@
                                     optBtn.className = 'sui_popover_model_button';
                                     optBtn.innerText = opt.fileName ? `Download: ${opt.fileName}` : 'Download File';
                                     optBtn.onclick = () => {
-                                        utils.loadUrlIntoManualDownloader(dl);
+                                        if ((state.providerId || '') === 'huggingface') {
+                                            hfApplyToManualDownloader(item, dl, openUrl);
+                                        }
+                                        else {
+                                            utils.loadUrlIntoManualDownloader(dl);
+                                        }
                                     };
                                     menuDiv.insertBefore(optBtn, loadAllBtn.nextSibling);
                                     added++;
@@ -528,7 +590,12 @@
                             optBtn.className = 'sui_popover_model_button';
                             optBtn.innerText = opt.fileName ? `Download: ${opt.fileName}` : 'Download File';
                             optBtn.onclick = () => {
-                                utils.loadUrlIntoManualDownloader(`${opt.downloadUrl}`);
+                                if ((state.providerId || '') === 'huggingface') {
+                                    hfApplyToManualDownloader(item, `${opt.downloadUrl}`, openUrl);
+                                }
+                                else {
+                                    utils.loadUrlIntoManualDownloader(`${opt.downloadUrl}`);
+                                }
                             };
                             menuDiv.appendChild(optBtn);
                         }
