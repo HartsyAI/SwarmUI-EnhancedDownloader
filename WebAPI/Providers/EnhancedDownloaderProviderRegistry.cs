@@ -6,9 +6,9 @@ public static class EnhancedDownloaderProviderRegistry
 {
     public static readonly ReadOnlyCollection<IEnhancedDownloaderProvider> Providers = new List<IEnhancedDownloaderProvider>()
     {
+        HartsyProvider.Instance,
         CivitAIProvider.Instance,
-        HuggingFaceProvider.Instance,
-        HartsyProvider.Instance
+        HuggingFaceProvider.Instance
     }.AsReadOnly();
 
     public static readonly ReadOnlyCollection<string> ProviderIds = Providers.Select(p => p.ProviderId).ToList().AsReadOnly();

@@ -10,7 +10,7 @@
 
     function listProvidersInOrder() {
         const providers = window.EnhancedDownloader.Providers || {};
-        const order = ['civitai', 'huggingface', 'hartsy'];
+        const order = ['hartsy', 'civitai', 'huggingface'];
         const result = [];
         for (const id of order) {
             if (providers[id]) result.push(providers[id]);
@@ -142,7 +142,7 @@
                 const opt = document.createElement('option');
                 opt.value = p.id;
                 opt.textContent = p.displayName || p.id;
-                if (p.id === 'civitai') opt.selected = true;
+                if (p.id === 'hartsy') opt.selected = true;
                 providerSelect.appendChild(opt);
             }
 
