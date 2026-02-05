@@ -24,18 +24,16 @@ public class HartsyProvider : IEnhancedDownloaderProvider
 
     private static readonly HashSet<string> AllowedSorts = ["popular", "newest", "downloads"];
 
-    private static string GetBaseUrl(Session session)
+    private static string GetApiKey(Session session)
     {
-        string customUrl = session.User.GetGenericData("hartsy_api", "url");
-        return !string.IsNullOrWhiteSpace(customUrl) ? customUrl.TrimEnd('/') : DefaultBaseUrl;
+        return session.User.GetGenericData("hartsy_api", "key");
     }
 
-    private static void AddApiKeyHeader(HttpRequestMessage request, Session session)
+    private static void AddApiKeyHeader(HttpRequestMessage request, string apiKey)
     {
-        string apiKey = session.User.GetGenericData("hartsy_api", "key");
         if (!string.IsNullOrEmpty(apiKey))
         {
-            request.Headers.Add("Authorization", $"Bearer {apiKey}");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
         }
     }
 
@@ -60,14 +58,15 @@ public class HartsyProvider : IEnhancedDownloaderProvider
         string architecture = baseModel;
         string tagsClean = (tags ?? "").Trim();
 
-        string cacheKey = $"hartsy:{query}:{page}:{limit}:{architecture}:{sortClean}:{tagsClean}";
+        string apiKey = GetApiKey(session);
+        bool hasApiKey = !string.IsNullOrEmpty(apiKey);
+        string cacheKey = $"hartsy:{query}:{page}:{limit}:{architecture}:{sortClean}:{tagsClean}:{hasApiKey}";
         if (SearchCache.TryGet(cacheKey, out JObject cached))
         {
             return cached;
         }
 
-        string baseUrl = GetBaseUrl(session);
-        UrlBuilder builder = new($"{baseUrl}/api/home/models");
+        UrlBuilder builder = new($"{BaseUrl}/api/v1/models");
         builder.Add("page", page);
         builder.Add("pageSize", limit);
         builder.Add("sort", sortClean);
@@ -90,7 +89,7 @@ public class HartsyProvider : IEnhancedDownloaderProvider
         try
         {
             using HttpRequestMessage request = new(HttpMethod.Get, url);
-            AddApiKeyHeader(request, session);
+            AddApiKeyHeader(request, apiKey);
             using HttpResponseMessage response = await Utilities.UtilWebClient.SendAsync(request);
             string resp = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
@@ -135,7 +134,7 @@ public class HartsyProvider : IEnhancedDownloaderProvider
                 string openUrl = !string.IsNullOrWhiteSpace(detailUrl) ? detailUrl : externalUrl;
                 if (string.IsNullOrWhiteSpace(openUrl) && !string.IsNullOrWhiteSpace(modelId))
                 {
-                    openUrl = $"{baseUrl}/models/{modelId}";
+                    openUrl = $"{BaseUrl}/models/{modelId}";
                 }
 
                 string downloadUrl = "";
@@ -202,14 +201,14 @@ public class HartsyProvider : IEnhancedDownloaderProvider
             return cached;
         }
 
-        string baseUrl = GetBaseUrl(session);
-        string url = $"{baseUrl}/api/home/models/filter-options";
+        string apiKey = GetApiKey(session);
+        string url = $"{BaseUrl}/api/v1/models/filter-options";
 
         await RateLimiter.WaitAsync();
         try
         {
             using HttpRequestMessage request = new(HttpMethod.Get, url);
-            AddApiKeyHeader(request, session);
+            AddApiKeyHeader(request, apiKey);
             using HttpResponseMessage response = await Utilities.UtilWebClient.SendAsync(request);
             string resp = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)

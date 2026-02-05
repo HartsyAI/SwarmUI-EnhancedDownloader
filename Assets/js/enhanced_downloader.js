@@ -4,7 +4,8 @@
     const RECENTS_KEY = 'enhanced_downloader_recent_folders_v1';
     const MAX_RECENT_FOLDERS = 12;
     const DOM_READY_TIMEOUT_MS = 15000;
-    const DOM_RETRY_INTERVAL_MS = 100;
+    const DOM_RETRY_INTERVAL_INITIAL_MS = 100;
+    const DOM_RETRY_INTERVAL_MAX_MS = 1000;
     let downloadRoots = null;
 
     async function loadDownloadRoots() {
@@ -315,7 +316,7 @@
 <div class="ed-info-title">Manual Download</div>
 <ul class="ed-info-list">
   <li><b>Purpose:</b> Download a model from a direct URL into Swarm’s model folders.</li>
-  <li><b>Allowed files:</b> <code>.safetensors</code> and <code>.gguf</code> only.</li>
+  <li><b>Allowed files:</b> Model files (<code>.safetensors</code>, <code>.gguf</code>, <code>.ckpt</code>, <code>.pt</code>, <code>.sft</code>).</li>
   <li><b>Hugging Face:</b> Paste a direct file URL.</li>
   <li><b>CivitAI:</b> Paste any CivitAI model/file URL; Swarm will auto-load metadata.</li>
   <li><b>Direct links:</b> Non-HF/CivitAI links must be direct downloads (not HTML pages).</li>
@@ -383,42 +384,67 @@
             return;
         }
 
-        let activeInstance = null;
+        // Use a Map to track active downloads by a unique ID, avoiding global mutable state race conditions
+        const activeDownloads = new Map();
+        let nextDownloadId = 1;
 
         // Permanently wrap makeWSRequest once to detect 401 on DoModelDownloadWS
         if (typeof window.makeWSRequest === 'function' && !window.makeWSRequest._ed401) {
             const origWS = window.makeWSRequest;
             window.makeWSRequest = function (name, payload, onData, timeout, onError, onOpen) {
-                if (name === 'DoModelDownloadWS' && typeof onError === 'function' && activeInstance) {
-                    const inst = activeInstance;
-                    const wrappedErr = function (e) {
-                        if (`${e}`.includes('401') || `${e}`.toLowerCase().includes('unauthorized')) {
-                            const link = `<a href="#" onclick="getRequiredElementById('usersettingstabbutton').click();getRequiredElementById('userinfotabbutton').click();">Open User Settings</a>`;
-                            const hint = `This download returned <b>401 Unauthorized</b>. This usually means the file is gated and requires authentication (or an API key) for the selected provider.<br>${link} to configure credentials, then retry.`;
-                            inst.statusText.innerHTML = `Error: ${escapeHtml(e)}\n<br>${hint}<br><br><button class="basic-button" title="Restart the download" style="width:98%">Retry</button><br><br>`;
-                            inst.statusText.querySelector('button').onclick = () => inst.download();
-                            inst.setBorderColor('#aa0000');
-                            inst.isDone();
-                            return;
+                if (name === 'DoModelDownloadWS' && typeof onError === 'function') {
+                    // Find the instance that initiated this request by checking our active downloads
+                    let inst = null;
+                    for (const [id, download] of activeDownloads) {
+                        if (download._edDownloading) {
+                            inst = download;
+                            break;
                         }
-                        return onError(e);
-                    };
-                    return origWS(name, payload, onData, timeout, wrappedErr, onOpen);
+                    }
+                    if (inst) {
+                        const capturedInst = inst;
+                        const wrappedErr = function (e) {
+                            delete capturedInst._edDownloading;
+                            if (`${e}`.includes('401') || `${e}`.toLowerCase().includes('unauthorized')) {
+                                const link = `<a href="#" onclick="getRequiredElementById('usersettingstabbutton').click();getRequiredElementById('userinfotabbutton').click();">Open User Settings</a>`;
+                                const hint = `This download returned <b>401 Unauthorized</b>. This usually means the file is gated and requires authentication (or an API key) for the selected provider.<br>${link} to configure credentials, then retry.`;
+                                capturedInst.statusText.innerHTML = `Error: ${escapeHtml(e)}\n<br>${hint}<br><br><button class="basic-button" title="Restart the download" style="width:98%">Retry</button><br><br>`;
+                                capturedInst.statusText.querySelector('button').onclick = () => capturedInst.download();
+                                capturedInst.setBorderColor('#aa0000');
+                                capturedInst.isDone();
+                                return;
+                            }
+                            return onError(e);
+                        };
+                        const wrappedOpen = function () {
+                            delete capturedInst._edDownloading;
+                            if (typeof onOpen === 'function') {
+                                return onOpen();
+                            }
+                        };
+                        return origWS(name, payload, onData, timeout, wrappedErr, wrappedOpen);
+                    }
                 }
                 return origWS(name, payload, onData, timeout, onError, onOpen);
             };
             window.makeWSRequest._ed401 = true;
         }
 
-        // Lightweight prototype wrapper — just tracks the active download instance
+        // Wrap download to mark instances as actively downloading
         const origDownload = ActiveModelDownload.prototype.download;
         ActiveModelDownload.prototype.download = function () {
-            activeInstance = this;
+            const id = nextDownloadId++;
+            this._edDownloadId = id;
+            this._edDownloading = true;
+            activeDownloads.set(id, this);
             try {
                 return origDownload.call(this);
             }
             finally {
-                activeInstance = null;
+                // Clean up after a delay to allow async WS setup to complete
+                setTimeout(() => {
+                    activeDownloads.delete(id);
+                }, 5000);
             }
         };
         ActiveModelDownload.prototype.download._ed401 = true;
@@ -428,11 +454,13 @@
         await loadDownloadRoots();
         enhanceModelDownloader401Message();
         const start = Date.now();
+        let retryInterval = DOM_RETRY_INTERVAL_INITIAL_MS;
         while (Date.now() - start < DOM_READY_TIMEOUT_MS) {
             if (tryEmbedDownloadsPanel() && tryEnhanceUrlUI() && tryEnhanceFolderUI() && tryEmbedCivitaiBrowserPanel()) {
                 break;
             }
-            await new Promise(r => setTimeout(r, DOM_RETRY_INTERVAL_MS));
+            await new Promise(r => setTimeout(r, retryInterval));
+            retryInterval = Math.min(retryInterval * 1.5, DOM_RETRY_INTERVAL_MAX_MS);
         }
     }
 

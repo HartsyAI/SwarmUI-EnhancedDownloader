@@ -23,6 +23,34 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
     private static readonly ProviderCache ImageCache = new(TimeSpan.FromMinutes(5));
     private static readonly SemaphoreSlim RateLimiter = new(5, 5);
 
+    private static readonly HashSet<string> AllowedImageHosts = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "huggingface.co",
+        "www.huggingface.co",
+        "hf.co",
+        "cdn-lfs.hf.co",
+        "cdn-lfs-us-1.hf.co",
+        "cdn-lfs-eu-1.hf.co",
+        "cas-bridge.xethub.hf.co",
+        "cdn-lfs.huggingface.co",
+        "cdn-lfs-us-1.huggingface.co"
+    };
+
+    private static bool IsAllowedImageUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return false;
+        try
+        {
+            Uri uri = new(url);
+            if (uri.Scheme != "https") return false;
+            return AllowedImageHosts.Contains(uri.Host);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static string EncodeModelIdForApi(string modelId)
     {
         modelId = (modelId ?? "").Trim();
@@ -92,6 +120,10 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
             string url = rel.StartsWith("http", StringComparison.OrdinalIgnoreCase)
                 ? rel
                 : BuildResolveUrl(modelId, rel);
+            if (!IsAllowedImageUrl(url))
+            {
+                continue;
+            }
             string dataUrl = await TryFetchImageDataUrl(url);
             if (!string.IsNullOrWhiteSpace(dataUrl))
             {
@@ -108,17 +140,18 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         {
             return "";
         }
-        if (rawUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || rawUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-        {
-            return rawUrl;
-        }
         if (rawUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
         {
             return "";
         }
+        if (rawUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || rawUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return IsAllowedImageUrl(rawUrl) ? rawUrl : "";
+        }
         if (rawUrl.StartsWith("//"))
         {
-            return "https:" + rawUrl;
+            string full = "https:" + rawUrl;
+            return IsAllowedImageUrl(full) ? full : "";
         }
         string rel = rawUrl;
         int hash = rel.IndexOf('#');

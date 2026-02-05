@@ -26,7 +26,7 @@ public static class EnhancedDownloaderAPI
         API.RegisterAPICall(EnhancedDownloaderHartsyFilterOptions, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
     }
 
-    public static async Task<JObject> ListProviders(Session session)
+    public static Task<JObject> ListProviders(Session session)
     {
         JArray providers = [];
         foreach (IEnhancedDownloaderProvider p in EnhancedDownloaderProviderRegistry.Providers)
@@ -39,24 +39,24 @@ public static class EnhancedDownloaderAPI
                 ["supportsNsfw"] = p.SupportsNsfw
             });
         }
-        return new JObject()
+        return Task.FromResult(new JObject()
         {
             ["success"] = true,
             ["providers"] = providers
-        };
+        });
     }
 
-    public static async Task<JObject> EnhancedDownloaderGetDownloadRoots(Session session)
+    public static Task<JObject> EnhancedDownloaderGetDownloadRoots(Session session)
     {
         if (_cachedDownloadRoots is not null && Environment.TickCount64 - _cachedDownloadRootsTimestamp < DownloadRootsCacheTtlMs)
         {
-            return _cachedDownloadRoots;
+            return Task.FromResult(_cachedDownloadRoots);
         }
         lock (_rootsLock)
         {
             if (_cachedDownloadRoots is not null && Environment.TickCount64 - _cachedDownloadRootsTimestamp < DownloadRootsCacheTtlMs)
             {
-                return _cachedDownloadRoots;
+                return Task.FromResult(_cachedDownloadRoots);
             }
             JObject roots = new();
             foreach ((string key, T2IModelHandler handler) in Program.T2IModelSets)
@@ -70,7 +70,7 @@ public static class EnhancedDownloaderAPI
             };
             _cachedDownloadRoots = result;
             _cachedDownloadRootsTimestamp = Environment.TickCount64;
-            return result;
+            return Task.FromResult(result);
         }
     }
 

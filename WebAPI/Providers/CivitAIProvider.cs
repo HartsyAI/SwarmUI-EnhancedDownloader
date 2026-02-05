@@ -41,16 +41,16 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         }
 
         bool isQueryMode = !string.IsNullOrWhiteSpace(query);
-        string cacheKey = $"civitai:{query}:{page}:{limit}:{cursor}:{typeClean}:{baseModel}:{sortClean}:{includeNsfw}";
+        string civitaiApiKey = session.User.GetGenericData("civitai_api", "key");
+        bool hasApiKey = !string.IsNullOrEmpty(civitaiApiKey);
+        string cacheKey = $"civitai:{query}:{page}:{limit}:{cursor}:{typeClean}:{baseModel}:{sortClean}:{includeNsfw}:{hasApiKey}";
         if (SearchCache.TryGet(cacheKey, out JObject cached))
         {
             return cached;
         }
+        string url = BuildSearchUrl(query, page, limit, cursor, typeClean, baseModel, sortClean, includeNsfw, isQueryMode);
 
-        string civitaiApiKey = session.User.GetGenericData("civitai_api", "key");
-        string url = BuildSearchUrl(query, page, limit, cursor, typeClean, baseModel, sortClean, includeNsfw, civitaiApiKey, isQueryMode);
-
-        JObject data = await FetchJsonAsync(url, "CivitAI search");
+        JObject data = await FetchJsonAsync(url, "CivitAI search", civitaiApiKey);
         if (data.ContainsKey("error"))
         {
             return data;
@@ -98,7 +98,7 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
     }
 
     private static string BuildSearchUrl(string query, int page, int limit, string cursor,
-        string type, string baseModel, string sort, bool includeNsfw, string apiKey, bool isQueryMode)
+        string type, string baseModel, string sort, bool includeNsfw, bool isQueryMode)
     {
         UrlBuilder builder = new("https://civitai.com/api/v1/models");
         builder.Add("limit", limit);
@@ -127,10 +127,6 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         {
             builder.AddIf(true, "nsfw", true);
         }
-        if (!string.IsNullOrEmpty(apiKey))
-        {
-            builder.Add("token", ModelsAPI.TokenTextLimiter.TrimToMatches(apiKey));
-        }
         return builder.ToString();
     }
 
@@ -158,12 +154,18 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         }
     }
 
-    private static async Task<JObject> FetchJsonAsync(string url, string label)
+    private static async Task<JObject> FetchJsonAsync(string url, string label, string apiKey = null)
     {
         await RateLimiter.WaitAsync();
         try
         {
-            using HttpResponseMessage response = await Utilities.UtilWebClient.GetAsync(url);
+            using HttpRequestMessage request = new(HttpMethod.Get, url);
+            if (!string.IsNullOrEmpty(apiKey))
+            {
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+                    "Bearer", ModelsAPI.TokenTextLimiter.TrimToMatches(apiKey));
+            }
+            using HttpResponseMessage response = await Utilities.UtilWebClient.SendAsync(request);
             string resp = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
@@ -188,12 +190,8 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
     {
         try
         {
-            UrlBuilder builder = new($"https://civitai.com/api/v1/models/{modelId}");
-            if (!string.IsNullOrEmpty(apiKey))
-            {
-                builder.Add("token", ModelsAPI.TokenTextLimiter.TrimToMatches(apiKey));
-            }
-            JObject modelObj = await FetchJsonAsync(builder.ToString(), $"CivitAI by-ID {modelId}");
+            string url = $"https://civitai.com/api/v1/models/{modelId}";
+            JObject modelObj = await FetchJsonAsync(url, $"CivitAI by-ID {modelId}", apiKey);
             if (modelObj.ContainsKey("error"))
             {
                 return null;
