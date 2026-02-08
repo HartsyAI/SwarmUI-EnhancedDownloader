@@ -10,12 +10,13 @@
 
     const sortMapping = {
         'Most Downloaded': 'downloads',
-        'Newest': 'newest',
-        'Highest Rated': 'popular',
-        'Most Popular': 'popular',
-        'popular': 'popular',
-        'newest': 'newest',
-        'downloads': 'downloads'
+        'Newest': 'created_at',
+        'Highest Rated': 'downloads',
+        'Most Popular': 'downloads',
+        'downloads': 'downloads',
+        'created_at': 'created_at',
+        'updated_at': 'updated_at',
+        'title': 'title'
     };
 
     window.EnhancedDownloader.Providers.hartsy = {
@@ -25,9 +26,10 @@
         supportsNsfw: false,
 
         sortOptions: [
-            { value: 'popular', label: 'Most Popular' },
-            { value: 'newest', label: 'Newest' },
-            { value: 'downloads', label: 'Most Downloads' }
+            { value: 'downloads', label: 'Most Downloads' },
+            { value: 'created_at', label: 'Newest' },
+            { value: 'updated_at', label: 'Recently Updated' },
+            { value: 'title', label: 'Title' }
         ],
 
         search: async function (params) {
