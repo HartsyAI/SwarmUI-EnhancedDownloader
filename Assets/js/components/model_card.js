@@ -95,19 +95,7 @@
         return { card: div, renderId };
     }
 
-    /** Reset the render ID counter (e.g. on new search). */
-    function resetRenderId() {
-        cardRenderId = 0;
-    }
-
-    /** Get the current render ID value. */
-    function getRenderId() {
-        return cardRenderId;
-    }
-
     window.EnhancedDownloader.Components.ModelCard = {
-        create: createModelCard,
-        resetRenderId: resetRenderId,
-        getRenderId: getRenderId
+        create: createModelCard
     };
 })();

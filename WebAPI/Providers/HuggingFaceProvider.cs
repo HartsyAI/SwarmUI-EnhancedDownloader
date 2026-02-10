@@ -5,7 +5,7 @@ using SwarmUI.Utils;
 using System.Collections.Specialized;
 using System.IO;
 using System.Net.Http;
-using System.Text.RegularExpressions;
+using SwarmUI.WebAPI;
 using System.Web;
 
 namespace EnhancedDownloader.Providers;
@@ -36,6 +36,22 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         "cdn-lfs-us-1.huggingface.co"
     };
 
+    private static string GetApiKey(Session session)
+    {
+        return session.User.GetGenericData("huggingface_api", "key");
+    }
+
+    private static async Task<HttpResponseMessage> SendAuthenticatedAsync(HttpMethod method, string url, string apiKey)
+    {
+        using HttpRequestMessage request = new(method, url);
+        if (!string.IsNullOrEmpty(apiKey))
+        {
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+                "Bearer", ModelsAPI.TokenTextLimiter.TrimToMatches(apiKey));
+        }
+        return await Utilities.UtilWebClient.SendAsync(request);
+    }
+
     private static bool IsAllowedImageUrl(string url)
     {
         if (string.IsNullOrWhiteSpace(url)) return false;
@@ -45,8 +61,9 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
             if (uri.Scheme != "https") return false;
             return AllowedImageHosts.Contains(uri.Host);
         }
-        catch
+        catch (Exception ex)
         {
+            Logs.Verbose($"EnhancedDownloader HuggingFace IsAllowedImageUrl failed for '{url}': {ex.ReadableString()}");
             return false;
         }
     }
@@ -79,11 +96,11 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         return $"https://huggingface.co/{modelId}/resolve/main/{HttpUtility.UrlEncode(filename).Replace("+", "%20")}";
     }
 
-    private static async Task<string> TryFetchImageDataUrl(string url)
+    private static async Task<string> TryFetchImageDataUrl(string url, string apiKey = null)
     {
         try
         {
-            using HttpResponseMessage response = await Utilities.UtilWebClient.GetAsync(url);
+            using HttpResponseMessage response = await SendAuthenticatedAsync(HttpMethod.Get, url, apiKey);
             if (!response.IsSuccessStatusCode)
             {
                 return "";
@@ -103,13 +120,14 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
             }
             return $"data:{ct};base64,{Convert.ToBase64String(data)}";
         }
-        catch
+        catch (Exception ex)
         {
+            Logs.Verbose($"EnhancedDownloader HuggingFace image fetch failed for '{url}': {ex.ReadableString()}");
             return "";
         }
     }
 
-    private static async Task<string> TryFetchFirstPreviewImage(string modelId, IEnumerable<string> relativePaths)
+    private static async Task<string> TryFetchFirstPreviewImage(string modelId, IEnumerable<string> relativePaths, string apiKey = null)
     {
         foreach (string rel in relativePaths)
         {
@@ -124,7 +142,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
             {
                 continue;
             }
-            string dataUrl = await TryFetchImageDataUrl(url);
+            string dataUrl = await TryFetchImageDataUrl(url, apiKey);
             if (!string.IsNullOrWhiteSpace(dataUrl))
             {
                 return dataUrl;
@@ -174,7 +192,84 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         return BuildResolveUrl(modelId, rel);
     }
 
-    private static async Task<string> TryFetchReadmeFirstImage(string modelId)
+    /// <summary>Extract image URLs from markdown ![alt](url) syntax using simple string parsing.</summary>
+    private static void ExtractMarkdownImageUrls(string md, List<string> results)
+    {
+        int pos = 0;
+        while (pos < md.Length)
+        {
+            int bang = md.IndexOf("![", pos);
+            if (bang < 0)
+            {
+                break;
+            }
+            int closeBracket = md.IndexOf(']', bang + 2);
+            if (closeBracket < 0)
+            {
+                break;
+            }
+            if (closeBracket + 1 >= md.Length || md[closeBracket + 1] != '(')
+            {
+                pos = closeBracket + 1;
+                continue;
+            }
+            int urlStart = closeBracket + 2;
+            int paren = md.IndexOf(')', urlStart);
+            if (paren < 0)
+            {
+                break;
+            }
+            string inner = md[urlStart..paren].Trim();
+            int space = inner.IndexOf(' ');
+            string urlPart = space >= 0 ? inner[..space] : inner;
+            if (!string.IsNullOrWhiteSpace(urlPart))
+            {
+                results.Add(urlPart);
+            }
+            pos = paren + 1;
+        }
+    }
+
+    /// <summary>Extract image URLs from HTML img src attributes using simple string parsing.</summary>
+    private static void ExtractHtmlImgSrcUrls(string md, List<string> results)
+    {
+        int pos = 0;
+        while (pos < md.Length)
+        {
+            int imgTag = md.IndexOf("<img", pos, StringComparison.OrdinalIgnoreCase);
+            if (imgTag < 0)
+            {
+                break;
+            }
+            int tagEnd = md.IndexOf('>', imgTag + 4);
+            if (tagEnd < 0)
+            {
+                break;
+            }
+            string tag = md[imgTag..tagEnd];
+            int srcIdx = tag.IndexOf("src=", StringComparison.OrdinalIgnoreCase);
+            if (srcIdx >= 0)
+            {
+                int valStart = srcIdx + 4;
+                if (valStart < tag.Length && (tag[valStart] == '"' || tag[valStart] == '\''))
+                {
+                    char quote = tag[valStart];
+                    int valEnd = tag.IndexOf(quote, valStart + 1);
+                    if (valEnd > valStart + 1)
+                    {
+                        string srcVal = tag[(valStart + 1)..valEnd].Trim();
+                        if (!string.IsNullOrWhiteSpace(srcVal))
+                        {
+                            results.Add(srcVal);
+                        }
+                    }
+                }
+            }
+            pos = tagEnd + 1;
+        }
+    }
+
+    private static async Task<string> TryFetchReadmeFirstImage(string modelId, string apiKey = null)
     {
         string[] readmeNames = ["README.md", "readme.md", "README.MD", "Readme.md"];
         foreach (string readmeName in readmeNames)
@@ -183,29 +278,27 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
             string md;
             try
             {
-                using HttpResponseMessage response = await Utilities.UtilWebClient.GetAsync(readmeUrl);
+                using HttpResponseMessage response = await SendAuthenticatedAsync(HttpMethod.Get, readmeUrl, apiKey);
                 if (!response.IsSuccessStatusCode) continue;
                 md = await response.Content.ReadAsStringAsync();
             }
-            catch { continue; }
+            catch (Exception ex)
+            {
+                Logs.Verbose($"EnhancedDownloader HuggingFace README fetch failed for '{readmeUrl}': {ex.ReadableString()}");
+                continue;
+            }
             if (string.IsNullOrWhiteSpace(md)) continue;
 
             List<string> candidates = [];
-            foreach (Match m in Regex.Matches(md, @"!\[[^\]]*\]\((?<url>[^\)\s]+)(\s+[^\)]*)?\)", RegexOptions.IgnoreCase))
-            {
-                if (m.Success) candidates.Add(m.Groups["url"].Value);
-            }
-            foreach (Match m in Regex.Matches(md, @"<img[^>]*?\s+src\s*=\s*(?:""|')(?<url>[^""']+)(?:""|')[^>]*>", RegexOptions.IgnoreCase))
-            {
-                if (m.Success) candidates.Add(m.Groups["url"].Value);
-            }
+            ExtractMarkdownImageUrls(md, candidates);
+            ExtractHtmlImgSrcUrls(md, candidates);
             foreach (string raw in candidates)
             {
                 string url = NormalizeReadmeImageUrl(modelId, raw);
                 if (string.IsNullOrWhiteSpace(url)) continue;
                 string lower = url.ToLowerInvariant();
                 if (lower.Contains("shields.io") || lower.Contains("badge") || lower.EndsWith(".svg")) continue;
-                string dataUrl = await TryFetchImageDataUrl(url);
+                string dataUrl = await TryFetchImageDataUrl(url, apiKey);
                 if (!string.IsNullOrWhiteSpace(dataUrl))
                 {
                     return dataUrl;
@@ -229,51 +322,60 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
             return cached;
         }
 
-        await RateLimiter.WaitAsync();
+        string apiKey = GetApiKey(session);
         try
         {
-            // 1. Try common preview filenames at repo root.
-            string image = await TryFetchFirstPreviewImage(modelId, ImageFileHelper.CommonPreviewFiles);
+            // 1. Query model siblings for preview files (single API call tells us what exists).
+            string image = "";
+            string previewFile = null;
+            await RateLimiter.WaitAsync();
+            try
+            {
+                string url = $"https://huggingface.co/api/models/{EncodeModelIdForApi(modelId)}?full=true";
+                using HttpResponseMessage response = await SendAuthenticatedAsync(HttpMethod.Get, url, apiKey);
+                if (response.IsSuccessStatusCode)
+                {
+                    string resp = await response.Content.ReadAsStringAsync();
+                    JObject data = resp.ParseToJson();
+                    if (data["siblings"] is JArray siblings)
+                    {
+                        previewFile = siblings.OfType<JObject>()
+                            .Select(s => s.Value<string>("rfilename") ?? "")
+                            .Where(f => !string.IsNullOrWhiteSpace(f))
+                            .FirstOrDefault(ImageFileHelper.IsPreviewFilename);
+                    }
+                }
+            }
+            finally
+            {
+                RateLimiter.Release();
+            }
+
+            // Fetch the preview file found in siblings (outside rate limiter).
+            if (!string.IsNullOrWhiteSpace(previewFile))
+            {
+                image = await TryFetchFirstPreviewImage(modelId, [previewFile], apiKey);
+                if (!string.IsNullOrWhiteSpace(image))
+                {
+                    return CacheAndReturn(cacheKey, image);
+                }
+            }
+
+            // 2. Fall back to common preview filenames at repo root.
+            image = await TryFetchFirstPreviewImage(modelId, ImageFileHelper.CommonPreviewFiles, apiKey);
             if (!string.IsNullOrWhiteSpace(image))
             {
                 return CacheAndReturn(cacheKey, image);
             }
 
-            // 2. Query model siblings for preview files.
-            string url = $"https://huggingface.co/api/models/{EncodeModelIdForApi(modelId)}?full=true";
-            using HttpResponseMessage response = await Utilities.UtilWebClient.GetAsync(url);
-            if (response.IsSuccessStatusCode)
-            {
-                string resp = await response.Content.ReadAsStringAsync();
-                JObject data = resp.ParseToJson();
-                if (data["siblings"] is JArray siblings)
-                {
-                    string previewFile = siblings.OfType<JObject>()
-                        .Select(s => s.Value<string>("rfilename") ?? "")
-                        .Where(f => !string.IsNullOrWhiteSpace(f))
-                        .FirstOrDefault(ImageFileHelper.IsPreviewFilename);
-                    if (!string.IsNullOrWhiteSpace(previewFile))
-                    {
-                        image = await TryFetchFirstPreviewImage(modelId, [previewFile]);
-                        if (!string.IsNullOrWhiteSpace(image))
-                        {
-                            return CacheAndReturn(cacheKey, image);
-                        }
-                    }
-                }
-            }
-
             // 3. Fall back to parsing README for embedded images.
-            image = await TryFetchReadmeFirstImage(modelId);
+            image = await TryFetchReadmeFirstImage(modelId, apiKey);
             return CacheAndReturn(cacheKey, image);
         }
-        catch
+        catch (Exception ex)
         {
+            Logs.Verbose($"EnhancedDownloader HuggingFace preview image failed for '{modelId}': {ex.ReadableString()}");
             return CacheAndReturn(cacheKey, "");
-        }
-        finally
-        {
-            RateLimiter.Release();
         }
     }
 
@@ -289,7 +391,9 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         string type = "", string baseModel = "", string sort = "", bool includeNsfw = false)
     {
         limit = Math.Clamp(limit, 1, 100);
-        string cacheKey = $"hf:{query}:{limit}:{cursor}";
+        string apiKey = GetApiKey(session);
+        bool hasApiKey = !string.IsNullOrEmpty(apiKey);
+        string cacheKey = $"hf:{session.User.UserID}:{query}:{limit}:{cursor}:{hasApiKey}";
         if (SearchCache.TryGet(cacheKey, out JObject cached))
         {
             return cached;
@@ -313,7 +417,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         await RateLimiter.WaitAsync();
         try
         {
-            using HttpResponseMessage response = await Utilities.UtilWebClient.GetAsync(url);
+            using HttpResponseMessage response = await SendAuthenticatedAsync(HttpMethod.Get, url, apiKey);
             resp = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
@@ -428,11 +532,12 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         }
         limit = Math.Clamp(limit, 1, 5000);
 
+        string apiKey = GetApiKey(session);
         string url = $"https://huggingface.co/api/models/{EncodeModelIdForApi(modelId)}?full=true";
         await RateLimiter.WaitAsync();
         try
         {
-            using HttpResponseMessage response = await Utilities.UtilWebClient.GetAsync(url);
+            using HttpResponseMessage response = await SendAuthenticatedAsync(HttpMethod.Get, url, apiKey);
             string resp = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {

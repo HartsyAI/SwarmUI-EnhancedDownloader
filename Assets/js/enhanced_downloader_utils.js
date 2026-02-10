@@ -50,11 +50,14 @@
             mz.dataset.raw = rawMetadata || '';
             if (imageDataUrl) {
                 mz.dataset.image = imageDataUrl;
-                imgSide.innerHTML = `<img src="${imageDataUrl}"/>`;
+                imgSide.replaceChildren();
+                const img = document.createElement('img');
+                img.src = imageDataUrl;
+                imgSide.appendChild(img);
             }
             else {
                 delete mz.dataset.image;
-                imgSide.innerHTML = '';
+                imgSide.replaceChildren();
             }
             return true;
         }

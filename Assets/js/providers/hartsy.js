@@ -42,7 +42,7 @@
                 page: params.page || 1,
                 limit: params.limit || 24,
                 architecture: params.baseModel || params.architecture || '',
-                sort: sortMapping[params.sort] || 'popular',
+                sort: sortMapping[params.sort] || 'downloads',
                 tags: params.tags || ''
             });
         },

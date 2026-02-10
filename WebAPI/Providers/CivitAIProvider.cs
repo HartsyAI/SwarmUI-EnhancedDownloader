@@ -43,7 +43,7 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         bool isQueryMode = !string.IsNullOrWhiteSpace(query);
         string civitaiApiKey = session.User.GetGenericData("civitai_api", "key");
         bool hasApiKey = !string.IsNullOrEmpty(civitaiApiKey);
-        string cacheKey = $"civitai:{query}:{page}:{limit}:{cursor}:{typeClean}:{baseModel}:{sortClean}:{includeNsfw}:{hasApiKey}";
+        string cacheKey = $"civitai:{session.User.UserID}:{query}:{page}:{limit}:{cursor}:{typeClean}:{baseModel}:{sortClean}:{includeNsfw}:{hasApiKey}";
         if (SearchCache.TryGet(cacheKey, out JObject cached))
         {
             return cached;
@@ -148,8 +148,9 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
             NameValueCollection qs = HttpUtility.ParseQueryString(nextUri.Query);
             return qs.Get("cursor");
         }
-        catch
+        catch (Exception ex)
         {
+            Logs.Verbose($"EnhancedDownloader CivitAI ExtractNextCursor failed for '{nextPage}': {ex.ReadableString()}");
             return null;
         }
     }

@@ -60,7 +60,7 @@ public class HartsyProvider : IEnhancedDownloaderProvider
 
         string apiKey = GetApiKey(session);
         bool hasApiKey = !string.IsNullOrEmpty(apiKey);
-        string cacheKey = $"hartsy:{query}:{page}:{limit}:{architecture}:{sortClean}:{tagsClean}:{hasApiKey}";
+        string cacheKey = $"hartsy:{session.User.UserID}:{query}:{page}:{limit}:{architecture}:{sortClean}:{tagsClean}:{hasApiKey}";
         if (SearchCache.TryGet(cacheKey, out JObject cached))
         {
             return cached;
@@ -241,20 +241,5 @@ public class HartsyProvider : IEnhancedDownloaderProvider
         {
             RateLimiter.Release();
         }
-    }
-
-    private static string MapContentType(string contentType)
-    {
-        return (contentType ?? "").ToLowerInvariant() switch
-        {
-            "model" => "Checkpoint",
-            "lora" => "LoRA",
-            "preset" => "Preset",
-            "workflow" => "Workflow",
-            "images" => "Image",
-            "dataset" => "Dataset",
-            "wildcard" => "Wildcard",
-            _ => contentType ?? "Model"
-        };
     }
 }

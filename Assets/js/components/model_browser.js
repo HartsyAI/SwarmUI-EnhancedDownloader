@@ -36,9 +36,10 @@
         { value: 'Highest Rated', label: 'Highest Rated' }
     ];
     const hartsySortOptions = [
-        { value: 'popular', label: 'Most Popular' },
-        { value: 'newest', label: 'Newest' },
-        { value: 'downloads', label: 'Most Downloads' }
+        { value: 'downloads', label: 'Most Downloads' },
+        { value: 'created_at', label: 'Newest' },
+        { value: 'updated_at', label: 'Recently Updated' },
+        { value: 'title', label: 'Title' }
     ];
 
     function createBrowserCard() {
@@ -199,7 +200,7 @@
                 // Sort
                 sortFilter.disabled = !isFilterable;
                 if (prov && prov.id === 'hartsy') {
-                    populateSelect(sortFilter, hartsySortOptions, 'popular');
+                    populateSelect(sortFilter, hartsySortOptions, 'downloads');
                 } else if (prov && prov.id === 'civitai') {
                     populateSelect(sortFilter, defaultSortOptions, state.lastSort || 'Most Downloaded');
                 }
@@ -262,7 +263,7 @@
 
                 state.lastQuery = newQuery;
                 if (filterable) {
-                    state.lastType = newType === 'ControlNet' ? 'Controlnet' : newType;
+                    state.lastType = newType;
                     state.lastBaseModel = newBaseModel;
                     state.lastSort = newSort;
                 }
