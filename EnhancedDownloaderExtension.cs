@@ -1,6 +1,8 @@
 using SwarmUI.Accounts;
 using SwarmUI.Core;
 using SwarmUI.Utils;
+using SwarmUI.WebAPI;
+using Microsoft.AspNetCore.Html;
 
 namespace EnhancedDownloader;
 
@@ -24,6 +26,11 @@ public class EnhancedDownloaderExtension : Extension
         ScriptFiles.Add("Assets/js/enhanced_downloader.js");
         StyleSheetFiles.Add("Assets/css/enhanced_downloader.css");
         EnhancedDownloaderAPI.Register();
+        BasicAPIFeatures.AcceptedAPIKeyTypes.Add("hartsy");
+        if (!UserUpstreamApiKeys.KeysByType.ContainsKey("hartsy"))
+        {
+            UserUpstreamApiKeys.Register(new("hartsy", "hartsy", "Hartsy", "https://hartsy.ai", new HtmlString("To browse and download models from Hartsy, you must set your Hartsy API key.")));
+        }
         Logs.Verbose("SwarmUI-EnhancedDownloader extension loaded.");
     }
 }
