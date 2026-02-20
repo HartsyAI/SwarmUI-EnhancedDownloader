@@ -18,6 +18,7 @@ public static class EnhancedDownloaderAPI
     {
         API.RegisterAPICall(ListProviders, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
         API.RegisterAPICall(EnhancedDownloaderGetDownloadRoots, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
+        API.RegisterAPICall(EnhancedDownloaderGetFeaturedModels, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
         API.RegisterAPICall(EnhancedDownloaderCivitaiSearch, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHuggingFaceSearch, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHuggingFaceFiles, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
@@ -109,5 +110,10 @@ public static class EnhancedDownloaderAPI
     public static async Task<JObject> EnhancedDownloaderHartsyFilterOptions(Session session)
     {
         return await HartsyProvider.Instance.GetFilterOptionsAsync(session);
+    }
+
+    public static Task<JObject> EnhancedDownloaderGetFeaturedModels(Session session)
+    {
+        return Task.FromResult(FeaturedModels.GetFeatured());
     }
 }

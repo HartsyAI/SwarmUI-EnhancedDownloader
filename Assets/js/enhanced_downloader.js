@@ -368,6 +368,14 @@
         return true;
     }
 
+    function tryEmbedFeaturedModelsPanel() {
+        const comp = window.EnhancedDownloader && window.EnhancedDownloader.Components && window.EnhancedDownloader.Components.FeaturedModels;
+        if (!comp || typeof comp.tryEmbed !== 'function') {
+            return false;
+        }
+        return comp.tryEmbed();
+    }
+
     function tryEmbedCivitaiBrowserPanel() {
         const comp = window.EnhancedDownloader && window.EnhancedDownloader.Components && window.EnhancedDownloader.Components.ModelBrowser;
         if (!comp || typeof comp.tryEmbed !== 'function') {
@@ -456,7 +464,7 @@
         const start = Date.now();
         let retryInterval = DOM_RETRY_INTERVAL_INITIAL_MS;
         while (Date.now() - start < DOM_READY_TIMEOUT_MS) {
-            if (tryEmbedDownloadsPanel() && tryEnhanceUrlUI() && tryEnhanceFolderUI() && tryEmbedCivitaiBrowserPanel()) {
+            if (tryEmbedDownloadsPanel() && tryEnhanceUrlUI() && tryEnhanceFolderUI() && tryEmbedCivitaiBrowserPanel() && tryEmbedFeaturedModelsPanel()) {
                 break;
             }
             await new Promise(r => setTimeout(r, retryInterval));

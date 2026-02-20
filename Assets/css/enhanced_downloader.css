@@ -466,3 +466,163 @@
     min-width: 5rem;
     text-align: center;
 }
+
+/* ---- Featured Models Section ---- */
+
+.enhanced-downloader-featured-section {
+    margin-bottom: 1rem;
+}
+
+.enhanced-downloader-featured-toggle-wrap {
+    float: right;
+    font-weight: normal;
+}
+
+.enhanced-downloader-featured-about {
+    color: var(--text-soft);
+    font-size: 90%;
+    line-height: 1.35;
+    margin-bottom: 0.75rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--light-border);
+    border-radius: 0.5rem;
+    background: var(--background-soft);
+}
+
+.enhanced-downloader-featured-about a {
+    color: var(--emphasis);
+    text-decoration: none;
+}
+
+.enhanced-downloader-featured-about a:hover {
+    text-decoration: underline;
+}
+
+.enhanced-downloader-featured-loading,
+.enhanced-downloader-featured-empty {
+    color: var(--text-soft);
+    font-size: 90%;
+    padding: 0.5rem 0;
+}
+
+/* Side-by-side columns */
+.enhanced-downloader-featured-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+@media (max-width: 900px) {
+    .enhanced-downloader-featured-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+.enhanced-downloader-featured-column {
+    min-width: 0;
+}
+
+.enhanced-downloader-featured-group-header {
+    font-weight: 700;
+    color: var(--text);
+    font-size: 95%;
+    margin: 0 0 0.35rem;
+    padding-bottom: 0.2rem;
+    border-bottom: 1px solid var(--light-border);
+}
+
+.enhanced-downloader-featured-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+/* Model cards – horizontal layout matching browse cards */
+.enhanced-downloader-featured-card.model-block {
+    height: auto;
+    width: auto;
+    display: flex;
+    white-space: normal;
+    overflow: hidden;
+    margin: 0;
+    transition: border-color 0.15s;
+}
+
+.enhanced-downloader-featured-card.model-block:hover {
+    border-color: var(--emphasis);
+}
+
+.enhanced-downloader-featured-card.model-block.ed-featured-recommended {
+    border-color: var(--emphasis);
+    border-width: 2px;
+}
+
+.enhanced-downloader-featured-card.model-block img {
+    width: 7rem;
+    height: 7rem;
+    max-height: 7rem;
+    margin: 0.5rem;
+    margin-bottom: 0;
+    object-fit: cover;
+    background-color: var(--background-soft);
+}
+
+.enhanced-downloader-featured-card .model-descblock {
+    width: auto;
+    height: auto;
+    flex: 1;
+    min-width: 0;
+    padding: 0.5rem 0.5rem 0.5rem 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    font-size: 80%;
+}
+
+.enhanced-downloader-featured-badge {
+    font-size: 72%;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: var(--emphasis);
+    color: var(--background);
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.enhanced-downloader-featured-note {
+    color: var(--text-soft);
+    margin-top: 0.2rem;
+    line-height: 1.25;
+    overflow: hidden;
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.enhanced-downloader-featured-card .ed-model-actions {
+    margin-top: auto;
+    padding-top: 0.35rem;
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.enhanced-downloader-featured-select {
+    flex: 1;
+    min-width: 0;
+    font-size: 100%;
+}
+
+.enhanced-downloader-featured-card .ed-model-actions .basic-button {
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.enhanced-downloader-featured-expand-btn {
+    margin-top: 0.35rem;
+    width: 100%;
+    text-align: center;
+}
