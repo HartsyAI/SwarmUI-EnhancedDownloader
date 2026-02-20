@@ -162,9 +162,13 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         {
             return "";
         }
-        if (rawUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || rawUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        if (rawUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         {
-            return IsAllowedImageUrl(rawUrl) ? rawUrl : "";
+            return rawUrl;
+        }
+        if (rawUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            return "";
         }
         if (rawUrl.StartsWith("//"))
         {
@@ -298,10 +302,19 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
                 if (string.IsNullOrWhiteSpace(url)) continue;
                 string lower = url.ToLowerInvariant();
                 if (lower.Contains("shields.io") || lower.Contains("badge") || lower.EndsWith(".svg")) continue;
-                string dataUrl = await TryFetchImageDataUrl(url, apiKey);
-                if (!string.IsNullOrWhiteSpace(dataUrl))
+                if (IsAllowedImageUrl(url))
                 {
-                    return dataUrl;
+                    // HuggingFace-hosted: download and return as base64 data URL
+                    string dataUrl = await TryFetchImageDataUrl(url, apiKey);
+                    if (!string.IsNullOrWhiteSpace(dataUrl))
+                    {
+                        return dataUrl;
+                    }
+                }
+                else
+                {
+                    // External CDN: return URL directly (browser loads it, much faster)
+                    return url;
                 }
             }
         }

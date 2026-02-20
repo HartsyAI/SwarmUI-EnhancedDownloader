@@ -8,39 +8,15 @@
     const EXPAND_IMAGE_KEY = 'enhanced_downloader_featured_expand_image';
     const EXPAND_VIDEO_KEY = 'enhanced_downloader_featured_expand_video';
 
-    let featuredRenderId = 0;
-
     function createModelCard(model) {
         const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
         const downloads = Array.isArray(model.downloads) ? model.downloads : [];
-        featuredRenderId++;
-        const renderId = featuredRenderId;
 
         const card = document.createElement('div');
         card.className = 'model-block model-block-hoverable enhanced-downloader-featured-card';
         if (model.isRecommended) {
             card.classList.add('ed-featured-recommended');
         }
-
-        // Thumbnail image (same pattern as browse cards)
-        const img = document.createElement('img');
-        img.src = 'imgs/model_placeholder.jpg';
-        img.dataset.renderId = `${renderId}`;
-        card.appendChild(img);
-
-        // Lazy-load from HuggingFace if previewSource is set
-        if (model.previewSource) {
-            const hfProvider = window.EnhancedDownloader &&
-                window.EnhancedDownloader.Providers &&
-                window.EnhancedDownloader.Providers.huggingface;
-            if (hfProvider && hfProvider.loadCardImage) {
-                hfProvider.loadCardImage(img, model.previewSource, renderId);
-            }
-        }
-
-        // Text block (model-descblock, matching browse cards)
-        const textBlock = document.createElement('div');
-        textBlock.className = 'model-descblock';
 
         const badgeHtml = model.isRecommended
             ? ' <span class="enhanced-downloader-featured-badge">Recommended</span>'
@@ -53,11 +29,13 @@
             ? `<div class="enhanced-downloader-featured-note">${escapeHtml(model.note)}</div>`
             : '';
 
-        textBlock.innerHTML = `
-            <b>${escapeHtml(model.name || '')}</b>${badgeHtml}
-            <br>${chipsStr}
+        const header = document.createElement('div');
+        header.innerHTML = `
+            <div><b>${escapeHtml(model.name || '')}</b>${badgeHtml}</div>
+            <div class="enhanced-downloader-featured-chips">${chipsStr}</div>
             ${noteHtml}
         `;
+        while (header.firstChild) card.appendChild(header.firstChild);
 
         // Actions row: version selector + download + open
         if (downloads.length > 0) {
@@ -95,10 +73,8 @@
             });
             actions.appendChild(openBtn);
 
-            textBlock.appendChild(actions);
+            card.appendChild(actions);
         }
-
-        card.appendChild(textBlock);
         return card;
     }
 
