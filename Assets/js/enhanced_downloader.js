@@ -95,94 +95,100 @@
         destination.innerHTML = `
             <div class="enhanced-downloader-destination-label"><span class="translate">Destination</span></div>
             <div class="enhanced-downloader-destination-path"><span class="path"></span></div>
-            <div class="enhanced-downloader-destination-crumbs"></div>
         `;
         const destinationPath = destination.querySelector('.path');
-        const destinationCrumbs = destination.querySelector('.enhanced-downloader-destination-crumbs');
 
-        const newWrap = document.createElement('div');
-        newWrap.className = 'enhanced-downloader-new-folder';
-        newWrap.innerHTML = `
-            <button type="button" class="basic-button enhanced-downloader-smallbtn">New Folder</button>
-            <span class="enhanced-downloader-new-folder-inline" style="display:none">
-                <input type="text" class="auto-text" placeholder="SDXL/LoRAs/Characters" />
-                <button type="button" class="basic-button enhanced-downloader-smallbtn">Add</button>
-            </span>
-        `;
-        const toggleBtn = newWrap.querySelector('button');
-        const inline = newWrap.querySelector('.enhanced-downloader-new-folder-inline');
-        const input = inline.querySelector('input');
-        const addBtn = inline.querySelectorAll('button')[0];
+        // Check if we're using the old dropdown or new folder browser
+        const isOldDropdown = folders.tagName === 'SELECT';
+
+        // Only create "New Folder" button for old dropdown system
+        let newWrap = null;
+        let toggleBtn = null;
+        let inline = null;
+        let input = null;
+        let addBtn = null;
+
+        if (isOldDropdown) {
+            newWrap = document.createElement('div');
+            newWrap.className = 'enhanced-downloader-new-folder';
+            newWrap.innerHTML = `
+                <button type="button" class="basic-button enhanced-downloader-smallbtn">New Folder</button>
+                <span class="enhanced-downloader-new-folder-inline" style="display:none">
+                    <input type="text" class="auto-text" placeholder="SDXL/LoRAs/Characters" />
+                    <button type="button" class="basic-button enhanced-downloader-smallbtn">Add</button>
+                </span>
+            `;
+            toggleBtn = newWrap.querySelector('button');
+            inline = newWrap.querySelector('.enhanced-downloader-new-folder-inline');
+            input = inline.querySelector('input');
+            addBtn = inline.querySelectorAll('button')[0];
+        }
 
         const updatePreview = () => {
             const type = modelDownloader.type ? modelDownloader.type.value : '';
             const rootRaw = downloadRoots && downloadRoots[type] ? `${downloadRoots[type]}` : '';
             const root = (rootRaw || type).replaceAll('\\', '/').replaceAll(/\/+/g, '/').replace(/\/$/, '');
-            const folder = folders.value && folders.value !== '(None)' ? folders.value : '';
+            const folder = isOldDropdown ? (folders.value && folders.value !== '(None)' ? folders.value : '') : (modelDownloader.selectedFolder && modelDownloader.selectedFolder !== '(None)' ? modelDownloader.selectedFolder : '');
             const nameVal = modelDownloader.name ? (modelDownloader.name.value || '') : '';
 
             const combined = `${root}/${folder ? folder + '/' : ''}${nameVal}`.replaceAll('\\', '/').replaceAll(/\/+/g, '/');
             destinationPath.textContent = combined;
+        };
 
-            while (destinationCrumbs.firstChild) {
-                destinationCrumbs.removeChild(destinationCrumbs.firstChild);
-            }
-
-            const addChip = (label, value, cls) => {
-                const span = document.createElement('span');
-                span.className = `enhanced-downloader-chip${cls ? ' ' + cls : ''}`;
-                span.textContent = label ? `${label}: ${value}` : value;
-                destinationCrumbs.appendChild(span);
+        if (isOldDropdown) {
+            toggleBtn.onclick = () => {
+                inline.style.display = inline.style.display === 'none' ? 'inline-flex' : 'none';
+                if (inline.style.display !== 'none') {
+                    input.focus();
+                    input.select();
+                }
             };
 
-            addChip('Root', root, 'enhanced-downloader-chip-root');
-            if (folder) {
-                addChip('Folder', folder, 'enhanced-downloader-chip-folder');
-            }
-            const nameParts = nameVal.split('/').filter(p => p && p.length);
-            if (nameParts.length > 1) {
-                addChip('From name', nameParts.slice(0, -1).join('/'), 'enhanced-downloader-chip-namefolders');
-            }
-            addChip('File', (nameParts.length ? nameParts[nameParts.length - 1] : (nameVal || '(unnamed)')), 'enhanced-downloader-chip-file');
-        };
+            const addFolder = () => {
+                const raw = (input.value || '').trim().replaceAll('\\', '/');
+                if (!raw) {
+                    return;
+                }
+                const safe = raw.replaceAll(/\s+/g, '_').replaceAll(/\/+/g, '/').replace(/\/$/, '');
+                const has = [...folders.querySelectorAll('option')].some(o => o.value === safe);
+                if (!has) {
+                    const opt = document.createElement('option');
+                    opt.value = safe;
+                    opt.textContent = safe;
+                    folders.appendChild(opt);
+                }
+                folders.value = safe;
+                addRecent(safe);
+                updatePreview();
+            };
+            addBtn.onclick = addFolder;
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addFolder();
+                }
+            });
+        }
 
-        toggleBtn.onclick = () => {
-            inline.style.display = inline.style.display === 'none' ? 'inline-flex' : 'none';
-            if (inline.style.display !== 'none') {
-                input.focus();
-                input.select();
+        if (isOldDropdown) {
+            folders.addEventListener('change', () => {
+                addRecent(folders.value);
+                updatePreview();
+            });
+        }
+        else {
+            // For new folder browser, wrap selectFolder to trigger updates
+            if (modelDownloader.selectFolder && !modelDownloader.selectFolder._enhancedDownloaderWrapped) {
+                const origSelectFolder = modelDownloader.selectFolder.bind(modelDownloader);
+                const wrapped = (folderPath) => {
+                    origSelectFolder(folderPath);
+                    updatePreview();
+                };
+                wrapped._enhancedDownloaderWrapped = true;
+                modelDownloader.selectFolder = wrapped;
             }
-        };
+        }
 
-        const addFolder = () => {
-            const raw = (input.value || '').trim().replaceAll('\\', '/');
-            if (!raw) {
-                return;
-            }
-            const safe = raw.replaceAll(/\s+/g, '_').replaceAll(/\/+/g, '/').replace(/\/$/, '');
-            const has = [...folders.querySelectorAll('option')].some(o => o.value === safe);
-            if (!has) {
-                const opt = document.createElement('option');
-                opt.value = safe;
-                opt.textContent = safe;
-                folders.appendChild(opt);
-            }
-            folders.value = safe;
-            addRecent(safe);
-            updatePreview();
-        };
-        addBtn.onclick = addFolder;
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addFolder();
-            }
-        });
-
-        folders.addEventListener('change', () => {
-            addRecent(folders.value);
-            updatePreview();
-        });
         if (modelDownloader.type) {
             modelDownloader.type.addEventListener('change', updatePreview);
         }
@@ -211,12 +217,24 @@
             modelDownloader.urlInput = wrapped;
         }
 
-        folders.insertAdjacentElement('afterend', newWrap);
-        if (modelDownloader.name) {
-            modelDownloader.name.insertAdjacentElement('afterend', destination);
+        // Insert elements into DOM
+        if (isOldDropdown) {
+            folders.insertAdjacentElement('afterend', newWrap);
+            if (modelDownloader.name) {
+                modelDownloader.name.insertAdjacentElement('afterend', destination);
+            }
+            else {
+                newWrap.insertAdjacentElement('afterend', destination);
+            }
         }
         else {
-            newWrap.insertAdjacentElement('afterend', destination);
+            // For new folder browser, insert destination after name or folders
+            if (modelDownloader.name) {
+                modelDownloader.name.insertAdjacentElement('afterend', destination);
+            }
+            else {
+                folders.insertAdjacentElement('afterend', destination);
+            }
         }
 
         modelDownloader.reloadFolders();

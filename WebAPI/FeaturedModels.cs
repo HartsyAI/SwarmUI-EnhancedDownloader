@@ -50,14 +50,16 @@ public static class FeaturedModels
                 "S3-DiT", "Tongyi MAI (Alibaba)", "6B", true,
                 D("Turbo FP8 (Recommended)", "https://huggingface.co/mcmonkey/swarm-models/blob/main/SwarmUI_Z-Image-Turbo-FP8Mix.safetensors"),
                 D("Turbo BF16", "https://huggingface.co/Comfy-Org/z_image_turbo/blob/main/split_files/diffusion_models/z_image_turbo_bf16.safetensors"),
-                D("Turbo GGUF", "https://huggingface.co/jayn7/Z-Image-Turbo-GGUF/tree/main"),
+                D("Turbo GGUF Q6_K", "https://huggingface.co/jayn7/Z-Image-Turbo-GGUF/blob/main/z_image_turbo-Q6_K.gguf"),
+                D("Turbo GGUF Q4_K_S", "https://huggingface.co/jayn7/Z-Image-Turbo-GGUF/blob/main/z_image_turbo-Q4_K_S.gguf"),
                 D("Base BF16", "https://huggingface.co/Comfy-Org/z_image/blob/main/split_files/diffusion_models/z_image_bf16.safetensors")
             ),
 
             M("Flux.2 Klein", "image",
                 "Great for editing and art variety. Smaller, faster Flux.2 variant. 4B is often smarter than 9B.",
                 "MMDiT", "Black Forest Labs", "4B, 9B", true,
-                D("Klein 4B Distilled", "https://huggingface.co/Comfy-Org/flux2-klein-4B/tree/main/split_files/diffusion_models"),
+                D("Klein 4B Distilled", "https://huggingface.co/Comfy-Org/flux2-klein-4B/blob/main/split_files/diffusion_models/flux-2-klein-4b.safetensors"),
+                D("Klein 4B Base", "https://huggingface.co/Comfy-Org/flux2-klein-4B/blob/main/split_files/diffusion_models/flux-2-klein-base-4b.safetensors"),
                 D("Klein 4B GGUF Q4", "https://huggingface.co/unsloth/FLUX.2-klein-4B-GGUF/blob/main/flux-2-klein-4b-Q4_K_M.gguf"),
                 D("Klein 4B Base GGUF Q4", "https://huggingface.co/unsloth/FLUX.2-klein-base-4B-GGUF/blob/main/flux-2-klein-base-4b-Q4_K_M.gguf"),
                 D("Klein 9B", "https://huggingface.co/black-forest-labs/FLUX.2-klein-9B/blob/main/flux-2-klein-9b.safetensors"),
@@ -70,7 +72,6 @@ public static class FeaturedModels
                 "Smartest image model available. Massive 32B, needs 64GB+ RAM.",
                 "MMDiT", "Black Forest Labs", "32B", true,
                 D("Dev FP8 (Recommended)", "https://huggingface.co/silveroxides/FLUX.2-dev-fp8_scaled/blob/main/flux2-dev-fp8mixedfromscaled.safetensors"),
-                D("Dev GGUF", "https://huggingface.co/city96/FLUX.2-dev-gguf/tree/main"),
                 D("Dev Turbo FP8", "https://huggingface.co/silveroxides/FLUX.2-dev-fp8_scaled/blob/main/flux2-dev-turbo-fp8mixed.safetensors"),
                 D("Turbo LoRA", "https://huggingface.co/fal/FLUX.2-dev-Turbo/blob/main/comfy/Flux_2-Turbo-LoRA_comfyui.safetensors")
             ),
@@ -79,9 +80,12 @@ public static class FeaturedModels
             M("Qwen Image", "image",
                 "Great quality, very memory intense (30GB+ RAM). Slow but smart.",
                 "MMDiT", "Alibaba-Qwen", "20B", false,
-                D("FP8/BF16 Variants", "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/tree/main/split_files/diffusion_models"),
-                D("Nunchaku (Faster)", "https://huggingface.co/nunchaku-tech/nunchaku-qwen-image/tree/main"),
-                D("GGUF", "https://huggingface.co/city96/Qwen-Image-gguf/tree/main"),
+                D("FP8 2512 (Recommended)", "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/blob/main/split_files/diffusion_models/qwen_image_2512_fp8_e4m3fn.safetensors"),
+                D("BF16 2512", "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/blob/main/split_files/diffusion_models/qwen_image_2512_bf16.safetensors"),
+                D("Nunchaku int4 (RTX 30/40xx)", "https://huggingface.co/nunchaku-tech/nunchaku-qwen-image/blob/main/svdq-int4_r32-qwen-image.safetensors"),
+                D("Nunchaku fp4 (RTX 50xx)", "https://huggingface.co/nunchaku-tech/nunchaku-qwen-image/blob/main/svdq-fp4_r32-qwen-image.safetensors"),
+                D("GGUF Q6_K", "https://huggingface.co/city96/Qwen-Image-gguf/blob/main/qwen-image-Q6_K.gguf"),
+                D("GGUF Q4_K_S", "https://huggingface.co/city96/Qwen-Image-gguf/blob/main/qwen-image-Q4_K_S.gguf"),
                 D("Distilled FP8", "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/blob/main/non_official/diffusion_models/qwen_image_distill_full_fp8_e4m3fn.safetensors")
             ),
 
@@ -89,20 +93,21 @@ public static class FeaturedModels
                 "Great quality, very memory intense. Targets 2048x2048. Refiner recommended.",
                 "MMDiT", "Tencent", "17B", false,
                 D("Original BF16", "https://huggingface.co/tencent/HunyuanImage-2.1/blob/main/dit/hunyuanimage2.1.safetensors"),
-                D("GGUF", "https://huggingface.co/QuantStack/HunyuanImage-2.1-GGUF/tree/main"),
                 D("Distilled BF16", "https://huggingface.co/Comfy-Org/HunyuanImage_2.1_ComfyUI/blob/main/split_files/diffusion_models/hunyuanimage2.1_distilled_bf16.safetensors"),
-                D("Distilled GGUF", "https://huggingface.co/QuantStack/HunyuanImage-2.1-Distilled-GGUF/tree/main"),
-                D("Refiner", "https://huggingface.co/tencent/HunyuanImage-2.1/blob/main/dit/hunyuanimage-refiner.safetensors"),
-                D("Refiner GGUF", "https://huggingface.co/QuantStack/HunyuanImage-2.1-Refiner-GGUF/tree/main")
+                D("Refiner", "https://huggingface.co/tencent/HunyuanImage-2.1/blob/main/dit/hunyuanimage-refiner.safetensors")
             ),
 
             M("Flux.1", "image",
                 "High quality, large ecosystem of finetunes and LoRAs. Outdated but still very popular.",
                 "MMDiT", "Black Forest Labs", "12B", false,
-                D("Dev Nunchaku (Fastest)", "https://huggingface.co/mit-han-lab/nunchaku-flux.1-dev/tree/main"),
-                D("Schnell Nunchaku", "https://huggingface.co/mit-han-lab/nunchaku-flux.1-schnell/tree/main"),
-                D("Dev GGUF", "https://huggingface.co/city96/FLUX.1-dev-gguf/tree/main"),
-                D("Schnell GGUF", "https://huggingface.co/city96/FLUX.1-schnell-gguf/tree/main"),
+                D("Dev Nunchaku int4 (RTX 30/40xx)", "https://huggingface.co/mit-han-lab/nunchaku-flux.1-dev/blob/main/svdq-int4_r32-flux.1-dev.safetensors"),
+                D("Dev Nunchaku fp4 (RTX 50xx)", "https://huggingface.co/mit-han-lab/nunchaku-flux.1-dev/blob/main/svdq-fp4_r32-flux.1-dev.safetensors"),
+                D("Schnell Nunchaku int4 (RTX 30/40xx)", "https://huggingface.co/mit-han-lab/nunchaku-flux.1-schnell/blob/main/svdq-int4_r32-flux.1-schnell.safetensors"),
+                D("Schnell Nunchaku fp4 (RTX 50xx)", "https://huggingface.co/mit-han-lab/nunchaku-flux.1-schnell/blob/main/svdq-fp4_r32-flux.1-schnell.safetensors"),
+                D("Dev GGUF Q6_K", "https://huggingface.co/city96/FLUX.1-dev-gguf/blob/main/flux1-dev-Q6_K.gguf"),
+                D("Dev GGUF Q4_K_S", "https://huggingface.co/city96/FLUX.1-dev-gguf/blob/main/flux1-dev-Q4_K_S.gguf"),
+                D("Schnell GGUF Q6_K", "https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q6_K.gguf"),
+                D("Schnell GGUF Q4_K_S", "https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q4_K_S.gguf"),
                 D("Dev FP8", "https://huggingface.co/Comfy-Org/flux1-dev/blob/main/flux1-dev-fp8.safetensors"),
                 D("Schnell FP8", "https://huggingface.co/Comfy-Org/flux1-schnell/blob/main/flux1-schnell-fp8.safetensors")
             ),
@@ -110,10 +115,9 @@ public static class FeaturedModels
             M("Chroma", "image",
                 "Flux derivative, uncensored. Decent quality, works best with long prompts.",
                 "MMDiT", "Lodestone Rock", "8.9B", false,
-                D("HD FP8 Scaled", "https://huggingface.co/silveroxides/Chroma1-HD-fp8-scaled/tree/main"),
-                D("FP8 Scaled", "https://huggingface.co/Clybius/Chroma-fp8-scaled/tree/main"),
-                D("GGUF", "https://huggingface.co/silveroxides/Chroma-GGUF"),
-                D("BF16 Original", "https://huggingface.co/lodestones/Chroma/tree/main")
+                D("HD FP8 Scaled", "https://huggingface.co/silveroxides/Chroma1-HD-fp8-scaled/blob/main/Chroma1-HD-fp8mixed-final.safetensors"),
+                D("GGUF Q8_0", "https://huggingface.co/silveroxides/Chroma-GGUF/blob/main/Chroma1-HD/Chroma1-HD-Q8_0.gguf"),
+                D("GGUF Q4_0", "https://huggingface.co/silveroxides/Chroma-GGUF/blob/main/Chroma1-HD/Chroma1-HD-Q4_0.gguf")
             ),
 
             M("Kandinsky 5 Image", "image",
@@ -139,27 +143,23 @@ public static class FeaturedModels
             M("SD 3.5 Large", "image",
                 "Outdated but decent for its time. 8B MMDiT from Stability AI.",
                 "MMDiT", "Stability AI", "8B", false,
-                D("GGUF", "https://huggingface.co/city96/stable-diffusion-3.5-large-gguf/tree/main"),
-                D("Turbo GGUF", "https://huggingface.co/city96/stable-diffusion-3.5-large-turbo-gguf/tree/main")
+                D("GGUF Q8_0", "https://huggingface.co/city96/stable-diffusion-3.5-large-gguf/blob/main/sd3.5_large-Q8_0.gguf"),
+                D("GGUF Q4_0", "https://huggingface.co/city96/stable-diffusion-3.5-large-gguf/blob/main/sd3.5_large-Q4_0.gguf"),
+                D("Turbo GGUF Q8_0", "https://huggingface.co/city96/stable-diffusion-3.5-large-turbo-gguf/blob/main/sd3.5_large_turbo-Q8_0.gguf"),
+                D("Turbo GGUF Q4_0", "https://huggingface.co/city96/stable-diffusion-3.5-large-turbo-gguf/blob/main/sd3.5_large_turbo-Q4_0.gguf")
             ),
 
             M("SD 3.5 Medium", "image",
                 "Outdated, lightweight 2B. Set resolution to 1024x1024 for best results.",
                 "MMDiT", "Stability AI", "2B", false,
-                D("GGUF", "https://huggingface.co/city96/stable-diffusion-3.5-medium-gguf/tree/main")
+                D("GGUF Q8_0", "https://huggingface.co/city96/stable-diffusion-3.5-medium-gguf/blob/main/sd3.5_medium-Q8_0.gguf"),
+                D("GGUF Q4_K_S", "https://huggingface.co/city96/stable-diffusion-3.5-medium-gguf/blob/main/sd3.5_medium-Q4_K_S.gguf")
             ),
 
             M("AuraFlow", "image",
                 "Outdated, but regained attention via Pony v7 finetune.",
                 "MMDiT", "Fal.AI", "6B", false,
-                D("v0.1", "https://huggingface.co/fal/AuraFlow/tree/main"),
-                D("v0.2", "https://huggingface.co/fal/AuraFlow-v0.2")
-            ),
-
-            M("Chroma Radiance", "image",
-                "Experimental pixel-space model. WIP, limited quality.",
-                "Pixel MMDiT", "Lodestone Rock", "8.9B", false,
-                D("BF16", "https://huggingface.co/lodestones/Chroma1-Radiance/tree/main")
+                D("v0.2", "https://huggingface.co/fal/AuraFlow-v0.2/blob/main/auraflow_v0.2.safetensors")
             ),
 
             // ========================
@@ -169,12 +169,11 @@ public static class FeaturedModels
             // --- Recommended ---
             M("Wan 2.1", "video",
                 "Best local video model. 14B for quality, 1.3B for speed. CausVid/Lightx2v LoRAs available for faster gen.",
-                "DiT", "Alibaba - Wan-AI", "1.3B, 5B, 14B", true,
-                D("Comfy Repackaged (FP8/FP16)", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/tree/main/split_files/diffusion_models"),
-                D("Kijai Variants (FP8, LoRAs)", "https://huggingface.co/Kijai/WanVideo_comfy/tree/main"),
-                D("T2V 14B GGUF", "https://huggingface.co/city96/Wan2.1-T2V-14B-gguf/tree/main"),
-                D("I2V 14B 480p GGUF", "https://huggingface.co/city96/Wan2.1-I2V-14B-480P-gguf/tree/main"),
-                D("I2V 14B 720p GGUF", "https://huggingface.co/city96/Wan2.1-I2V-14B-720P-gguf/tree/main"),
+                "DiT", "Alibaba - Wan-AI", "1.3B, 14B", true,
+                D("T2V 14B FP8 (Recommended)", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_t2v_14B_fp8_scaled.safetensors"),
+                D("T2V 1.3B FP16", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_t2v_1.3B_fp16.safetensors"),
+                D("I2V 480p 14B FP8", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_i2v_480p_14B_fp8_scaled.safetensors"),
+                D("I2V 720p 14B FP8", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_i2v_720p_14B_fp8_scaled.safetensors"),
                 D("I2V 1.3B Fun-InP", "https://huggingface.co/alibaba-pai/Wan2.1-Fun-1.3B-InP/blob/main/diffusion_pytorch_model.safetensors"),
                 D("FLF2V 14B 720p FP8", "https://huggingface.co/Kijai/WanVideo_comfy/blob/main/Wan2_1-FLF2V-14B-720P_fp8_e4m3fn.safetensors"),
                 D("Lightx2v LoRA (Fast 14B)", "https://huggingface.co/Kijai/WanVideo_comfy/blob/main/Wan21_T2V_14B_lightx2v_cfg_step_distill_lora_rank32.safetensors"),
@@ -186,10 +185,11 @@ public static class FeaturedModels
             M("Wan 2.2", "video",
                 "Better photorealism than 2.1 but more complex (high+low noise pair for 14B). 5B variant is simpler.",
                 "DiT", "Alibaba - Wan-AI", "5B, 14B", true,
-                D("Comfy Repackaged", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/tree/main/split_files/diffusion_models"),
-                D("GGUF Collection", "https://huggingface.co/collections/QuantStack/wan22-ggufs-6887ec891bdea453a35b95f3"),
-                D("Lightning T2V LoRA (High)", "https://huggingface.co/Kijai/WanVideo_comfy/tree/main/LoRAs/Wan22-Lightning"),
-                D("Lightx2v I2V LoRA (High)", "https://huggingface.co/Kijai/WanVideo_comfy/tree/main/LoRAs/Wan22_Lightx2v")
+                D("T2V 14B High Noise FP8", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors"),
+                D("T2V 14B Low Noise FP8", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors"),
+                D("I2V 14B High Noise FP8", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors"),
+                D("I2V 14B Low Noise FP8", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors"),
+                D("5B TI2V FP16", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors")
             ),
 
             // --- Modern ---
@@ -205,29 +205,29 @@ public static class FeaturedModels
                 "MMDiT", "Tencent", "12B", false,
                 D("T2V BF16", "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/blob/main/split_files/diffusion_models/hunyuan_video_t2v_720p_bf16.safetensors"),
                 D("I2V BF16", "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/blob/main/split_files/diffusion_models/hunyuan_video_image_to_video_720p_bf16.safetensors"),
-                D("FP8/GGUF (Kijai)", "https://huggingface.co/Kijai/HunyuanVideo_comfy/tree/main"),
-                D("GGUF (city96)", "https://huggingface.co/city96/HunyuanVideo-gguf/tree/main"),
-                D("FastVideo FP8", "https://huggingface.co/Kijai/HunyuanVideo_comfy/blob/main/hunyuan_video_FastVideo_720_fp8_e4m3fn.safetensors"),
-                D("FastVideo GGUF", "https://huggingface.co/city96/FastHunyuan-gguf/tree/main")
+                D("GGUF Q6_K", "https://huggingface.co/city96/HunyuanVideo-gguf/blob/main/hunyuan-video-t2v-720p-Q6_K.gguf"),
+                D("GGUF Q4_K_M", "https://huggingface.co/city96/HunyuanVideo-gguf/blob/main/hunyuan-video-t2v-720p-Q4_K_M.gguf"),
+                D("FastVideo FP8", "https://huggingface.co/Kijai/HunyuanVideo_comfy/blob/main/hunyuan_video_FastVideo_720_fp8_e4m3fn.safetensors")
             ),
 
             M("Hunyuan Video 1.5", "video",
                 "Faster than v1 thanks to 16x16 VAE. T2V, I2V, and SuperResolution variants.",
                 "MMDiT", "Tencent", "8B", false,
-                D("All Models (Comfy Repackaged)", "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/tree/main/split_files/diffusion_models"),
-                D("Latent Upscale Models", "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/tree/main/split_files/latent_upscale_models")
+                D("T2V 720p Distilled", "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/blob/main/split_files/diffusion_models/hunyuan_video_1.5_t2v_720p_distilled_bf16.safetensors"),
+                D("I2V 720p Distilled", "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/blob/main/split_files/diffusion_models/hunyuan_video_1.5_i2v_720p_distilled_bf16.safetensors")
             ),
 
             M("LTX Video", "video",
                 "Very fast but lower quality. Popular for Image2Video workflows.",
                 "DiT", "Lightricks", "3B", false,
-                D("All Versions", "https://huggingface.co/Lightricks/LTX-Video/tree/main")
+                D("v0.9.1", "https://huggingface.co/Lightricks/LTX-Video/blob/main/ltx-video-2b-v0.9.1.safetensors")
             ),
 
             M("LTX Video 2", "video",
                 "First open source Audio+Video model. 19B, mixed quality but fun.",
                 "DiT", "Lightricks", "19B", false,
-                D("All Models", "https://huggingface.co/Lightricks/LTX-2/tree/main"),
+                D("v1.0", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-v1.0.safetensors"),
+                D("Distilled v1.0", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled-v1.0.safetensors"),
                 D("Spatial Upscaler 2x", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-spatial-upscaler-x2-1.0.safetensors")
             ),
         ];

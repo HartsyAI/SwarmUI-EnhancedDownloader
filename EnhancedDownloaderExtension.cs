@@ -17,6 +17,7 @@ public class EnhancedDownloaderExtension : Extension
     public override void OnInit()
     {
         ScriptFiles.Add("Assets/js/enhanced_downloader_utils.js");
+        ScriptFiles.Add("Assets/js/download_history.js");
         ScriptFiles.Add("Assets/js/providers/civitai.js");
         ScriptFiles.Add("Assets/js/providers/huggingface.js");
         ScriptFiles.Add("Assets/js/providers/hartsy.js");

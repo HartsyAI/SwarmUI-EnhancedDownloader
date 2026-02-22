@@ -37,22 +37,11 @@
         },
 
         handleDownload: function (item) {
-            if (!window.modelDownloader || typeof modelDownloader.getCivitaiMetadata !== 'function') {
-                return;
+            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            const bestUrl = item.downloadUrl || item.openUrl || '';
+            if (utils) {
+                utils.loadUrlIntoManualDownloader(bestUrl);
             }
-            const versId = item.modelVersionId ? `${item.modelVersionId}` : null;
-            modelDownloader.getCivitaiMetadata(`${item.modelId}`, versId, (rawData, rawVersion, metadata, modelType, url, img, imgs, errMsg) => {
-                if (!rawData) {
-                    return;
-                }
-                const typeToUse = modelType || modelTypeToSwarmSubtype(item.type);
-                const safeName = `${rawData.name} - ${rawVersion.name}`.replaceAll(/[\|\\\/\:\*\?\"\<\>\|\,\.\&\!\[\]\(\)]/g, '-');
-                const folder = modelDownloader.folders && modelDownloader.folders.value !== '(None)' ? modelDownloader.folders.value : '';
-                const fullName = folder ? `${folder}/${safeName}` : safeName;
-                const metaText = metadata ? JSON.stringify(metadata) : '';
-                const download = new ActiveModelDownload(modelDownloader, fullName, url, img, typeToUse, metaText);
-                download.download();
-            }, '', true);
         },
 
         handleCardClick: function (item) {

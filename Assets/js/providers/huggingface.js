@@ -70,12 +70,15 @@
             const modelId = item && item.modelId ? `${item.modelId}` : '';
             const descText = stripHtmlToText((item && item.description) ? item.description : '');
             const link = openUrl ? `${openUrl}` : '';
+            const fileSize = item && item.fileSize ? item.fileSize : null;
+            const fileSizeStr = fileSize && typeof fileSizeStringify === 'function' ? fileSizeStringify(fileSize) : '';
 
             const infoHtml = `
                 <b>Hugging Face Metadata</b>
                 ${title ? `<br><b>Model</b>: ${escapeHtml(title)}` : ''}
                 ${modelId ? `<br><b>Model ID</b>: ${escapeHtml(modelId)}` : ''}
                 ${link ? `<br><b>Link</b>: <a href="${link}" target="_blank" rel="noreferrer">${escapeHtml(link)}</a>` : ''}
+                ${fileSizeStr ? `<br><b>File Size</b>: ${escapeHtml(fileSizeStr)}` : ''}
                 ${descText ? `<br><b>Description</b>: ${escapeHtml(descText)}` : ''}
             `;
 

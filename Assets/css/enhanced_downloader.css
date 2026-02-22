@@ -55,28 +55,6 @@
     text-overflow: ellipsis;
 }
 
-.enhanced-downloader-destination-crumbs {
-    margin-top: 0.35rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-}
-
-.enhanced-downloader-chip {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.1rem 0.4rem;
-    font-size: 80%;
-    border-radius: 999px;
-    border: 1px solid var(--light-border);
-    color: var(--text-soft);
-    background: var(--background);
-    max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
 .enhanced-downloader-downloads-card {
     margin-top: 1rem;
 }
@@ -565,7 +543,7 @@
     padding: 0.05rem 0.4rem;
     border-radius: 999px;
     background: var(--emphasis);
-    color: var(--background);
+    color: var(--button-text);
     white-space: nowrap;
     font-weight: 600;
     vertical-align: middle;
