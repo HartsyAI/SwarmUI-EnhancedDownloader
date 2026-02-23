@@ -8,7 +8,7 @@ using System.Net.Http;
 using SwarmUI.WebAPI;
 using System.Web;
 
-namespace EnhancedDownloader.Providers;
+namespace Hartsy.Extensions.Providers;
 
 public class HuggingFaceProvider : IEnhancedDownloaderProvider
 {

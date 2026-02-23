@@ -1,7 +1,7 @@
 using Newtonsoft.Json.Linq;
 using SwarmUI.Accounts;
 
-namespace EnhancedDownloader.Providers;
+namespace Hartsy.Extensions.Providers;
 
 public interface IEnhancedDownloaderProvider
 {

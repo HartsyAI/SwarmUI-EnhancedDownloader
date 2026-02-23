@@ -5,7 +5,7 @@ using SwarmUI.Utils;
 using System.Net.Http;
 using System.Web;
 
-namespace EnhancedDownloader.Providers;
+namespace Hartsy.Extensions.Providers;
 
 public class HartsyProvider : IEnhancedDownloaderProvider
 {

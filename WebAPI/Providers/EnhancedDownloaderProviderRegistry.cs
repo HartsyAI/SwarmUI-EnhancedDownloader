@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 
-namespace EnhancedDownloader.Providers;
+namespace Hartsy.Extensions.Providers;
 
 public static class EnhancedDownloaderProviderRegistry
 {

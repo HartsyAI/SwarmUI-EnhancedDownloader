@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Web;
 
-namespace EnhancedDownloader.Providers;
+namespace Hartsy.Extensions.Providers;
 
 /// <summary>Simple TTL-based cache backed by a <see cref="ConcurrentDictionary{TKey,TValue}"/>.</summary>
 public class ProviderCache

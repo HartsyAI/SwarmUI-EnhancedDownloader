@@ -3,9 +3,9 @@ using SwarmUI.Accounts;
 using SwarmUI.Core;
 using SwarmUI.Text2Image;
 using SwarmUI.WebAPI;
-using EnhancedDownloader.Providers;
+using Hartsy.Extensions.Providers;
 
-namespace EnhancedDownloader;
+namespace Hartsy.Extensions;
 
 public static class EnhancedDownloaderAPI
 {

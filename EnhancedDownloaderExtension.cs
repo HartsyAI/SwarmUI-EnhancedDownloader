@@ -4,7 +4,7 @@ using SwarmUI.Utils;
 using SwarmUI.WebAPI;
 using Microsoft.AspNetCore.Html;
 
-namespace EnhancedDownloader;
+namespace Hartsy.Extensions;
 
 public class EnhancedDownloaderExtension : Extension
 {

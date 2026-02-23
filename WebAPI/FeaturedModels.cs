@@ -1,6 +1,6 @@
 using Newtonsoft.Json.Linq;
 
-namespace EnhancedDownloader;
+namespace Hartsy.Extensions;
 
 /// <summary>Curated list of models from the SwarmUI docs with all download URLs.</summary>
 public static class FeaturedModels
