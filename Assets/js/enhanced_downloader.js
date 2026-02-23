@@ -75,8 +75,16 @@
     }
 
     function tryEnhanceFolderUI() {
-        if (!window.modelDownloader || !modelDownloader.folders) {
+        if (!window.modelDownloader) {
             return false;
+        }
+        // If folders doesn't exist yet (removed from Swarm), check if folder browser exists
+        if (!modelDownloader.folders && !modelDownloader.folderBrowser) {
+            return false;
+        }
+        // If folder browser exists but folders doesn't, just return true (folder_browser_injection.js handles it)
+        if (modelDownloader.folderBrowser && !modelDownloader.folders) {
+            return true;
         }
         const folders = modelDownloader.folders;
         if (folders.dataset.enhancedDownloaderDone) {

@@ -18,6 +18,7 @@ public class EnhancedDownloaderExtension : Extension
     {
         ScriptFiles.Add("Assets/js/enhanced_downloader_utils.js");
         ScriptFiles.Add("Assets/js/download_history.js");
+        ScriptFiles.Add("Assets/js/folder_browser_injection.js");
         ScriptFiles.Add("Assets/js/providers/civitai.js");
         ScriptFiles.Add("Assets/js/providers/huggingface.js");
         ScriptFiles.Add("Assets/js/providers/hartsy.js");
