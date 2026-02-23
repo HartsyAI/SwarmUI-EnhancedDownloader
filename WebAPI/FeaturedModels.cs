@@ -226,9 +226,11 @@ public static class FeaturedModels
             M("LTX Video 2", "video",
                 "First open source Audio+Video model. 19B, mixed quality but fun.",
                 "DiT", "Lightricks", "19B", false,
-                D("v1.0", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-v1.0.safetensors"),
-                D("Distilled v1.0", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled-v1.0.safetensors"),
-                D("Spatial Upscaler 2x", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-spatial-upscaler-x2-1.0.safetensors")
+                D("Dev FP8", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev-fp8.safetensors"),
+                D("Dev FP4", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev-fp4.safetensors"),
+                D("Dev BF16", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev.safetensors"),
+                D("Distilled FP8", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled-fp8.safetensors"),
+                D("Distilled BF16", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled.safetensors")
             ),
         ];
     }

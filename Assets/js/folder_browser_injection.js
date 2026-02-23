@@ -13,6 +13,25 @@
             return true;
         }
 
+        // Hide the old folder dropdown if it exists
+        const oldFolderDropdown = document.getElementById('model_downloader_folder');
+        if (oldFolderDropdown) {
+            // Find the entire line containing the dropdown and hide it
+            let current = oldFolderDropdown;
+            while (current && current.previousSibling) {
+                if (current.previousSibling.nodeType === Node.TEXT_NODE && current.previousSibling.textContent.includes('Folder')) {
+                    current.previousSibling.textContent = '';
+                    break;
+                }
+                current = current.previousSibling;
+            }
+            oldFolderDropdown.style.display = 'none';
+            // Also hide the <br> before it if present
+            if (oldFolderDropdown.previousElementSibling && oldFolderDropdown.previousElementSibling.tagName === 'BR') {
+                oldFolderDropdown.previousElementSibling.style.display = 'none';
+            }
+        }
+
         // Check if folder browser elements already exist (from Swarm core or previous injection)
         let folderBrowser = document.getElementById('model_downloader_folder_browser');
         let selectedFolderDisplay = document.getElementById('model_downloader_selected_folder');
