@@ -13,10 +13,13 @@
             return true;
         }
 
-        // Hide the old folder dropdown if it exists
+        // Hide the old folder dropdown and related UI if it exists
         const oldFolderDropdown = document.getElementById('model_downloader_folder');
         if (oldFolderDropdown) {
-            // Find the entire line containing the dropdown and hide it
+            // Hide the dropdown itself
+            oldFolderDropdown.style.display = 'none';
+
+            // Hide the "Folder" label text node
             let current = oldFolderDropdown;
             while (current && current.previousSibling) {
                 if (current.previousSibling.nodeType === Node.TEXT_NODE && current.previousSibling.textContent.includes('Folder')) {
@@ -25,10 +28,15 @@
                 }
                 current = current.previousSibling;
             }
-            oldFolderDropdown.style.display = 'none';
-            // Also hide the <br> before it if present
+
+            // Hide the <br> before the dropdown
             if (oldFolderDropdown.previousElementSibling && oldFolderDropdown.previousElementSibling.tagName === 'BR') {
                 oldFolderDropdown.previousElementSibling.style.display = 'none';
+            }
+
+            // Hide the "New Folder" wrapper created by enhanced_downloader.js (if it exists)
+            if (oldFolderDropdown.nextElementSibling && oldFolderDropdown.nextElementSibling.classList.contains('enhanced-downloader-new-folder')) {
+                oldFolderDropdown.nextElementSibling.style.display = 'none';
             }
         }
 
