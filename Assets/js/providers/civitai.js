@@ -53,11 +53,9 @@
         },
 
         getPopoverExtras: function (item, menuDiv) {
-            // CivitAI has no extra popover items
         }
     };
 
-    // Handle CivitAI download URLs by fetching metadata from version endpoint
     function injectCivitAIVersionFix() {
         if (!window.modelDownloader) {
             return false;
@@ -73,14 +71,12 @@
         mdl.urlInput = function() {
             const url = this.url.value.trim();
 
-            // Check if it's a CivitAI download URL (api/download/models/{versionId})
             if (url.startsWith(this.civitPrefix)) {
                 const parts = url.substring(this.civitPrefix.length).split('/').slice(0, 4);
 
                 if (parts.length >= 4 && parts[0] === 'api' && parts[1] === 'download' && parts[2] === 'models') {
                     const versionId = parts[3];
 
-                    // Fetch version data directly - it includes downloadUrl and all metadata
                     genericRequest('ForwardMetadataRequest', { 'url': `${this.civitPrefix}api/v1/model-versions/${versionId}` }, (rawData) => {
                         rawData = rawData.response;
                         if (!rawData || !rawData.files || !rawData.files.length) {
@@ -88,11 +84,9 @@
                             return;
                         }
 
-                        // Use the downloadUrl from the version data
                         const primaryFile = rawData.files.find(f => f.primary) || rawData.files[0];
                         this.url.value = primaryFile.downloadUrl;
 
-                        // Trigger normal flow with the real download URL
                         origUrlInput.call(this);
                     }, 0, () => {
                         this.urlStatusArea.innerText = "URL appears to be a CivitAI download link, but could not fetch model information.";

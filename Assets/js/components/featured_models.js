@@ -37,7 +37,6 @@
         `;
         while (header.firstChild) card.appendChild(header.firstChild);
 
-        // Actions row: version selector + download + open
         if (downloads.length > 0) {
             const actions = document.createElement('div');
             actions.className = 'ed-model-actions';
@@ -174,7 +173,6 @@
             const loadingEl = card.querySelector('.enhanced-downloader-featured-loading');
             const columnsEl = card.querySelector('.enhanced-downloader-featured-columns');
 
-            // Collapse entire section
             const isCollapsed = localStorage.getItem(COLLAPSE_KEY) === 'true';
             if (isCollapsed) {
                 bodyWrap.style.display = 'none';
@@ -187,7 +185,6 @@
                 localStorage.setItem(COLLAPSE_KEY, hidden ? 'false' : 'true');
             };
 
-            // Insert before the browse card
             const browseCard = rightCol.querySelector('.enhanced-downloader-browser-card');
             if (browseCard) {
                 rightCol.insertBefore(card, browseCard);
@@ -195,7 +192,6 @@
                 rightCol.insertBefore(card, rightCol.firstChild);
             }
 
-            // Load data
             utils.genericRequestAsync('EnhancedDownloaderGetFeaturedModels', {}).then(resp => {
                 loadingEl.style.display = 'none';
                 if (!resp || !resp.success || !Array.isArray(resp.models) || resp.models.length === 0) {

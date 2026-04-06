@@ -92,7 +92,6 @@
         },
 
         getPopoverExtras: function (item, menuDiv) {
-            // No extra popover items for Hartsy
         }
     };
 })();

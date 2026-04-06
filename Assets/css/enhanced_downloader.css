@@ -600,6 +600,7 @@
     cursor: pointer;
     color: var(--text);
     font-weight: 500;
+    user-select: none;
 }
 
 .folder-browser-selected:hover {

@@ -88,7 +88,6 @@
                 'modelspec.thumbnail': ''
             }, null, 2);
 
-            // Swarm's urlInput() clears metadataZone for HF links; set URL first, then re-apply.
             utils.loadUrlIntoManualDownloader(bestDownloadUrl || openUrl);
             utils.setManualDownloaderInfo(infoHtml, rawMeta, '');
 
@@ -105,7 +104,6 @@
             }
         }
         catch {
-            // ignore
         }
     };
 

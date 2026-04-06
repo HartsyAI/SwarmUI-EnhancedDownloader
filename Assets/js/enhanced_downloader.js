@@ -20,7 +20,6 @@
             }
         }
         catch {
-            // ignore
         }
     }
 
@@ -78,11 +77,9 @@
         if (!window.modelDownloader) {
             return false;
         }
-        // If folders doesn't exist yet (removed from Swarm), check if folder browser exists
         if (!modelDownloader.folders && !modelDownloader.folderBrowser) {
             return false;
         }
-        // If folder browser exists but folders doesn't, just return true (folder_browser_injection.js handles it)
         if (modelDownloader.folderBrowser && !modelDownloader.folders) {
             return true;
         }
@@ -106,10 +103,8 @@
         `;
         const destinationPath = destination.querySelector('.path');
 
-        // Check if we're using the old dropdown or new folder browser
         const isOldDropdown = folders.tagName === 'SELECT';
 
-        // Only create "New Folder" button for old dropdown system
         let newWrap = null;
         let toggleBtn = null;
         let inline = null;
@@ -185,7 +180,6 @@
             });
         }
         else {
-            // For new folder browser, wrap selectFolder to trigger updates
             if (modelDownloader.selectFolder && !modelDownloader.selectFolder._enhancedDownloaderWrapped) {
                 const origSelectFolder = modelDownloader.selectFolder.bind(modelDownloader);
                 const wrapped = (folderPath) => {
@@ -225,7 +219,6 @@
             modelDownloader.urlInput = wrapped;
         }
 
-        // Insert elements into DOM
         if (isOldDropdown) {
             folders.insertAdjacentElement('afterend', newWrap);
             if (modelDownloader.name) {
@@ -236,7 +229,6 @@
             }
         }
         else {
-            // For new folder browser, insert destination after name or folders
             if (modelDownloader.name) {
                 modelDownloader.name.insertAdjacentElement('afterend', destination);
             }
@@ -279,7 +271,6 @@
                 }
             }
             catch {
-                // ignore
             }
         };
         clearBtn.onclick = () => {
@@ -418,16 +409,13 @@
             return;
         }
 
-        // Use a Map to track active downloads by a unique ID, avoiding global mutable state race conditions
         const activeDownloads = new Map();
         let nextDownloadId = 1;
 
-        // Permanently wrap makeWSRequest once to detect 401 on DoModelDownloadWS
         if (typeof window.makeWSRequest === 'function' && !window.makeWSRequest._ed401) {
             const origWS = window.makeWSRequest;
             window.makeWSRequest = function (name, payload, onData, timeout, onError, onOpen) {
                 if (name === 'DoModelDownloadWS' && typeof onError === 'function') {
-                    // Find the instance that initiated this request by checking our active downloads
                     let inst = null;
                     for (const [id, download] of activeDownloads) {
                         if (download._edDownloading) {
@@ -464,7 +452,6 @@
             window.makeWSRequest._ed401 = true;
         }
 
-        // Wrap download to mark instances as actively downloading
         const origDownload = ActiveModelDownload.prototype.download;
         ActiveModelDownload.prototype.download = function () {
             const id = nextDownloadId++;
@@ -475,7 +462,6 @@
                 return origDownload.call(this);
             }
             finally {
-                // Clean up after a delay to allow async WS setup to complete
                 setTimeout(() => {
                     activeDownloads.delete(id);
                 }, 5000);

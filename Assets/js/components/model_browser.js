@@ -21,7 +21,6 @@
         return result;
     }
 
-    // Default filter option sets
     const defaultBaseModelOptions = [
         { value: 'All', label: 'All' },
         { value: 'SD 1.5', label: 'SD 1.5' },
@@ -138,7 +137,6 @@
             const nextBtn = card.querySelector('.ed-next');
             const pageInfo = card.querySelector('.ed-pageinfo');
 
-            // Populate provider dropdown
             for (const p of providers) {
                 const opt = document.createElement('option');
                 opt.value = p.id;
@@ -147,7 +145,6 @@
                 providerSelect.appendChild(opt);
             }
 
-            // State
             const state = {
                 inflight: false,
                 providerId: providerSelect.value || providers[0].id,
@@ -165,14 +162,11 @@
                 return !!(state.lastQuery && state.lastQuery.trim().length);
             };
 
-            // --- UI Update Functions ---
-
             const updateProviderUI = async () => {
                 const prov = getProvider(state.providerId);
                 const isFilterable = !!(prov && prov.supportsFilters);
                 const isNsfw = !!(prov && prov.supportsNsfw);
 
-                // Placeholder text
                 if (prov && prov.id === 'huggingface') {
                     query.placeholder = 'Search Hugging Face...';
                 } else if (prov && prov.id === 'hartsy') {
@@ -181,10 +175,7 @@
                     query.placeholder = 'Search...';
                 }
 
-                // Type filter (CivitAI only)
                 typeFilter.disabled = !(prov && prov.id === 'civitai');
-
-                // Base model / architecture
                 baseModelFilter.disabled = !isFilterable;
                 if (prov && prov.id === 'hartsy' && prov.getArchitectureOptions) {
                     try {
@@ -197,7 +188,6 @@
                     populateSelect(baseModelFilter, defaultBaseModelOptions, state.lastBaseModel || 'All');
                 }
 
-                // Sort
                 sortFilter.disabled = !isFilterable;
                 if (prov && prov.id === 'hartsy') {
                     populateSelect(sortFilter, hartsySortOptions, 'downloads');
@@ -205,7 +195,6 @@
                     populateSelect(sortFilter, defaultSortOptions, state.lastSort || 'Most Downloaded');
                 }
 
-                // NSFW
                 nsfwToggle.disabled = !isNsfw;
                 if (!isNsfw) nsfwToggle.checked = false;
             };
@@ -227,8 +216,6 @@
                 }
             };
 
-            // --- Render ---
-
             const render = (items) => {
                 while (resultsEl.firstChild) resultsEl.removeChild(resultsEl.firstChild);
                 for (const item of (items || [])) {
@@ -239,8 +226,6 @@
                 }
                 applyTranslations(resultsEl);
             };
-
-            // --- Search ---
 
             const runSearch = async (setPage = null) => {
                 if (state.inflight) return;
@@ -332,8 +317,6 @@
                 updatePager();
             };
 
-            // --- Event Binding ---
-
             providerSelect.onchange = async () => {
                 state.providerId = providerSelect.value || state.providerId;
                 await updateProviderUI();
@@ -374,8 +357,6 @@
                     runSearch(Math.min(state.totalPages, state.page + 1));
                 }
             };
-
-            // --- Mount ---
 
             wrapper.dataset.enhancedDownloaderBrowserDone = 'true';
             const rightCol = wrapper.querySelector('.enhanced-downloader-col-right');

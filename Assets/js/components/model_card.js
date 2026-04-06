@@ -25,20 +25,17 @@
         const div = document.createElement('div');
         div.className = 'model-block model-block-hoverable enhanced-downloader-model-card';
 
-        // Image
         const img = document.createElement('img');
         img.dataset.renderId = `${renderId}`;
         img.src = item.image || 'imgs/model_placeholder.jpg';
         img.title = 'Click to load into Manual Download';
         div.appendChild(img);
 
-        // Lazy-load HuggingFace images via provider
         if (providerId === 'huggingface' && provider && provider.loadCardImage
             && item.modelId && (!item.image || `${item.image}`.startsWith('imgs/'))) {
             provider.loadCardImage(img, item.modelId, renderId);
         }
 
-        // Text block
         const textBlock = document.createElement('div');
         textBlock.className = 'model-descblock';
 
@@ -69,7 +66,6 @@
         `;
         div.appendChild(textBlock);
 
-        // Image click — delegate to provider
         img.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -80,7 +76,6 @@
             }
         });
 
-        // Download button — delegate to provider
         const downloadBtn = textBlock.querySelector('.ed-model-download');
         if (downloadBtn) {
             downloadBtn.onclick = () => {

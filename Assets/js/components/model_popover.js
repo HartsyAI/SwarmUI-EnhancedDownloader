@@ -28,7 +28,6 @@
         const popoverId = `enhanced-downloader-model-${renderId}`;
         const menuDiv = createDiv(`popover_${popoverId}`, 'sui-popover sui_popover_model');
 
-        // Download button
         const btnDownload = document.createElement('div');
         btnDownload.className = 'sui_popover_model_button';
         btnDownload.innerText = 'Download';
@@ -41,12 +40,10 @@
         };
         menuDiv.appendChild(btnDownload);
 
-        // Provider-specific extras (e.g. HF "Load all files")
         if (provider && typeof provider.getPopoverExtras === 'function') {
             provider.getPopoverExtras(item, menuDiv);
         }
 
-        // Non-CivitAI file download options
         if (providerId !== 'civitai' && downloadOptions.length > 0) {
             for (const opt of downloadOptions) {
                 if (!opt || !opt.downloadUrl) continue;
@@ -55,7 +52,6 @@
                 optBtn.innerText = opt.fileName ? `Download: ${opt.fileName}` : 'Download File';
                 optBtn.onclick = () => {
                     if (provider && provider.handleCardClick) {
-                        // Use provider logic for consistency (e.g. HF sets metadata)
                         const fakeItem = Object.assign({}, item, { downloadUrl: `${opt.downloadUrl}` });
                         provider.handleCardClick(fakeItem);
                     } else if (utils) {
@@ -66,7 +62,6 @@
             }
         }
 
-        // Open link
         if (openUrl) {
             const btnOpen = document.createElement('a');
             btnOpen.className = 'sui_popover_model_button';
@@ -77,7 +72,6 @@
             menuDiv.appendChild(btnOpen);
         }
 
-        // Copy actions — use SwarmUI's global copyText()
         const addCopy = (label, value) => {
             const btn = document.createElement('div');
             btn.className = 'sui_popover_model_button';
@@ -104,7 +98,6 @@
         if (item.fileName) addCopy('Copy Filename', `${item.fileName}`);
         if (item.fileSize) addCopy('Copy File Size (bytes)', `${item.fileSize}`);
 
-        // Hamburger menu button
         const menuBtn = createDiv(null, 'model-block-menu-button');
         menuBtn.innerHTML = '&#x2630;';
         menuBtn.addEventListener('click', () => {
