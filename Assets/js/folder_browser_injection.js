@@ -1,6 +1,51 @@
 (function () {
     'use strict';
 
+    function hideOldFolderRow(oldFolderDropdown) {
+        oldFolderDropdown.style.display = 'none';
+        const popover = document.getElementById('popover_modeldownloaderfolder');
+        if (popover) {
+            popover.style.display = 'none';
+        }
+        let node = oldFolderDropdown.previousSibling;
+        while (node) {
+            const prev = node.previousSibling;
+            if (node.nodeType === Node.TEXT_NODE) {
+                if (node.textContent.trim() === ':' || node.textContent.includes('Folder')) {
+                    node.textContent = '';
+                }
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                if (node.tagName === 'B' && node.textContent.trim() === 'Folder') {
+                    node.style.display = 'none';
+                } else if (node.classList && node.classList.contains('auto-input-qbutton')) {
+                    node.style.display = 'none';
+                } else if (node.tagName === 'BR') {
+                    node.style.display = 'none';
+                    break;
+                }
+            }
+            node = prev;
+        }
+        if (oldFolderDropdown.nextElementSibling && oldFolderDropdown.nextElementSibling.classList.contains('enhanced-downloader-new-folder')) {
+            oldFolderDropdown.nextElementSibling.style.display = 'none';
+        }
+    }
+
+    function syncHiddenDropdown(folderPath) {
+        const oldDropdown = document.getElementById('model_downloader_folder');
+        if (!oldDropdown) {
+            return;
+        }
+        if (folderPath !== '(None)' && ![...oldDropdown.options].some(o => o.value === folderPath)) {
+            const opt = document.createElement('option');
+            opt.value = folderPath;
+            opt.textContent = folderPath;
+            oldDropdown.appendChild(opt);
+        }
+        oldDropdown.value = folderPath;
+        oldDropdown.dispatchEvent(new Event('change'));
+    }
+
     function injectFolderBrowser() {
         if (!window.modelDownloader) {
             return false;
@@ -8,72 +53,29 @@
 
         const mdl = window.modelDownloader;
 
-        // Check if already injected
         if (mdl._folderBrowserInjected) {
             return true;
         }
 
-        // Hide the old folder dropdown and related UI if it exists
         const oldFolderDropdown = document.getElementById('model_downloader_folder');
         if (oldFolderDropdown) {
-            // Hide the dropdown itself
-            oldFolderDropdown.style.display = 'none';
-
-            // Hide the "Folder" label text node
-            let current = oldFolderDropdown;
-            while (current && current.previousSibling) {
-                if (current.previousSibling.nodeType === Node.TEXT_NODE && current.previousSibling.textContent.includes('Folder')) {
-                    current.previousSibling.textContent = '';
-                    break;
-                }
-                current = current.previousSibling;
-            }
-
-            // Hide the <br> before the dropdown
-            if (oldFolderDropdown.previousElementSibling && oldFolderDropdown.previousElementSibling.tagName === 'BR') {
-                oldFolderDropdown.previousElementSibling.style.display = 'none';
-            }
-
-            // Hide the "New Folder" wrapper created by enhanced_downloader.js (if it exists)
-            if (oldFolderDropdown.nextElementSibling && oldFolderDropdown.nextElementSibling.classList.contains('enhanced-downloader-new-folder')) {
-                oldFolderDropdown.nextElementSibling.style.display = 'none';
-            }
+            hideOldFolderRow(oldFolderDropdown);
         }
 
-        // Check if folder browser elements already exist (from Swarm core or previous injection)
         let folderBrowser = document.getElementById('model_downloader_folder_browser');
         let selectedFolderDisplay = document.getElementById('model_downloader_selected_folder');
 
-        // If they don't exist, we need to create and inject them
         if (!folderBrowser || !selectedFolderDisplay) {
-            // Create folder browser elements
-            const browserHTML = `
-                <br><span style="font-weight: bold;">Destination Folder</span>:
-                <span id="model_downloader_selected_folder" class="folder-browser-selected">Root Folder</span>
-                <div id="model_downloader_folder_browser" class="folder-browser" style="display: none;"></div>
-            `;
-
-            // Insert after the model type dropdown
-            const typeDropdown = document.getElementById('model_downloader_type');
-            if (!typeDropdown) {
+            if (!oldFolderDropdown) {
                 return false;
             }
 
-            // Find the next sibling to insert after
-            let insertAfter = typeDropdown.parentElement;
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = browserHTML;
+            const browserHTML = `<br><span style="font-weight: bold;">Destination Folder</span>: ` +
+                `<span id="model_downloader_selected_folder" class="folder-browser-selected">Root Folder</span>` +
+                `<div id="model_downloader_folder_browser" class="folder-browser" style="display: none;"></div>`;
 
-            while (tempDiv.firstChild) {
-                if (insertAfter.nextSibling) {
-                    insertAfter.parentNode.insertBefore(tempDiv.firstChild, insertAfter.nextSibling);
-                } else {
-                    insertAfter.parentNode.appendChild(tempDiv.firstChild);
-                }
-                insertAfter = insertAfter.nextSibling || insertAfter;
-            }
+            oldFolderDropdown.insertAdjacentHTML('afterend', browserHTML);
 
-            // Get references to the newly created elements
             folderBrowser = document.getElementById('model_downloader_folder_browser');
             selectedFolderDisplay = document.getElementById('model_downloader_selected_folder');
         }
@@ -82,23 +84,23 @@
             return false;
         }
 
-        // Set up references
         mdl.folderBrowser = folderBrowser;
         mdl.selectedFolderDisplay = selectedFolderDisplay;
         mdl.selectedFolder = '(None)';
         mdl.expandedFolders = new Set();
         mdl.folderBrowserVisible = false;
 
-        // Build folder browser
+        selectedFolderDisplay.addEventListener('click', () => mdl.toggleFolderBrowser());
+
         mdl.buildFolderBrowser = function() {
-            if (!window.coreModelMap || !this.folderBrowser) {
+            if (!this.folderBrowser) {
                 return;
             }
 
             try {
                 const selectedType = this.type.value;
                 let folderList = [];
-                const submap = window.coreModelMap[selectedType];
+                const submap = coreModelMap ? coreModelMap[selectedType] : null;
 
                 if (submap) {
                     for (let model of submap) {
@@ -130,7 +132,7 @@
 
                 let html = '<div class="folder-browser-header">';
                 html += `<div class="folder-item ${this.selectedFolder === '(None)' ? 'selected' : ''}" onclick="modelDownloader.selectFolder('(None)')">`;
-                html += '<span class="folder-icon">📁</span> <span class="folder-name">Root Folder</span>';
+                html += '<span class="folder-icon">\uD83D\uDCC1</span> <span class="folder-name">Root Folder</span>';
                 html += '</div>';
                 html += '<button class="folder-new-btn" onclick="modelDownloader.createNewFolder()">+ New Folder</button>';
                 html += '</div>';
@@ -157,12 +159,12 @@
                 html += `<div class="folder-item ${isSelected ? 'selected' : ''}" data-folder="${escapeHtml(fullPath)}">`;
 
                 if (hasChildren) {
-                    html += `<span class="folder-toggle" onclick="modelDownloader.toggleFolder('${escapedPath}')">${isExpanded ? '▼' : '▶'}</span>`;
+                    html += `<span class="folder-toggle" onclick="modelDownloader.toggleFolder('${escapedPath}')">${isExpanded ? '\u25BC' : '\u25B6'}</span>`;
                 } else {
                     html += '<span class="folder-toggle-spacer"></span>';
                 }
 
-                html += `<span class="folder-icon">📁</span> <span class="folder-name" onclick="modelDownloader.selectFolder('${escapedPath}')">${escapeHtml(folderName)}</span>`;
+                html += `<span class="folder-icon">\uD83D\uDCC1</span> <span class="folder-name" onclick="modelDownloader.selectFolder('${escapedPath}')">${escapeHtml(folderName)}</span>`;
                 html += '</div>';
 
                 if (hasChildren && isExpanded) {
@@ -179,10 +181,9 @@
         mdl.toggleFolderBrowser = function() {
             this.folderBrowserVisible = !this.folderBrowserVisible;
             if (this.folderBrowserVisible) {
-                this.folderBrowser.style.display = 'block';
-            } else {
-                this.folderBrowser.style.display = 'none';
+                this.buildFolderBrowser();
             }
+            this.folderBrowser.style.display = this.folderBrowserVisible ? 'block' : 'none';
         };
 
         mdl.updateSelectedFolderDisplay = function() {
@@ -201,6 +202,7 @@
 
         mdl.selectFolder = function(folderPath) {
             this.selectedFolder = folderPath;
+            syncHiddenDropdown(folderPath);
             this.updateSelectedFolderDisplay();
             this.toggleFolderBrowser();
         };
@@ -226,12 +228,12 @@
                 for (let i = 1; i < parts.length; i++) {
                     this.expandedFolders.add(parts.slice(0, i).join('/'));
                 }
+                syncHiddenDropdown(folderName);
                 this.updateSelectedFolderDisplay();
                 this.buildFolderBrowser();
             }
         };
 
-        // Wrap reloadFolders to also rebuild browser
         if (mdl.reloadFolders && !mdl.reloadFolders._folderBrowserWrapped) {
             const origReloadFolders = mdl.reloadFolders;
             mdl.reloadFolders = function() {
@@ -241,50 +243,29 @@
             mdl.reloadFolders._folderBrowserWrapped = true;
         }
 
-        // Wrap type change to rebuild folder browser
         if (mdl.type) {
             mdl.type.addEventListener('change', () => {
                 mdl.selectedFolder = '(None)';
+                syncHiddenDropdown('(None)');
                 mdl.updateSelectedFolderDisplay();
                 mdl.buildFolderBrowser();
             });
         }
 
-        // Wrap run() to use selectedFolder
         if (mdl.run && !mdl.run._folderBrowserWrapped) {
             const origRun = mdl.run;
             mdl.run = function() {
-                // Store selectedFolder in a temporary variable that Swarm can use
-                const folderValue = this.selectedFolder === '(None)' ? '(None)' : this.selectedFolder;
-
-                // Call original with the folder value
-                const origFolders = this.folders;
-                this.folders = { value: folderValue };
+                syncHiddenDropdown(this.selectedFolder);
                 origRun.call(this);
-                this.folders = origFolders;
             };
             mdl.run._folderBrowserWrapped = true;
         }
 
-        // Compatibility: keep folders reference
-        mdl.folders = mdl.folderBrowser;
-
-        // Initial build
         mdl.buildFolderBrowser();
 
         mdl._folderBrowserInjected = true;
         return true;
     }
 
-    function init() {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                setTimeout(injectFolderBrowser, 100);
-            });
-        } else {
-            setTimeout(injectFolderBrowser, 100);
-        }
-    }
-
-    init();
+    injectFolderBrowser();
 })();
