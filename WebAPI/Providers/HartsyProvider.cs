@@ -2,6 +2,7 @@ using Newtonsoft.Json.Linq;
 using SwarmUI.Accounts;
 using SwarmUI.Core;
 using SwarmUI.Utils;
+using SwarmUI.WebAPI;
 using System.Net.Http;
 using System.Web;
 
@@ -32,7 +33,7 @@ public class HartsyProvider : IEnhancedDownloaderProvider
     {
         if (!string.IsNullOrEmpty(apiKey))
         {
-            request.Headers.Add("X-API-Key", apiKey);
+            request.Headers.Add("X-API-Key", ModelsAPI.TokenTextLimiter.TrimToMatches(apiKey));
         }
     }
 

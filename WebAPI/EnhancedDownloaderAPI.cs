@@ -10,10 +10,10 @@ namespace Hartsy.Extensions;
 /// <summary>Registers and routes all Enhanced Downloader API endpoints.</summary>
 public static class EnhancedDownloaderAPI
 {
-    public static JObject _cachedDownloadRoots;
-    public static long _cachedDownloadRootsTimestamp;
+    public static JObject CachedDownloadRoots;
+    public static long CachedDownloadRootsTimestamp;
     public const long DownloadRootsCacheTtlMs = 30_000;
-    public static readonly object _rootsLock = new();
+    public static readonly object RootsLock = new();
 
     /// <summary>Registers all Enhanced Downloader API call handlers with the SwarmUI API system.</summary>
     public static void Register()
@@ -30,6 +30,7 @@ public static class EnhancedDownloaderAPI
     }
 
     /// <summary>Returns a list of all registered download providers with their capabilities.</summary>
+    [API.APIDescription("Returns a list of all registered download providers with their capabilities.", "\"success\": true, \"providers\": [{ \"id\": \"civitai\", \"displayName\": \"CivitAI\", ... }]")]
     public static Task<JObject> ListProviders(Session session)
     {
         JArray providers = [];
@@ -51,17 +52,18 @@ public static class EnhancedDownloaderAPI
     }
 
     /// <summary>Returns a cached mapping of model type keys to their filesystem download folder paths.</summary>
+    [API.APIDescription("Returns a cached mapping of model type keys to their filesystem download folder paths.", "\"success\": true, \"roots\": { \"Stable-Diffusion\": \"path/to/models\", ... }")]
     public static Task<JObject> EnhancedDownloaderGetDownloadRoots(Session session)
     {
-        if (_cachedDownloadRoots is not null && Environment.TickCount64 - _cachedDownloadRootsTimestamp < DownloadRootsCacheTtlMs)
+        if (CachedDownloadRoots is not null && Environment.TickCount64 - CachedDownloadRootsTimestamp < DownloadRootsCacheTtlMs)
         {
-            return Task.FromResult(_cachedDownloadRoots);
+            return Task.FromResult(CachedDownloadRoots);
         }
-        lock (_rootsLock)
+        lock (RootsLock)
         {
-            if (_cachedDownloadRoots is not null && Environment.TickCount64 - _cachedDownloadRootsTimestamp < DownloadRootsCacheTtlMs)
+            if (CachedDownloadRoots is not null && Environment.TickCount64 - CachedDownloadRootsTimestamp < DownloadRootsCacheTtlMs)
             {
-                return Task.FromResult(_cachedDownloadRoots);
+                return Task.FromResult(CachedDownloadRoots);
             }
             JObject roots = new();
             foreach ((string key, T2IModelHandler handler) in Program.T2IModelSets)
@@ -73,49 +75,76 @@ public static class EnhancedDownloaderAPI
                 ["success"] = true,
                 ["roots"] = roots
             };
-            _cachedDownloadRoots = result;
-            _cachedDownloadRootsTimestamp = Environment.TickCount64;
+            CachedDownloadRoots = result;
+            CachedDownloadRootsTimestamp = Environment.TickCount64;
             return Task.FromResult(result);
         }
     }
 
     /// <summary>Searches CivitAI for models matching the given query and filters.</summary>
-    public static async Task<JObject> EnhancedDownloaderCivitaiSearch(Session session, string query = "", int page = 1, int limit = 24, string cursor = "", string type = "", string baseModel = "", string sort = "Most Downloaded", bool includeNsfw = false)
+    [API.APIDescription("Searches CivitAI for models matching the given query and filters.", "\"success\": true, \"items\": [...]")]
+    public static async Task<JObject> EnhancedDownloaderCivitaiSearch(Session session,
+        [API.APIParameter("Search query text.")] string query = "",
+        [API.APIParameter("Page number for pagination.")] int page = 1,
+        [API.APIParameter("Maximum results per page.")] int limit = 24,
+        [API.APIParameter("Cursor for cursor-based pagination.")] string cursor = "",
+        [API.APIParameter("Model type filter (e.g. Checkpoint, LORA).")] string type = "",
+        [API.APIParameter("Base model filter (e.g. SDXL, Flux.1 D).")] string baseModel = "",
+        [API.APIParameter("Sort order (Highest Rated, Most Downloaded, Newest).")] string sort = "Most Downloaded",
+        [API.APIParameter("Whether to include NSFW results.")] bool includeNsfw = false)
     {
         return await CivitAIProvider.Instance.SearchAsync(session, query, page, limit, cursor, type, baseModel, sort, includeNsfw);
     }
 
     /// <summary>Searches Hugging Face for models matching the given query.</summary>
-    public static async Task<JObject> EnhancedDownloaderHuggingFaceSearch(Session session, string query = "", int limit = 24, string cursor = "")
+    [API.APIDescription("Searches Hugging Face for models matching the given query.", "\"success\": true, \"items\": [...]")]
+    public static async Task<JObject> EnhancedDownloaderHuggingFaceSearch(Session session,
+        [API.APIParameter("Search query text.")] string query = "",
+        [API.APIParameter("Maximum results per page.")] int limit = 24,
+        [API.APIParameter("Cursor for pagination.")] string cursor = "")
     {
         return await HuggingFaceProvider.Instance.SearchAsync(session, query, 1, limit, cursor);
     }
 
     /// <summary>Lists downloadable files for a specific Hugging Face model repository.</summary>
-    public static async Task<JObject> EnhancedDownloaderHuggingFaceFiles(Session session, string modelId, int limit = 500)
+    [API.APIDescription("Lists downloadable files for a specific Hugging Face model repository.", "\"success\": true, \"files\": [{ \"fileName\": \"...\", \"downloadUrl\": \"...\", \"fileSize\": 123 }]")]
+    public static async Task<JObject> EnhancedDownloaderHuggingFaceFiles(Session session,
+        [API.APIParameter("The Hugging Face model ID (e.g. user/repo).")] string modelId,
+        [API.APIParameter("Maximum number of files to return.")] int limit = 500)
     {
         return await HuggingFaceProvider.Instance.ListFilesAsync(session, modelId, limit);
     }
 
     /// <summary>Fetches a preview image for a Hugging Face model.</summary>
-    public static async Task<JObject> EnhancedDownloaderHuggingFaceImage(Session session, string modelId)
+    [API.APIDescription("Fetches a preview image for a Hugging Face model.", "\"success\": true, \"image\": \"data:image/png;base64,...\"")]
+    public static async Task<JObject> EnhancedDownloaderHuggingFaceImage(Session session,
+        [API.APIParameter("The Hugging Face model ID (e.g. user/repo).")] string modelId)
     {
         return await HuggingFaceProvider.Instance.GetPreviewImageAsync(session, modelId);
     }
 
     /// <summary>Searches Hartsy for models matching the given query, architecture, and tags.</summary>
-    public static async Task<JObject> EnhancedDownloaderHartsySearch(Session session, string query = "", int page = 1, int limit = 24, string architecture = "", string sort = "popular", string tags = "")
+    [API.APIDescription("Searches Hartsy for models matching the given query, architecture, and tags.", "\"success\": true, \"items\": [...]")]
+    public static async Task<JObject> EnhancedDownloaderHartsySearch(Session session,
+        [API.APIParameter("Search query text.")] string query = "",
+        [API.APIParameter("Page number for pagination.")] int page = 1,
+        [API.APIParameter("Maximum results per page.")] int limit = 24,
+        [API.APIParameter("Architecture filter.")] string architecture = "",
+        [API.APIParameter("Sort order.")] string sort = "popular",
+        [API.APIParameter("Comma-separated tag filter.")] string tags = "")
     {
         return await HartsyProvider.Instance.SearchAsync(session, query, page, limit, "", "", architecture, sort, false, tags);
     }
 
     /// <summary>Returns available filter options (architectures, tags) from the Hartsy API.</summary>
+    [API.APIDescription("Returns available filter options (architectures, tags) from the Hartsy API.", "\"success\": true, \"architectures\": [...], \"tags\": [...]")]
     public static async Task<JObject> EnhancedDownloaderHartsyFilterOptions(Session session)
     {
         return await HartsyProvider.Instance.GetFilterOptionsAsync(session);
     }
 
     /// <summary>Returns the curated list of featured/recommended models.</summary>
+    [API.APIDescription("Returns the curated list of featured/recommended models.", "\"success\": true, \"models\": [...]")]
     public static Task<JObject> EnhancedDownloaderGetFeaturedModels(Session session)
     {
         return Task.FromResult(FeaturedModels.GetFeatured());

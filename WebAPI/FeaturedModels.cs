@@ -5,12 +5,12 @@ namespace Hartsy.Extensions;
 /// <summary>Curated list of models from the SwarmUI docs with all download URLs.</summary>
 public static class FeaturedModels
 {
-    public static JObject _cached;
+    public static JObject Cached;
 
     /// <summary>Returns the cached featured models list, building it on first access.</summary>
     public static JObject GetFeatured()
     {
-        return _cached ??= new JObject
+        return Cached ??= new JObject
         {
             ["success"] = true,
             ["models"] = BuildModelList()

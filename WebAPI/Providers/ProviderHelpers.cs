@@ -9,13 +9,13 @@ namespace Hartsy.Extensions.Providers;
 /// <remarks>Initializes a new cache with the given time-to-live duration.</remarks>
 public class ProviderCache(TimeSpan ttl)
 {
-    public readonly ConcurrentDictionary<string, (JObject Result, long Timestamp)> _cache = new();
-    public readonly long _ttlMs = (long)ttl.TotalMilliseconds;
+    public readonly ConcurrentDictionary<string, (JObject Result, long Timestamp)> Cache = new();
+    public readonly long TtlMs = (long)ttl.TotalMilliseconds;
 
     /// <summary>Attempts to retrieve a cached result by key, returning false if missing or expired.</summary>
     public bool TryGet(string key, out JObject result)
     {
-        if (_cache.TryGetValue(key, out (JObject Result, long Timestamp) entry) && Environment.TickCount64 - entry.Timestamp < _ttlMs)
+        if (Cache.TryGetValue(key, out (JObject Result, long Timestamp) entry) && Environment.TickCount64 - entry.Timestamp < TtlMs)
         {
             result = entry.Result;
             return true;
@@ -27,8 +27,8 @@ public class ProviderCache(TimeSpan ttl)
     /// <summary>Stores a result in the cache and prunes expired entries if the cache exceeds 200 items.</summary>
     public void Set(string key, JObject result)
     {
-        _cache[key] = (result, Environment.TickCount64);
-        if (_cache.Count > 200)
+        Cache[key] = (result, Environment.TickCount64);
+        if (Cache.Count > 200)
         {
             Prune();
         }
@@ -38,11 +38,11 @@ public class ProviderCache(TimeSpan ttl)
     public void Prune()
     {
         long now = Environment.TickCount64;
-        foreach (KeyValuePair<string, (JObject Result, long Timestamp)> kvp in _cache)
+        foreach (KeyValuePair<string, (JObject Result, long Timestamp)> kvp in Cache)
         {
-            if (now - kvp.Value.Timestamp >= _ttlMs)
+            if (now - kvp.Value.Timestamp >= TtlMs)
             {
-                _cache.TryRemove(kvp.Key, out _);
+                Cache.TryRemove(kvp.Key, out _);
             }
         }
     }
@@ -175,15 +175,15 @@ public static class ImageFileHelper
 /// <remarks>Initializes a new URL builder with the given base URL.</remarks>
 public class UrlBuilder(string baseUrl)
 {
-    public readonly string _base = baseUrl;
-    public readonly List<(string Key, string Value)> _params = [];
+    public readonly string BaseUrl = baseUrl;
+    public readonly List<(string Key, string Value)> Params = [];
 
     /// <summary>Appends a query parameter if the value is non-empty.</summary>
     public UrlBuilder Add(string key, string value)
     {
         if (!string.IsNullOrWhiteSpace(value))
         {
-            _params.Add((key, value));
+            Params.Add((key, value));
         }
         return this;
     }
@@ -191,7 +191,7 @@ public class UrlBuilder(string baseUrl)
     /// <summary>Appends a query parameter with an integer value.</summary>
     public UrlBuilder Add(string key, int value)
     {
-        _params.Add((key, value.ToString()));
+        Params.Add((key, value.ToString()));
         return this;
     }
 
@@ -200,7 +200,7 @@ public class UrlBuilder(string baseUrl)
     {
         if (condition && !string.IsNullOrWhiteSpace(value))
         {
-            _params.Add((key, value));
+            Params.Add((key, value));
         }
         return this;
     }
@@ -210,7 +210,7 @@ public class UrlBuilder(string baseUrl)
     {
         if (condition)
         {
-            _params.Add((key, value.ToString().ToLowerInvariant()));
+            Params.Add((key, value.ToString().ToLowerInvariant()));
         }
         return this;
     }
@@ -218,10 +218,10 @@ public class UrlBuilder(string baseUrl)
     /// <inheritdoc/>
     public override string ToString()
     {
-        if (_params.Count == 0)
+        if (Params.Count == 0)
         {
-            return _base;
+            return BaseUrl;
         }
-        return _base + "?" + string.Join("&", _params.Select(p => $"{HttpUtility.UrlEncode(p.Key)}={HttpUtility.UrlEncode(p.Value)}"));
+        return BaseUrl + "?" + string.Join("&", Params.Select(p => $"{HttpUtility.UrlEncode(p.Key)}={HttpUtility.UrlEncode(p.Value)}"));
     }
 }
