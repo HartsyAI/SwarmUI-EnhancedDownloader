@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Html;
 
 namespace Hartsy.Extensions;
 
+/// <summary>Main extension class that registers scripts, styles, API endpoints, and permissions for the Enhanced Downloader.</summary>
 public class EnhancedDownloaderExtension : Extension
 {
     public static readonly PermInfo PermEnhancedDownloader = Permissions.Register(new("enhanced_downloader", "Enhanced Downloader", "Allows access to the Enhanced Downloader extension APIs.", PermissionDefault.POWERUSERS, Permissions.GroupControl, PermSafetyLevel.UNTESTED));
@@ -14,6 +15,7 @@ public class EnhancedDownloaderExtension : Extension
 
     public static readonly PermInfo PermEnhancedDownloaderNSFW = Permissions.Register(new("enhanced_downloader_nsfw", "Enhanced Downloader: NSFW", "Allows NSFW results in the Enhanced Downloader browser.", PermissionDefault.POWERUSERS, Permissions.GroupControl, PermSafetyLevel.UNTESTED));
 
+    /// <inheritdoc/>
     public override void OnInit()
     {
         ScriptFiles.Add("Assets/js/enhanced_downloader_utils.js");

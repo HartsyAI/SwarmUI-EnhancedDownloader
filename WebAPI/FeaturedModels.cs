@@ -5,8 +5,9 @@ namespace Hartsy.Extensions;
 /// <summary>Curated list of models from the SwarmUI docs with all download URLs.</summary>
 public static class FeaturedModels
 {
-    private static JObject _cached;
+    public static JObject _cached;
 
+    /// <summary>Returns the cached featured models list, building it on first access.</summary>
     public static JObject GetFeatured()
     {
         return _cached ??= new JObject
@@ -16,7 +17,8 @@ public static class FeaturedModels
         };
     }
 
-    private static JObject M(string name, string category, string note, string architecture, string author, string scale, bool recommended, params JObject[] downloads)
+    /// <summary>Creates a featured model entry with metadata and download variants.</summary>
+    public static JObject M(string name, string category, string note, string architecture, string author, string scale, bool recommended, params JObject[] downloads)
     {
         return new JObject
         {
@@ -31,20 +33,19 @@ public static class FeaturedModels
         };
     }
 
-    private static JObject D(string label, string url)
+    /// <summary>Creates a download variant entry with a label and URL.</summary>
+    public static JObject D(string label, string url)
     {
         return new JObject { ["label"] = label, ["url"] = url };
     }
 
-    private static JArray BuildModelList()
+    /// <summary>Builds the complete list of featured image and video models with all download variants.</summary>
+    public static JArray BuildModelList()
     {
         return
         [
-            // ========================
-            // IMAGE MODELS
-            // ========================
+            #region Image Models
 
-            // --- Recommended ---
             M("Z-Image", "image",
                 "Best for photoreal. Lightweight 6B with a fast Turbo variant.",
                 "S3-DiT", "Tongyi MAI (Alibaba)", "6B", true,
@@ -76,7 +77,6 @@ public static class FeaturedModels
                 D("Turbo LoRA", "https://huggingface.co/fal/FLUX.2-dev-Turbo/blob/main/comfy/Flux_2-Turbo-LoRA_comfyui.safetensors")
             ),
 
-            // --- Modern / Good ---
             M("Qwen Image", "image",
                 "Great quality, very memory intense (30GB+ RAM). Slow but smart.",
                 "MMDiT", "Alibaba-Qwen", "20B", false,
@@ -139,7 +139,6 @@ public static class FeaturedModels
                 D("Diffusion Model BF16", "https://huggingface.co/Comfy-Org/Lumina_Image_2.0_Repackaged/blob/main/split_files/diffusion_models/lumina_2_model_bf16.safetensors")
             ),
 
-            // --- Older ---
             M("SD 3.5 Large", "image",
                 "Outdated but decent for its time. 8B MMDiT from Stability AI.",
                 "MMDiT", "Stability AI", "8B", false,
@@ -162,11 +161,10 @@ public static class FeaturedModels
                 D("v0.2", "https://huggingface.co/fal/AuraFlow-v0.2/blob/main/auraflow_v0.2.safetensors")
             ),
 
-            // ========================
-            // VIDEO MODELS
-            // ========================
+            #endregion
 
-            // --- Recommended ---
+            #region Video Models
+
             M("Wan 2.1", "video",
                 "Best local video model. 14B for quality, 1.3B for speed. CausVid/Lightx2v LoRAs available for faster gen.",
                 "DiT", "Alibaba - Wan-AI", "1.3B, 14B", true,
@@ -192,7 +190,6 @@ public static class FeaturedModels
                 D("5B TI2V FP16", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors")
             ),
 
-            // --- Modern ---
             M("Kandinsky 5 Video", "video",
                 "New and interesting. 19B Pro for quality, 2B Lite for speed. Still maturing.",
                 "DiT", "Kandinsky Lab", "2B, 19B", false,
@@ -232,6 +229,8 @@ public static class FeaturedModels
                 D("Distilled FP8", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled-fp8.safetensors"),
                 D("Distilled BF16", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled.safetensors")
             ),
+
+            #endregion
         ];
     }
 }

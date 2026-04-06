@@ -9,6 +9,7 @@ using System.Web;
 
 namespace Hartsy.Extensions.Providers;
 
+/// <summary>Provider implementation for searching and fetching models from the CivitAI API.</summary>
 public class CivitAIProvider : IEnhancedDownloaderProvider
 {
     public static readonly CivitAIProvider Instance = new();
@@ -18,14 +19,12 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
     public bool SupportsFilters => true;
     public bool SupportsNsfw => true;
 
-    private static readonly ProviderCache SearchCache = new(TimeSpan.FromSeconds(60));
-    private static readonly SemaphoreSlim RateLimiter = new(3, 3);
+    public static readonly ProviderCache SearchCache = new(TimeSpan.FromSeconds(60));
+    public static readonly SemaphoreSlim RateLimiter = new(3, 3);
+    public static readonly HashSet<string> AllowedSorts = ["Highest Rated", "Most Downloaded", "Newest"];
 
-    private static readonly HashSet<string> AllowedSorts = ["Highest Rated", "Most Downloaded", "Newest"];
-
-    public async Task<JObject> SearchAsync(Session session,
-        string query = "", int page = 1, int limit = 24, string cursor = "",
-        string type = "", string baseModel = "", string sort = "", bool includeNsfw = false)
+    /// <inheritdoc/>
+    public async Task<JObject> SearchAsync(Session session, string query = "", int page = 1, int limit = 24, string cursor = "", string type = "", string baseModel = "", string sort = "", bool includeNsfw = false)
     {
         if (includeNsfw && !session.User.HasPermission(EnhancedDownloaderExtension.PermEnhancedDownloaderNSFW))
         {
@@ -39,7 +38,6 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         {
             typeClean = "Controlnet";
         }
-
         bool isQueryMode = !string.IsNullOrWhiteSpace(query);
         string civitaiApiKey = session.User.GetGenericData("civitai_api", "key");
         bool hasApiKey = !string.IsNullOrEmpty(civitaiApiKey);
@@ -49,31 +47,24 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
             return cached;
         }
         string url = BuildSearchUrl(query, page, limit, cursor, typeClean, baseModel, sortClean, includeNsfw, isQueryMode);
-
         JObject data = await FetchJsonAsync(url, "CivitAI search", civitaiApiKey);
         if (data.ContainsKey("error"))
         {
             return data;
         }
-
         JArray items = data["items"] as JArray ?? [];
-        JObject meta = data["metadata"] as JObject ?? new JObject();
+        JObject meta = data["metadata"] as JObject ?? [];
         int currentPage = meta.Value<int?>("currentPage") ?? page;
         int totalPages = meta.Value<int?>("totalPages") ?? 1;
         int totalItems = meta.Value<int?>("totalItems") ?? items.Count;
         string nextCursor = isQueryMode ? ExtractNextCursor(meta) : null;
-
         JArray results = [];
         foreach (JObject item in items.OfType<JObject>())
         {
             JObject bestVersion = (item["modelVersions"] as JArray)?.OfType<JObject>().FirstOrDefault();
             results.Add(ModelResultBuilder.FromCivitAI(item, bestVersion));
         }
-
-        // Workaround: CivitAI sometimes returns a nextCursor pointing to a model ID not in the current page.
-        if (isQueryMode && results.Count < limit && !string.IsNullOrWhiteSpace(nextCursor)
-            && long.TryParse(nextCursor.Trim(), out long nextCursorAsId)
-            && results.OfType<JObject>().All(r => (r.Value<long?>("modelId") ?? 0) != nextCursorAsId))
+        if (isQueryMode && results.Count < limit && !string.IsNullOrWhiteSpace(nextCursor) && long.TryParse(nextCursor.Trim(), out long nextCursorAsId) && results.OfType<JObject>().All(r => (r.Value<long?>("modelId") ?? 0) != nextCursorAsId))
         {
             JObject extra = await TryFetchCursorModel(nextCursorAsId, civitaiApiKey, query, typeClean);
             if (extra is not null)
@@ -82,7 +73,6 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
                 nextCursor = null;
             }
         }
-
         JObject result = new()
         {
             ["success"] = true,
@@ -97,8 +87,8 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         return result;
     }
 
-    private static string BuildSearchUrl(string query, int page, int limit, string cursor,
-        string type, string baseModel, string sort, bool includeNsfw, bool isQueryMode)
+    /// <summary>Constructs the CivitAI API search URL with all query parameters.</summary>
+    public static string BuildSearchUrl(string query, int page, int limit, string cursor, string type, string baseModel, string sort, bool includeNsfw, bool isQueryMode)
     {
         UrlBuilder builder = new("https://civitai.com/api/v1/models");
         builder.Add("limit", limit);
@@ -130,7 +120,8 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         return builder.ToString();
     }
 
-    private static string ExtractNextCursor(JObject meta)
+    /// <summary>Extracts the next-page cursor from CivitAI response metadata.</summary>
+    public static string ExtractNextCursor(JObject meta)
     {
         string nextCursor = meta.Value<string>("nextCursor");
         if (!string.IsNullOrWhiteSpace(nextCursor))
@@ -155,7 +146,8 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         }
     }
 
-    private static async Task<JObject> FetchJsonAsync(string url, string label, string apiKey = null)
+    /// <summary>Sends a rate-limited GET request to the given URL and returns the parsed JSON response.</summary>
+    public static async Task<JObject> FetchJsonAsync(string url, string label, string apiKey = null)
     {
         await RateLimiter.WaitAsync();
         try
@@ -163,8 +155,7 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
             using HttpRequestMessage request = new(HttpMethod.Get, url);
             if (!string.IsNullOrEmpty(apiKey))
             {
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
-                    "Bearer", ModelsAPI.TokenTextLimiter.TrimToMatches(apiKey));
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ModelsAPI.TokenTextLimiter.TrimToMatches(apiKey));
             }
             using HttpResponseMessage response = await Utilities.UtilWebClient.SendAsync(request);
             string resp = await response.Content.ReadAsStringAsync();
@@ -187,7 +178,8 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         }
     }
 
-    private static async Task<JObject> TryFetchCursorModel(long modelId, string apiKey, string query, string type)
+    /// <summary>Attempts to fetch a single model by ID when the cursor points to it, returning null if it doesn't match filters.</summary>
+    public static async Task<JObject> TryFetchCursorModel(long modelId, string apiKey, string query, string type)
     {
         try
         {
@@ -199,8 +191,7 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
             }
             string modelName = modelObj.Value<string>("name") ?? "";
             string modelType = modelObj.Value<string>("type") ?? "";
-            bool matchesType = string.IsNullOrWhiteSpace(type) || type == "All"
-                || string.Equals(modelType, type, StringComparison.OrdinalIgnoreCase);
+            bool matchesType = string.IsNullOrWhiteSpace(type) || type == "All" || string.Equals(modelType, type, StringComparison.OrdinalIgnoreCase);
             bool matchesQuery = modelName.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase);
             if (!matchesType || !matchesQuery)
             {

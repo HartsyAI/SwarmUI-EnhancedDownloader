@@ -7,13 +7,15 @@ using Hartsy.Extensions.Providers;
 
 namespace Hartsy.Extensions;
 
+/// <summary>Registers and routes all Enhanced Downloader API endpoints.</summary>
 public static class EnhancedDownloaderAPI
 {
-    private static JObject _cachedDownloadRoots;
-    private static long _cachedDownloadRootsTimestamp;
-    private const long DownloadRootsCacheTtlMs = 30_000;
-    private static readonly object _rootsLock = new();
+    public static JObject _cachedDownloadRoots;
+    public static long _cachedDownloadRootsTimestamp;
+    public const long DownloadRootsCacheTtlMs = 30_000;
+    public static readonly object _rootsLock = new();
 
+    /// <summary>Registers all Enhanced Downloader API call handlers with the SwarmUI API system.</summary>
     public static void Register()
     {
         API.RegisterAPICall(ListProviders, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
@@ -27,6 +29,7 @@ public static class EnhancedDownloaderAPI
         API.RegisterAPICall(EnhancedDownloaderHartsyFilterOptions, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
     }
 
+    /// <summary>Returns a list of all registered download providers with their capabilities.</summary>
     public static Task<JObject> ListProviders(Session session)
     {
         JArray providers = [];
@@ -47,6 +50,7 @@ public static class EnhancedDownloaderAPI
         });
     }
 
+    /// <summary>Returns a cached mapping of model type keys to their filesystem download folder paths.</summary>
     public static Task<JObject> EnhancedDownloaderGetDownloadRoots(Session session)
     {
         if (_cachedDownloadRoots is not null && Environment.TickCount64 - _cachedDownloadRootsTimestamp < DownloadRootsCacheTtlMs)
@@ -75,43 +79,43 @@ public static class EnhancedDownloaderAPI
         }
     }
 
-    public static async Task<JObject> EnhancedDownloaderCivitaiSearch(Session session,
-        string query = "", int page = 1, int limit = 24, string cursor = "",
-        string type = "", string baseModel = "", string sort = "Most Downloaded",
-        bool includeNsfw = false)
+    /// <summary>Searches CivitAI for models matching the given query and filters.</summary>
+    public static async Task<JObject> EnhancedDownloaderCivitaiSearch(Session session, string query = "", int page = 1, int limit = 24, string cursor = "", string type = "", string baseModel = "", string sort = "Most Downloaded", bool includeNsfw = false)
     {
         return await CivitAIProvider.Instance.SearchAsync(session, query, page, limit, cursor, type, baseModel, sort, includeNsfw);
     }
 
-    public static async Task<JObject> EnhancedDownloaderHuggingFaceSearch(Session session,
-        string query = "", int limit = 24, string cursor = "")
+    /// <summary>Searches Hugging Face for models matching the given query.</summary>
+    public static async Task<JObject> EnhancedDownloaderHuggingFaceSearch(Session session, string query = "", int limit = 24, string cursor = "")
     {
         return await HuggingFaceProvider.Instance.SearchAsync(session, query, 1, limit, cursor);
     }
 
-    public static async Task<JObject> EnhancedDownloaderHuggingFaceFiles(Session session,
-        string modelId, int limit = 500)
+    /// <summary>Lists downloadable files for a specific Hugging Face model repository.</summary>
+    public static async Task<JObject> EnhancedDownloaderHuggingFaceFiles(Session session, string modelId, int limit = 500)
     {
         return await HuggingFaceProvider.Instance.ListFilesAsync(session, modelId, limit);
     }
 
+    /// <summary>Fetches a preview image for a Hugging Face model.</summary>
     public static async Task<JObject> EnhancedDownloaderHuggingFaceImage(Session session, string modelId)
     {
         return await HuggingFaceProvider.Instance.GetPreviewImageAsync(session, modelId);
     }
 
-    public static async Task<JObject> EnhancedDownloaderHartsySearch(Session session,
-        string query = "", int page = 1, int limit = 24,
-        string architecture = "", string sort = "popular", string tags = "")
+    /// <summary>Searches Hartsy for models matching the given query, architecture, and tags.</summary>
+    public static async Task<JObject> EnhancedDownloaderHartsySearch(Session session, string query = "", int page = 1, int limit = 24, string architecture = "", string sort = "popular", string tags = "")
     {
         return await HartsyProvider.Instance.SearchAsync(session, query, page, limit, "", "", architecture, sort, false, tags);
     }
 
+    /// <summary>Returns available filter options (architectures, tags) from the Hartsy API.</summary>
     public static async Task<JObject> EnhancedDownloaderHartsyFilterOptions(Session session)
     {
         return await HartsyProvider.Instance.GetFilterOptionsAsync(session);
     }
 
+    /// <summary>Returns the curated list of featured/recommended models.</summary>
     public static Task<JObject> EnhancedDownloaderGetFeaturedModels(Session session)
     {
         return Task.FromResult(FeaturedModels.GetFeatured());
