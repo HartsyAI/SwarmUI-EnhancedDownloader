@@ -37,13 +37,18 @@
             if (!utils || !utils.genericRequestAsync) {
                 throw new Error('EnhancedDownloader utils not loaded');
             }
+            let tags = params.tags || '';
+            if (params.type && params.type !== 'All') {
+                const typeTag = params.type.toLowerCase();
+                tags = tags ? `${tags},${typeTag}` : typeTag;
+            }
             return await utils.genericRequestAsync('EnhancedDownloaderHartsySearch', {
                 query: params.query || '',
                 page: params.page || 1,
                 limit: params.limit || 24,
                 architecture: params.baseModel || params.architecture || '',
                 sort: sortMapping[params.sort] || 'downloads',
-                tags: params.tags || ''
+                tags: tags
             });
         },
 

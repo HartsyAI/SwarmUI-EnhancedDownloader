@@ -59,9 +59,9 @@
                     <div class="enhanced-downloader-browser-row">
                         <span class="translate">Filters</span>:
                         <select class="auto-dropdown ed-type" autocomplete="off">
-                            <option value="All" class="translate" selected>All</option>
+                            <option value="All" class="translate">All</option>
                             <option value="Checkpoint">Checkpoint</option>
-                            <option value="LORA">LoRA</option>
+                            <option value="LORA" selected>LoRA</option>
                             <option value="LoCon">LoCon</option>
                             <option value="LyCORIS">LyCORIS</option>
                             <option value="TextualInversion">Textual Inversion</option>
@@ -150,7 +150,7 @@
                 providerId: providerSelect.value || providers[0].id,
                 cursor: '', cursorStack: [], hasNextCursor: false, nextCursor: '',
                 page: 1, totalPages: 1, hasMore: false,
-                lastQuery: '', lastType: 'All', lastBaseModel: 'All',
+                lastQuery: '', lastType: 'LORA', lastBaseModel: 'All',
                 lastSort: 'Most Downloaded', lastIncludeNsfw: false
             };
 
@@ -175,7 +175,7 @@
                     query.placeholder = 'Search...';
                 }
 
-                typeFilter.disabled = !(prov && prov.id === 'civitai');
+                typeFilter.disabled = !(prov && (prov.id === 'civitai' || prov.id === 'hartsy'));
                 baseModelFilter.disabled = !isFilterable;
                 if (prov && prov.id === 'hartsy' && prov.getArchitectureOptions) {
                     try {
