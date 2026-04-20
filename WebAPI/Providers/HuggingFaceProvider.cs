@@ -49,7 +49,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", ModelsAPI.TokenTextLimiter.TrimToMatches(apiKey));
         }
-        return await Utilities.UtilWebClient.SendAsync(request);
+        return await ProviderHttpClient.Client.SendAsync(request);
     }
 
     /// <summary>Returns true if the URL points to a whitelisted Hugging Face image host.</summary>
@@ -319,17 +319,14 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
                 {
                     continue;
                 }
-                if (IsAllowedImageUrl(url))
+                if (!IsAllowedImageUrl(url))
                 {
-                    string dataUrl = await TryFetchImageDataUrl(url, apiKey);
-                    if (!string.IsNullOrWhiteSpace(dataUrl))
-                    {
-                        return dataUrl;
-                    }
+                    continue;
                 }
-                else
+                string dataUrl = await TryFetchImageDataUrl(url, apiKey);
+                if (!string.IsNullOrWhiteSpace(dataUrl))
                 {
-                    return url;
+                    return dataUrl;
                 }
             }
         }

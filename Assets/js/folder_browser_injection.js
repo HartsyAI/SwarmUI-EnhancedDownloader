@@ -153,7 +153,7 @@
                 let hasChildren = Object.keys(tree[folderName]).length > 0;
                 let isExpanded = this.expandedFolders.has(fullPath);
                 let isSelected = this.selectedFolder === fullPath;
-                let escapedPath = fullPath.replaceAll('\\', '\\\\').replaceAll("'", "\\'");
+                let escapedPath = escapeJsString(fullPath);
 
                 html += '<div class="folder-item-wrapper">';
                 html += `<div class="folder-item ${isSelected ? 'selected' : ''}" data-folder="${escapeHtml(fullPath)}">`;

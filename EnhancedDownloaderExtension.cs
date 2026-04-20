@@ -16,7 +16,7 @@ public class EnhancedDownloaderExtension : Extension
     public static readonly PermInfo PermEnhancedDownloaderNSFW = Permissions.Register(new("enhanced_downloader_nsfw", "Enhanced Downloader: NSFW", "Allows NSFW results in the Enhanced Downloader browser.", PermissionDefault.POWERUSERS, Permissions.GroupControl, PermSafetyLevel.UNTESTED));
 
     /// <inheritdoc/>
-    public override void OnInit()
+    public override void OnPreInit()
     {
         ScriptFiles.Add("Assets/js/enhanced_downloader_utils.js");
         ScriptFiles.Add("Assets/js/download_history.js");
@@ -30,6 +30,11 @@ public class EnhancedDownloaderExtension : Extension
         ScriptFiles.Add("Assets/js/components/model_browser.js");
         ScriptFiles.Add("Assets/js/enhanced_downloader.js");
         StyleSheetFiles.Add("Assets/css/enhanced_downloader.css");
+    }
+
+    /// <inheritdoc/>
+    public override void OnInit()
+    {
         EnhancedDownloaderAPI.Register();
         BasicAPIFeatures.AcceptedAPIKeyTypes.Add("hartsy");
         if (!UserUpstreamApiKeys.KeysByType.ContainsKey("hartsy"))

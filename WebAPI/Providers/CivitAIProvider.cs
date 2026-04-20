@@ -157,7 +157,7 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
             {
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ModelsAPI.TokenTextLimiter.TrimToMatches(apiKey));
             }
-            using HttpResponseMessage response = await Utilities.UtilWebClient.SendAsync(request);
+            using HttpResponseMessage response = await ProviderHttpClient.Client.SendAsync(request);
             string resp = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
@@ -200,9 +200,9 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
             JObject bestVersion = (modelObj["modelVersions"] as JArray)?.OfType<JObject>().FirstOrDefault();
             return ModelResultBuilder.FromCivitAI(modelObj, bestVersion, modelId);
         }
-        catch
+        catch (Exception ex)
         {
-            Logs.Warning($"EnhancedDownloader CivitAI by-ID fetch failed for '{modelId}'.");
+            Logs.Warning($"EnhancedDownloader CivitAI by-ID fetch failed for '{modelId}': {ex.ReadableString()}");
             return null;
         }
     }

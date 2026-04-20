@@ -81,7 +81,7 @@ public class HartsyProvider : IEnhancedDownloaderProvider
         {
             using HttpRequestMessage request = new(HttpMethod.Get, url);
             AddApiKeyHeader(request, apiKey);
-            using HttpResponseMessage response = await Utilities.UtilWebClient.SendAsync(request);
+            using HttpResponseMessage response = await ProviderHttpClient.Client.SendAsync(request);
             string resp = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
@@ -177,7 +177,7 @@ public class HartsyProvider : IEnhancedDownloaderProvider
         {
             using HttpRequestMessage request = new(HttpMethod.Get, url);
             AddApiKeyHeader(request, apiKey);
-            using HttpResponseMessage response = await Utilities.UtilWebClient.SendAsync(request);
+            using HttpResponseMessage response = await ProviderHttpClient.Client.SendAsync(request);
             string resp = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {

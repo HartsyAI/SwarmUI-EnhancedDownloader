@@ -1,9 +1,17 @@
 using Newtonsoft.Json.Linq;
+using SwarmUI.Backends;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Net.Http;
 using System.Web;
 
 namespace Hartsy.Extensions.Providers;
+
+/// <summary>Shared HTTP client for all Enhanced Downloader providers. Uses SwarmUI's configured client factory instead of the global singleton.</summary>
+public static class ProviderHttpClient
+{
+    public static readonly HttpClient Client = NetworkBackendUtils.MakeHttpClient();
+}
 
 /// <summary>Simple TTL-based cache backed by a <see cref="ConcurrentDictionary{TKey,TValue}"/>.</summary>
 /// <remarks>Initializes a new cache with the given time-to-live duration.</remarks>
