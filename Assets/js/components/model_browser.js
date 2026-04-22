@@ -180,7 +180,8 @@
                 if (prov && prov.id === 'hartsy' && prov.getArchitectureOptions) {
                     try {
                         const archOptions = await prov.getArchitectureOptions();
-                        populateSelect(baseModelFilter, archOptions.map(a => ({ value: a, label: a })), 'All');
+                        const formatted = archOptions.map(a => (typeof a === 'string') ? { value: a, label: a } : a);
+                        populateSelect(baseModelFilter, formatted, 'All');
                     } catch {
                         populateSelect(baseModelFilter, [{ value: 'All', label: 'All' }], 'All');
                     }

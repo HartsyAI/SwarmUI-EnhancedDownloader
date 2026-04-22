@@ -115,8 +115,11 @@ public class HartsyProvider : IEnhancedDownloaderProvider
                 string uploadSource = item.Value<string>("uploaded_from") ?? "";
                 string fileName = item.Value<string>("file_name") ?? "";
                 long downloads = item.Value<long?>("downloads_count") ?? 0;
+                bool isNsfw = item.Value<bool?>("is_nsfw") ?? false;
+                string subscriptionRequired = item.Value<string>("subscription_required") ?? "";
+                JArray itemTags = item["tags"] as JArray ?? [];
                 string openUrl = $"https://hartsy.ai/models/{modelId}";
-                results.Add(new JObject()
+                JObject resultItem = new()
                 {
                     ["modelId"] = modelId,
                     ["modelVersionId"] = "",
@@ -133,8 +136,21 @@ public class HartsyProvider : IEnhancedDownloaderProvider
                     ["fileName"] = fileName,
                     ["fileSize"] = fileSize is null ? null : (JToken)fileSize,
                     ["openUrl"] = openUrl,
-                    ["uploadSource"] = uploadSource
-                });
+                    ["uploadSource"] = uploadSource,
+                    ["isNsfw"] = isNsfw,
+                    ["subscriptionRequired"] = subscriptionRequired,
+                    ["tags"] = itemTags
+                };
+                if (item["torrent"] is JObject torrentObj)
+                {
+                    resultItem["torrent"] = new JObject()
+                    {
+                        ["magnetLink"] = torrentObj.Value<string>("magnet_link") ?? "",
+                        ["torrentUrl"] = torrentObj.Value<string>("torrent_url") ?? "",
+                        ["infoHash"] = torrentObj.Value<string>("info_hash") ?? ""
+                    };
+                }
+                results.Add(resultItem);
             }
 
             JObject result = new()
@@ -190,7 +206,7 @@ public class HartsyProvider : IEnhancedDownloaderProvider
                 return new JObject() { ["success"] = false, ["error"] = "Failed to load filter options." };
             }
             JObject data = responseJson["data"] as JObject ?? [];
-            JArray architectureIds = [];
+            JArray architectures = [];
             if (data["architectures"] is JArray archArray)
             {
                 foreach (JObject arch in archArray.OfType<JObject>())
@@ -198,16 +214,22 @@ public class HartsyProvider : IEnhancedDownloaderProvider
                     string archId = arch.Value<string>("id") ?? "";
                     if (!string.IsNullOrEmpty(archId))
                     {
-                        architectureIds.Add(archId);
+                        architectures.Add(new JObject()
+                        {
+                            ["id"] = archId,
+                            ["displayName"] = arch.Value<string>("display_name") ?? archId,
+                            ["modelCount"] = arch.Value<int?>("model_count") ?? 0
+                        });
                     }
                 }
             }
             JObject result = new()
             {
                 ["success"] = true,
-                ["architectures"] = architectureIds,
+                ["architectures"] = architectures,
                 ["tags"] = data["tags"] as JArray ?? [],
-                ["uploadSources"] = data["upload_sources"] as JArray ?? []
+                ["uploadSources"] = data["upload_sources"] as JArray ?? [],
+                ["subscriptionTiers"] = data["subscription_tiers"] as JArray ?? []
             };
             FilterCache.Set(cacheKey, result);
             return result;
@@ -215,6 +237,132 @@ public class HartsyProvider : IEnhancedDownloaderProvider
         catch (Exception ex)
         {
             Logs.Warning($"EnhancedDownloader Hartsy filter options failed: {ex.ReadableString()}");
+            return new JObject() { ["success"] = false, ["error"] = "Failed to contact Hartsy." };
+        }
+        finally
+        {
+            RateLimiter.Release();
+        }
+    }
+
+    /// <summary>Fetches download info for a specific model from the Hartsy API, which records analytics and provides hash/torrent data.</summary>
+    public async Task<JObject> GetModelDownloadAsync(Session session, string modelId)
+    {
+        if (string.IsNullOrWhiteSpace(modelId))
+        {
+            return new JObject() { ["success"] = false, ["error"] = "Model ID is required." };
+        }
+        string apiKey = GetApiKey(session);
+        string url = $"{BaseUrl}/models/{Uri.EscapeDataString(modelId)}/download";
+        await RateLimiter.WaitAsync();
+        try
+        {
+            using HttpRequestMessage request = new(HttpMethod.Get, url);
+            AddApiKeyHeader(request, apiKey);
+            using HttpResponseMessage response = await ProviderHttpClient.Client.SendAsync(request);
+            string resp = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                string trimmed = resp.Length > 500 ? resp[..500] : resp;
+                Logs.Warning($"EnhancedDownloader Hartsy download info failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
+                return new JObject() { ["success"] = false, ["error"] = $"Hartsy error {(int)response.StatusCode}: {trimmed}" };
+            }
+            JObject responseJson = resp.ParseToJson();
+            if (responseJson.Value<bool?>("success") != true)
+            {
+                string errorMsg = responseJson["error"]?.Value<string>("message") ?? "Unknown error";
+                return new JObject() { ["success"] = false, ["error"] = $"Hartsy API error: {errorMsg}" };
+            }
+            JObject data = responseJson["data"] as JObject ?? [];
+            JObject result = new()
+            {
+                ["success"] = true,
+                ["modelId"] = data.Value<string>("model_id") ?? modelId,
+                ["title"] = data.Value<string>("title") ?? "",
+                ["fileName"] = data.Value<string>("file_name") ?? "",
+                ["fileSize"] = data.Value<long?>("file_size"),
+                ["downloadUrl"] = data.Value<string>("download_url") ?? "",
+                ["hashSha256"] = data.Value<string>("hash_sha256") ?? "",
+                ["downloadsCount"] = data.Value<long?>("downloads_count") ?? 0
+            };
+            if (data["torrent"] is JObject torrentObj)
+            {
+                result["torrent"] = new JObject()
+                {
+                    ["magnetLink"] = torrentObj.Value<string>("magnet_link") ?? "",
+                    ["torrentUrl"] = torrentObj.Value<string>("torrent_url") ?? "",
+                    ["infoHash"] = torrentObj.Value<string>("info_hash") ?? ""
+                };
+            }
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Logs.Warning($"EnhancedDownloader Hartsy download info failed: {ex.ReadableString()}");
+            return new JObject() { ["success"] = false, ["error"] = "Failed to contact Hartsy." };
+        }
+        finally
+        {
+            RateLimiter.Release();
+        }
+    }
+
+    /// <summary>Fetches version variants (different architectures) for a specific model from the Hartsy API.</summary>
+    public async Task<JObject> GetModelVersionsAsync(Session session, string modelId)
+    {
+        if (string.IsNullOrWhiteSpace(modelId))
+        {
+            return new JObject() { ["success"] = false, ["error"] = "Model ID is required." };
+        }
+        string apiKey = GetApiKey(session);
+        string url = $"{BaseUrl}/models/{Uri.EscapeDataString(modelId)}/versions";
+        await RateLimiter.WaitAsync();
+        try
+        {
+            using HttpRequestMessage request = new(HttpMethod.Get, url);
+            AddApiKeyHeader(request, apiKey);
+            using HttpResponseMessage response = await ProviderHttpClient.Client.SendAsync(request);
+            string resp = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                string trimmed = resp.Length > 500 ? resp[..500] : resp;
+                Logs.Warning($"EnhancedDownloader Hartsy versions failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
+                return new JObject() { ["success"] = false, ["error"] = $"Hartsy error {(int)response.StatusCode}: {trimmed}" };
+            }
+            JObject responseJson = resp.ParseToJson();
+            if (responseJson.Value<bool?>("success") != true)
+            {
+                string errorMsg = responseJson["error"]?.Value<string>("message") ?? "Unknown error";
+                return new JObject() { ["success"] = false, ["error"] = $"Hartsy API error: {errorMsg}" };
+            }
+            JObject data = responseJson["data"] as JObject ?? [];
+            JArray versions = data["versions"] as JArray ?? [];
+            JArray results = [];
+            foreach (JObject ver in versions.OfType<JObject>())
+            {
+                results.Add(new JObject()
+                {
+                    ["id"] = ver.Value<string>("id") ?? "",
+                    ["title"] = ver.Value<string>("title") ?? "",
+                    ["versionLabel"] = ver.Value<string>("version_label") ?? "",
+                    ["architecture"] = ver.Value<string>("architecture") ?? "",
+                    ["fileName"] = ver.Value<string>("file_name") ?? "",
+                    ["fileSize"] = ver.Value<long?>("file_size"),
+                    ["description"] = ver.Value<string>("description") ?? "",
+                    ["thumbnailUrl"] = ver.Value<string>("thumbnail_url") ?? "",
+                    ["createdAt"] = ver.Value<string>("created_at") ?? ""
+                });
+            }
+            return new JObject()
+            {
+                ["success"] = true,
+                ["parentModelId"] = data.Value<string>("parent_model_id") ?? modelId,
+                ["versions"] = results
+            };
+        }
+        catch (Exception ex)
+        {
+            Logs.Warning($"EnhancedDownloader Hartsy versions failed: {ex.ReadableString()}");
             return new JObject() { ["success"] = false, ["error"] = "Failed to contact Hartsy." };
         }
         finally

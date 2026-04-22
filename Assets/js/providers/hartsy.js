@@ -59,7 +59,7 @@
             }
             const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
             if (!utils || !utils.genericRequestAsync) {
-                return { architectures: [], tags: [], uploadSources: [] };
+                return { architectures: [], tags: [], uploadSources: [], subscriptionTiers: [] };
             }
             try {
                 const resp = await utils.genericRequestAsync('EnhancedDownloaderHartsyFilterOptions', {});
@@ -67,7 +67,8 @@
                     filterOptionsCache = {
                         architectures: resp.architectures || [],
                         tags: resp.tags || [],
-                        uploadSources: resp.uploadSources || []
+                        uploadSources: resp.uploadSources || [],
+                        subscriptionTiers: resp.subscriptionTiers || []
                     };
                     filterOptionsCacheTime = now;
                     return filterOptionsCache;
@@ -76,18 +77,44 @@
             catch (e) {
                 console.warn('Failed to load Hartsy filter options:', e);
             }
-            return { architectures: [], tags: [], uploadSources: [] };
+            return { architectures: [], tags: [], uploadSources: [], subscriptionTiers: [] };
         },
 
         getArchitectureOptions: async function () {
             const options = await this.getFilterOptions();
-            return ['All', ...(options.architectures || [])];
+            const archs = options.architectures || [];
+            const result = [{ value: 'All', label: 'All' }];
+            for (const arch of archs) {
+                if (arch && arch.id) {
+                    const count = arch.modelCount || 0;
+                    const name = arch.displayName || arch.id;
+                    result.push({
+                        value: arch.id,
+                        label: count > 0 ? `${name} (${count})` : name
+                    });
+                }
+            }
+            return result;
         },
 
-        handleDownload: function (item) {
+        handleDownload: async function (item) {
             const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            if (!utils) return;
+            if (item.modelId && utils.genericRequestAsync) {
+                try {
+                    const resp = await utils.genericRequestAsync('EnhancedDownloaderHartsyDownload', {
+                        modelId: `${item.modelId}`
+                    });
+                    if (resp && resp.success && resp.downloadUrl) {
+                        utils.loadUrlIntoManualDownloader(resp.downloadUrl);
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Hartsy download endpoint failed, falling back:', e);
+                }
+            }
             const bestUrl = item.downloadUrl || item.openUrl || '';
-            if (utils) {
+            if (bestUrl) {
                 utils.loadUrlIntoManualDownloader(bestUrl);
             }
         },
@@ -97,6 +124,51 @@
         },
 
         getPopoverExtras: function (item, menuDiv) {
+            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            if (!item.modelId || !utils || !utils.genericRequestAsync) return;
+            if (item.torrent && item.torrent.magnetLink) {
+                const magnetBtn = document.createElement('div');
+                magnetBtn.className = 'sui_popover_model_button';
+                magnetBtn.innerText = 'Copy Magnet Link';
+                magnetBtn.onclick = () => {
+                    if (typeof copyText === 'function') {
+                        copyText(item.torrent.magnetLink);
+                    }
+                };
+                menuDiv.appendChild(magnetBtn);
+            }
+            const versionsBtn = document.createElement('div');
+            versionsBtn.className = 'sui_popover_model_button';
+            versionsBtn.innerText = 'Load versions...';
+            versionsBtn.onclick = async () => {
+                versionsBtn.innerText = 'Loading...';
+                versionsBtn.style.pointerEvents = 'none';
+                try {
+                    const resp = await utils.genericRequestAsync('EnhancedDownloaderHartsyVersions', {
+                        modelId: `${item.modelId}`
+                    });
+                    if (!resp || !resp.success || !Array.isArray(resp.versions) || resp.versions.length === 0) {
+                        versionsBtn.innerText = 'No other versions';
+                        return;
+                    }
+                    versionsBtn.style.display = 'none';
+                    for (const ver of resp.versions) {
+                        if (ver.id === item.modelId) continue;
+                        const label = ver.versionLabel || ver.architecture || ver.title || 'Version';
+                        const sizeStr = ver.fileSize ? ` (${(ver.fileSize / (1024 * 1024)).toFixed(0)} MB)` : '';
+                        const verBtn = document.createElement('div');
+                        verBtn.className = 'sui_popover_model_button';
+                        verBtn.innerText = `Download: ${label}${sizeStr}`;
+                        verBtn.onclick = () => {
+                            this.handleDownload({ modelId: ver.id, downloadUrl: '', openUrl: `https://hartsy.ai/models/${ver.id}` });
+                        };
+                        menuDiv.appendChild(verBtn);
+                    }
+                } catch {
+                    versionsBtn.innerText = 'Failed to load versions';
+                }
+            };
+            menuDiv.appendChild(versionsBtn);
         }
     };
 })();

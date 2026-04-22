@@ -93,6 +93,9 @@
                 }
             }
         }
+        if (item.torrent && item.torrent.magnetLink) {
+            addCopy('Copy Magnet Link', item.torrent.magnetLink);
+        }
         if (item.modelId) addCopy('Copy Model ID', `${item.modelId}`);
         if (item.modelVersionId) addCopy('Copy Version ID', `${item.modelVersionId}`);
         if (item.fileName) addCopy('Copy Filename', `${item.fileName}`);

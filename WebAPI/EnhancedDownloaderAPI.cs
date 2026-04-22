@@ -27,6 +27,8 @@ public static class EnhancedDownloaderAPI
         API.RegisterAPICall(EnhancedDownloaderHuggingFaceImage, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHartsySearch, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHartsyFilterOptions, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
+        API.RegisterAPICall(EnhancedDownloaderHartsyDownload, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
+        API.RegisterAPICall(EnhancedDownloaderHartsyVersions, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
     }
 
     /// <summary>Returns a list of all registered download providers with their capabilities.</summary>
@@ -148,5 +150,21 @@ public static class EnhancedDownloaderAPI
     public static Task<JObject> EnhancedDownloaderGetFeaturedModels(Session session)
     {
         return Task.FromResult(FeaturedModels.GetFeatured());
+    }
+
+    /// <summary>Fetches download info for a Hartsy model, recording analytics and providing hash/torrent data.</summary>
+    [API.APIDescription("Fetches download info for a Hartsy model.", "\"success\": true, \"downloadUrl\": \"...\", \"hashSha256\": \"...\", \"torrent\": { ... }")]
+    public static async Task<JObject> EnhancedDownloaderHartsyDownload(Session session,
+        [API.APIParameter("The Hartsy model ID.")] string modelId)
+    {
+        return await HartsyProvider.Instance.GetModelDownloadAsync(session, modelId);
+    }
+
+    /// <summary>Fetches version variants (different architectures) for a Hartsy model.</summary>
+    [API.APIDescription("Fetches version variants for a Hartsy model.", "\"success\": true, \"versions\": [{ \"id\": \"...\", \"architecture\": \"...\", ... }]")]
+    public static async Task<JObject> EnhancedDownloaderHartsyVersions(Session session,
+        [API.APIParameter("The Hartsy model ID.")] string modelId)
+    {
+        return await HartsyProvider.Instance.GetModelVersionsAsync(session, modelId);
     }
 }
