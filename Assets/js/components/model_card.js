@@ -49,6 +49,10 @@
         const openUrl = item.openUrl ? `${item.openUrl}` : '';
         const descText = stripHtmlToText(item.description || '');
         const descHtml = descText ? `<div class="ed-model-desc">${escapeHtml(descText)}</div>` : '';
+        const badges = (provider && typeof provider.getCardBadges === 'function') ? (provider.getCardBadges(item) || []) : [];
+        const badgesHtml = badges.length > 0
+            ? `<div class="ed-model-badges">${badges.map(b => `<span class="ed-model-badge ed-model-badge-${escapeHtml(b.kind || 'info')}">${escapeHtml(b.label || '')}</span>`).join('')}</div>`
+            : '';
 
         const actionsHtml = `
             <div class="ed-model-actions">
@@ -61,6 +65,7 @@
             <b>${escapeHtml(item.name || '')}</b>
             ${item.versionName ? `<br>${escapeHtml(item.versionName)}` : ''}
             <br>${escapeHtml(item.type || '')}${baseStr ? ` | ${baseStr}` : ''}${creatorStr ? ` | ${creatorStr}` : ''}${downloadsStr ? ` | ${downloadsStr} downloads` : ''}
+            ${badgesHtml}
             ${descHtml}
             ${actionsHtml}
         `;

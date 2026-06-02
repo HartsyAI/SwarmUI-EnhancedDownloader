@@ -17,11 +17,27 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
     public static readonly HuggingFaceProvider Instance = new();
     public string ProviderId => "huggingface";
     public string DisplayName => "Hugging Face";
-    public bool SupportsFilters => false;
+    public bool SupportsFilters => true;
     public bool SupportsNsfw => false;
     public static readonly ProviderCache SearchCache = new(TimeSpan.FromSeconds(60));
     public static readonly ProviderCache ImageCache = new(TimeSpan.FromMinutes(5));
     public static readonly SemaphoreSlim RateLimiter = new(5, 5);
+    public static readonly HashSet<string> AllowedPipelineTags = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "text-to-image", "image-to-image", "text-to-video", "image-to-video",
+        "text-to-audio", "text-to-speech", "automatic-speech-recognition",
+        "image-to-text", "image-segmentation", "depth-estimation",
+        "text-generation", "feature-extraction", "any-to-any"
+    };
+    public static readonly HashSet<string> AllowedLibraries = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "diffusers", "transformers", "gguf", "peft", "sentence-transformers",
+        "safetensors", "onnx", "mlx", "timm"
+    };
+    public static readonly HashSet<string> AllowedSorts = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "trending", "downloads", "likes", "lastModified", "createdAt"
+    };
     public static readonly HashSet<string> AllowedImageHosts = new(StringComparer.OrdinalIgnoreCase)
     {
         "huggingface.co",
@@ -402,12 +418,34 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
     }
 
     /// <inheritdoc/>
-    public async Task<JObject> SearchAsync(Session session, string query = "", int page = 1, int limit = 24, string cursor = "", string type = "", string baseModel = "", string sort = "", bool includeNsfw = false)
+    public Task<JObject> SearchAsync(Session session, string query = "", int page = 1, int limit = 24, string cursor = "", string type = "", string baseModel = "", string sort = "", bool includeNsfw = false)
+    {
+        return SearchAsync(session, query, limit, cursor, pipelineTag: type, library: baseModel, sort: sort, author: "");
+    }
+
+    /// <summary>Searches Hugging Face models with pipeline tag, library, sort, and author filters.</summary>
+    public async Task<JObject> SearchAsync(Session session, string query, int limit, string cursor, string pipelineTag, string library, string sort, string author)
     {
         limit = Math.Clamp(limit, 1, 100);
+        string pipelineClean = (pipelineTag ?? "").Trim();
+        if (pipelineClean.Equals("All", StringComparison.OrdinalIgnoreCase) || !AllowedPipelineTags.Contains(pipelineClean))
+        {
+            pipelineClean = "";
+        }
+        string libraryClean = (library ?? "").Trim();
+        if (libraryClean.Equals("All", StringComparison.OrdinalIgnoreCase) || !AllowedLibraries.Contains(libraryClean))
+        {
+            libraryClean = "";
+        }
+        string sortClean = (sort ?? "").Trim();
+        if (!AllowedSorts.Contains(sortClean))
+        {
+            sortClean = "";
+        }
+        string authorClean = (author ?? "").Trim();
         string apiKey = GetApiKey(session);
         bool hasApiKey = !string.IsNullOrEmpty(apiKey);
-        string cacheKey = $"hf:{session.User.UserID}:{query}:{limit}:{cursor}:{hasApiKey}";
+        string cacheKey = $"hf:{session.User.UserID}:{query}:{limit}:{cursor}:{pipelineClean}:{libraryClean}:{sortClean}:{authorClean}:{hasApiKey}";
         if (SearchCache.TryGet(cacheKey, out JObject cached))
         {
             return cached;
@@ -422,6 +460,23 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         if (!string.IsNullOrWhiteSpace(cursor))
         {
             builder.Add("cursor", cursor);
+        }
+        if (!string.IsNullOrWhiteSpace(pipelineClean))
+        {
+            builder.Add("filter", pipelineClean);
+        }
+        if (!string.IsNullOrWhiteSpace(libraryClean))
+        {
+            builder.Add("library", libraryClean);
+        }
+        if (!string.IsNullOrWhiteSpace(sortClean))
+        {
+            builder.Add("sort", sortClean);
+            builder.Add("direction", "-1");
+        }
+        if (!string.IsNullOrWhiteSpace(authorClean))
+        {
+            builder.Add("author", authorClean);
         }
         string url = builder.ToString();
         string resp;
@@ -468,7 +523,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
             }
             JObject cardData = item["cardData"] as JObject;
             string description = item.Value<string>("description") ?? cardData?.Value<string>("description") ?? "";
-            string author = item.Value<string>("author") ?? "";
+            string itemAuthor = item.Value<string>("author") ?? "";
             long downloads = item.Value<long?>("downloads") ?? 0;
             string lastModified = item.Value<string>("lastModified") ?? "";
             string openUrl = $"https://huggingface.co/{modelId}";
@@ -492,7 +547,8 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
                     {
                         ["fileName"] = rfilename,
                         ["downloadUrl"] = fileUrl,
-                        ["fileSize"] = sib.Value<long?>("size") is long size ? size : null
+                        ["fileSize"] = sib.Value<long?>("size") is long size ? size : null,
+                        ["quantType"] = QuantDetector.Detect(rfilename)
                     });
                     if (downloadOptions.Count >= 25)
                     {
@@ -510,7 +566,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
                 ["name"] = modelId,
                 ["type"] = "HuggingFace",
                 ["description"] = description,
-                ["creator"] = author,
+                ["creator"] = itemAuthor,
                 ["downloads"] = downloads,
                 ["versionName"] = lastModified,
                 ["baseModel"] = "",
@@ -586,7 +642,8 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
                     {
                         ["fileName"] = rfilename,
                         ["downloadUrl"] = dl,
-                        ["fileSize"] = size is null ? null : (JToken)size
+                        ["fileSize"] = size is null ? null : (JToken)size,
+                        ["quantType"] = QuantDetector.Detect(rfilename)
                     });
                 }
                 return new JObject()

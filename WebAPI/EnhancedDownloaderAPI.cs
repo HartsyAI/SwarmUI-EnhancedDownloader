@@ -22,6 +22,9 @@ public static class EnhancedDownloaderAPI
         API.RegisterAPICall(EnhancedDownloaderGetDownloadRoots, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
         API.RegisterAPICall(EnhancedDownloaderGetFeaturedModels, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
         API.RegisterAPICall(EnhancedDownloaderCivitaiSearch, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
+        API.RegisterAPICall(EnhancedDownloaderCivitaiTags, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
+        API.RegisterAPICall(EnhancedDownloaderCivitaiImages, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
+        API.RegisterAPICall(EnhancedDownloaderCivitaiVersionCheck, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHuggingFaceSearch, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHuggingFaceFiles, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHuggingFaceImage, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
@@ -86,26 +89,62 @@ public static class EnhancedDownloaderAPI
     /// <summary>Searches CivitAI for models matching the given query and filters.</summary>
     [API.APIDescription("Searches CivitAI for models matching the given query and filters.", "\"success\": true, \"items\": [...]")]
     public static async Task<JObject> EnhancedDownloaderCivitaiSearch(Session session,
-        [API.APIParameter("Search query text.")] string query = "",
+        [API.APIParameter("Search query text. Prefix with @username to filter by creator.")] string query = "",
         [API.APIParameter("Page number for pagination.")] int page = 1,
         [API.APIParameter("Maximum results per page.")] int limit = 24,
         [API.APIParameter("Cursor for cursor-based pagination.")] string cursor = "",
         [API.APIParameter("Model type filter (e.g. Checkpoint, LORA).")] string type = "",
         [API.APIParameter("Base model filter (e.g. SDXL, Flux.1 D).")] string baseModel = "",
-        [API.APIParameter("Sort order (Highest Rated, Most Downloaded, Newest).")] string sort = "Most Downloaded",
-        [API.APIParameter("Whether to include NSFW results.")] bool includeNsfw = false)
+        [API.APIParameter("Sort order (Highest Rated, Most Downloaded, Newest, Oldest, Most Liked, Most Discussed, Most Collected).")] string sort = "Most Downloaded",
+        [API.APIParameter("Whether to include NSFW results. Routes to civitai.red when true.")] bool includeNsfw = false,
+        [API.APIParameter("Time period filter (AllTime, Year, Month, Week, Day).")] string period = "",
+        [API.APIParameter("Filter by creator username (alternative to @user prefix in query).")] string username = "",
+        [API.APIParameter("Filter by a single tag name.")] string tag = "",
+        [API.APIParameter("Only include models that can be generated on Civitai.")] bool supportsGeneration = false,
+        [API.APIParameter("Only include models trained on the Civitai platform.")] bool fromPlatform = false)
     {
-        return await CivitAIProvider.Instance.SearchAsync(session, query, page, limit, cursor, type, baseModel, sort, includeNsfw);
+        return await CivitAIProvider.Instance.SearchAsync(session, query, page, limit, cursor, type, baseModel, sort, includeNsfw, period, username, tag, supportsGeneration, fromPlatform);
     }
 
-    /// <summary>Searches Hugging Face for models matching the given query.</summary>
-    [API.APIDescription("Searches Hugging Face for models matching the given query.", "\"success\": true, \"items\": [...]")]
+    /// <summary>Searches CivitAI tag names for autocomplete suggestions.</summary>
+    [API.APIDescription("Searches CivitAI tag names for autocomplete suggestions.", "\"success\": true, \"tags\": [{ \"name\": \"...\", \"modelCount\": 123 }]")]
+    public static async Task<JObject> EnhancedDownloaderCivitaiTags(Session session,
+        [API.APIParameter("Tag query prefix.")] string query = "",
+        [API.APIParameter("Maximum suggestions to return.")] int limit = 20)
+    {
+        return await CivitAIProvider.Instance.GetTagsAsync(session, query, limit);
+    }
+
+    /// <summary>Fetches example images with prompt metadata for a CivitAI model version.</summary>
+    [API.APIDescription("Fetches example images with prompt metadata for a CivitAI model version.", "\"success\": true, \"images\": [{ \"url\": \"...\", \"prompt\": \"...\", ... }]")]
+    public static async Task<JObject> EnhancedDownloaderCivitaiImages(Session session,
+        [API.APIParameter("CivitAI model version ID.")] long modelVersionId = 0,
+        [API.APIParameter("Maximum images to return.")] int limit = 6,
+        [API.APIParameter("Whether to include NSFW image results.")] bool includeNsfw = false)
+    {
+        return await CivitAIProvider.Instance.GetExampleImagesAsync(session, modelVersionId, limit, includeNsfw);
+    }
+
+    /// <summary>Pre-flight check for a CivitAI model version: returns auth and early-access state.</summary>
+    [API.APIDescription("Pre-flight check for a CivitAI model version.", "\"success\": true, \"requireAuth\": false, \"inEarlyAccess\": false, ...")]
+    public static async Task<JObject> EnhancedDownloaderCivitaiVersionCheck(Session session,
+        [API.APIParameter("CivitAI model version ID.")] long modelVersionId = 0)
+    {
+        return await CivitAIProvider.Instance.CheckVersionAsync(session, modelVersionId);
+    }
+
+    /// <summary>Searches Hugging Face for models matching the given query and filters.</summary>
+    [API.APIDescription("Searches Hugging Face for models matching the given query and filters.", "\"success\": true, \"items\": [...]")]
     public static async Task<JObject> EnhancedDownloaderHuggingFaceSearch(Session session,
         [API.APIParameter("Search query text.")] string query = "",
         [API.APIParameter("Maximum results per page.")] int limit = 24,
-        [API.APIParameter("Cursor for pagination.")] string cursor = "")
+        [API.APIParameter("Cursor for pagination.")] string cursor = "",
+        [API.APIParameter("Pipeline tag filter (e.g. text-to-image).")] string pipelineTag = "",
+        [API.APIParameter("Library filter (e.g. diffusers, transformers, gguf).")] string library = "",
+        [API.APIParameter("Sort order (trending, downloads, likes, lastModified, createdAt).")] string sort = "",
+        [API.APIParameter("Filter by author/org.")] string author = "")
     {
-        return await HuggingFaceProvider.Instance.SearchAsync(session, query, 1, limit, cursor);
+        return await HuggingFaceProvider.Instance.SearchAsync(session, query, limit, cursor, pipelineTag, library, sort, author);
     }
 
     /// <summary>Lists downloadable files for a specific Hugging Face model repository.</summary>

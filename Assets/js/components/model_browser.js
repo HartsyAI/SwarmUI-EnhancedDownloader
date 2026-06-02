@@ -29,6 +29,16 @@
         { value: 'Illustrious', label: 'Illustrious' },
         { value: 'Flux.1 D', label: 'Flux.1 D' }
     ];
+    const civitaiTypeOptions = [
+        { value: 'All', label: 'All' },
+        { value: 'Checkpoint', label: 'Checkpoint' },
+        { value: 'LORA', label: 'LoRA' },
+        { value: 'LoCon', label: 'LoCon' },
+        { value: 'LyCORIS', label: 'LyCORIS' },
+        { value: 'TextualInversion', label: 'Textual Inversion' },
+        { value: 'ControlNet', label: 'ControlNet' },
+        { value: 'VAE', label: 'VAE' }
+    ];
     const defaultSortOptions = [
         { value: 'Most Downloaded', label: 'Most Downloaded' },
         { value: 'Newest', label: 'Newest' },
@@ -81,7 +91,17 @@
                             <option value="Newest">Newest</option>
                             <option value="Highest Rated">Highest Rated</option>
                         </select>
+                        <select class="auto-dropdown ed-period" autocomplete="off" style="display:none">
+                            <option value="AllTime" selected>All Time</option>
+                        </select>
                         <label class="enhanced-downloader-toggle"><input type="checkbox" class="ed-nsfw" /> <span class="translate">NSFW</span></label>
+                    </div>
+                    <div class="enhanced-downloader-browser-row ed-civitai-row" style="display:none">
+                        <span class="translate">Tag</span>:
+                        <input type="text" class="auto-text ed-tag" list="ed-tag-suggestions" placeholder="Type a tag..." autocomplete="off" />
+                        <datalist id="ed-tag-suggestions"></datalist>
+                        <label class="enhanced-downloader-toggle"><input type="checkbox" class="ed-gen-only" /> <span class="translate">Generation-Ready</span></label>
+                        <label class="enhanced-downloader-toggle"><input type="checkbox" class="ed-from-platform" /> <span class="translate">Trained on Civitai</span></label>
                     </div>
                 </div>
                 <div class="enhanced-downloader-browser-status"></div>
@@ -130,7 +150,13 @@
             const typeFilter = card.querySelector('.ed-type');
             const baseModelFilter = card.querySelector('.ed-basemodel');
             const sortFilter = card.querySelector('.ed-sort');
+            const periodFilter = card.querySelector('.ed-period');
             const nsfwToggle = card.querySelector('.ed-nsfw');
+            const civitaiRow = card.querySelector('.ed-civitai-row');
+            const tagInput = card.querySelector('.ed-tag');
+            const tagSuggestions = card.querySelector('#ed-tag-suggestions');
+            const genOnlyToggle = card.querySelector('.ed-gen-only');
+            const fromPlatformToggle = card.querySelector('.ed-from-platform');
             const statusEl = card.querySelector('.enhanced-downloader-browser-status');
             const resultsEl = card.querySelector('.enhanced-downloader-browser-results');
             const prevBtn = card.querySelector('.ed-prev');
@@ -151,7 +177,8 @@
                 cursor: '', cursorStack: [], hasNextCursor: false, nextCursor: '',
                 page: 1, totalPages: 1, hasMore: false,
                 lastQuery: '', lastType: 'LORA', lastBaseModel: 'All',
-                lastSort: 'Most Downloaded', lastIncludeNsfw: false
+                lastSort: 'Most Downloaded', lastPeriod: 'AllTime', lastIncludeNsfw: false,
+                lastTag: '', lastSupportsGeneration: false, lastFromPlatform: false
             };
 
             const isProviderCursorPaged = () => {
@@ -175,7 +202,7 @@
                     query.placeholder = 'Search...';
                 }
 
-                typeFilter.disabled = !(prov && (prov.id === 'civitai' || prov.id === 'hartsy'));
+                typeFilter.disabled = !(prov && (prov.id === 'civitai' || prov.id === 'hartsy' || prov.id === 'huggingface'));
                 baseModelFilter.disabled = !isFilterable;
                 if (prov && prov.id === 'hartsy' && prov.getArchitectureOptions) {
                     try {
@@ -186,15 +213,31 @@
                         populateSelect(baseModelFilter, [{ value: 'All', label: 'All' }], 'All');
                     }
                 } else if (prov && prov.id === 'civitai') {
+                    populateSelect(typeFilter, civitaiTypeOptions, state.lastType || 'LORA');
                     populateSelect(baseModelFilter, defaultBaseModelOptions, state.lastBaseModel || 'All');
+                } else if (prov && prov.id === 'huggingface') {
+                    populateSelect(typeFilter, prov.getPipelineTagOptions ? prov.getPipelineTagOptions() : [], 'All');
+                    populateSelect(baseModelFilter, prov.getLibraryOptions ? prov.getLibraryOptions() : [], 'All');
                 }
 
                 sortFilter.disabled = !isFilterable;
                 if (prov && prov.id === 'hartsy') {
                     populateSelect(sortFilter, hartsySortOptions, 'downloads');
                 } else if (prov && prov.id === 'civitai') {
-                    populateSelect(sortFilter, defaultSortOptions, state.lastSort || 'Most Downloaded');
+                    const civitaiSorts = prov.getSortOptions ? prov.getSortOptions() : defaultSortOptions;
+                    populateSelect(sortFilter, civitaiSorts, state.lastSort || 'Most Downloaded');
+                } else if (prov && prov.id === 'huggingface') {
+                    populateSelect(sortFilter, prov.getSortOptions ? prov.getSortOptions() : [], 'trending');
                 }
+
+                const supportsPeriod = !!(prov && prov.supportsPeriod);
+                periodFilter.style.display = supportsPeriod ? '' : 'none';
+                periodFilter.disabled = !supportsPeriod;
+                if (supportsPeriod && prov.getPeriodOptions) {
+                    populateSelect(periodFilter, prov.getPeriodOptions(), state.lastPeriod || 'AllTime');
+                }
+
+                civitaiRow.style.display = (prov && prov.id === 'civitai') ? '' : 'none';
 
                 nsfwToggle.disabled = !isNsfw;
                 if (!isNsfw) nsfwToggle.checked = false;
@@ -237,15 +280,25 @@
                 const newType = typeFilter.value || 'All';
                 const newBaseModel = baseModelFilter.value || 'All';
                 const newSort = sortFilter.value || 'Most Downloaded';
+                const newPeriod = periodFilter.value || 'AllTime';
                 const newNsfw = !!nsfwToggle.checked;
+                const isCivitai = prov.id === 'civitai';
+                const newTag = isCivitai ? (tagInput.value || '').trim() : '';
+                const newGenOnly = isCivitai && !!genOnlyToggle.checked;
+                const newFromPlatform = isCivitai && !!fromPlatformToggle.checked;
                 const filterable = !!prov.supportsFilters;
+                const periodable = !!prov.supportsPeriod;
 
                 const filtersChanged =
                     state.lastQuery !== newQuery
                     || (filterable && state.lastType !== newType)
                     || (filterable && state.lastBaseModel !== newBaseModel)
                     || (filterable && state.lastSort !== newSort)
-                    || (prov.supportsNsfw && state.lastIncludeNsfw !== newNsfw);
+                    || (periodable && state.lastPeriod !== newPeriod)
+                    || (prov.supportsNsfw && state.lastIncludeNsfw !== newNsfw)
+                    || (isCivitai && state.lastTag !== newTag)
+                    || (isCivitai && state.lastSupportsGeneration !== newGenOnly)
+                    || (isCivitai && state.lastFromPlatform !== newFromPlatform);
 
                 state.lastQuery = newQuery;
                 if (filterable) {
@@ -253,7 +306,19 @@
                     state.lastBaseModel = newBaseModel;
                     state.lastSort = newSort;
                 }
+                if (periodable) {
+                    state.lastPeriod = newPeriod;
+                }
                 state.lastIncludeNsfw = prov.supportsNsfw ? newNsfw : false;
+                if (isCivitai) {
+                    state.lastTag = newTag;
+                    state.lastSupportsGeneration = newGenOnly;
+                    state.lastFromPlatform = newFromPlatform;
+                } else {
+                    state.lastTag = '';
+                    state.lastSupportsGeneration = false;
+                    state.lastFromPlatform = false;
+                }
 
                 if (filtersChanged) {
                     state.page = 1;
@@ -284,7 +349,11 @@
                         type: state.lastType,
                         baseModel: state.lastBaseModel,
                         sort: state.lastSort,
-                        includeNsfw: state.lastIncludeNsfw
+                        period: state.lastPeriod,
+                        includeNsfw: state.lastIncludeNsfw,
+                        tag: state.lastTag,
+                        supportsGeneration: state.lastSupportsGeneration,
+                        fromPlatform: state.lastFromPlatform
                     });
 
                     if (!resp || resp.error || !resp.success) {
@@ -305,7 +374,12 @@
                             state.hasNextCursor = false;
                             state.nextCursor = '';
                         }
-                        statusEl.textContent = `Found ${resp.totalItems || 0} results`;
+                        const total = resp.totalItems || 0;
+                        let statusText = `Found ${total} results`;
+                        if (total === 0 && state.providerId === 'civitai' && !state.lastIncludeNsfw && prov.supportsNsfw && !nsfwToggle.disabled) {
+                            statusText += ' — no SFW matches; enable NSFW to search civitai.red.';
+                        }
+                        statusEl.textContent = statusText;
                         render(resp.items || []);
                     }
                 } catch {
@@ -330,7 +404,37 @@
             typeFilter.onchange = () => runSearch(1);
             baseModelFilter.onchange = () => runSearch(1);
             sortFilter.onchange = () => runSearch(1);
+            periodFilter.onchange = () => runSearch(1);
             nsfwToggle.onchange = () => runSearch(1);
+            genOnlyToggle.onchange = () => runSearch(1);
+            fromPlatformToggle.onchange = () => runSearch(1);
+            tagInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); runSearch(1); }
+            });
+            tagInput.addEventListener('change', () => runSearch(1));
+
+            let tagSuggestTimer = null;
+            tagInput.addEventListener('input', () => {
+                const prov = getProvider(state.providerId);
+                if (!prov || prov.id !== 'civitai' || typeof prov.suggestTags !== 'function') return;
+                if (tagSuggestTimer) clearTimeout(tagSuggestTimer);
+                tagSuggestTimer = setTimeout(async () => {
+                    const term = (tagInput.value || '').trim();
+                    if (term.length < 2) {
+                        while (tagSuggestions.firstChild) tagSuggestions.removeChild(tagSuggestions.firstChild);
+                        return;
+                    }
+                    const tags = await prov.suggestTags(term);
+                    while (tagSuggestions.firstChild) tagSuggestions.removeChild(tagSuggestions.firstChild);
+                    for (const t of tags) {
+                        if (!t || !t.name) continue;
+                        const opt = document.createElement('option');
+                        opt.value = t.name;
+                        if (t.modelCount) opt.label = `${t.name} (${t.modelCount})`;
+                        tagSuggestions.appendChild(opt);
+                    }
+                }, 250);
+            });
 
             prevBtn.onclick = () => {
                 if (isProviderCursorPaged()) {

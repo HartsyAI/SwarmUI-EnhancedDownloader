@@ -87,9 +87,18 @@ public static class ModelResultBuilder
         string creator = model["creator"] is JObject creatorObj ? (creatorObj.Value<string>("username") ?? "") : "";
         JObject stats = model["stats"] as JObject ?? new JObject();
         long downloads = stats.Value<long?>("downloadCount") ?? 0;
+        long thumbsUp = stats.Value<long?>("thumbsUpCount") ?? 0;
+        int nsfwLevel = model.Value<int?>("nsfwLevel") ?? 0;
+        string mode = model.Value<string>("mode") ?? "";
+        string availability = model.Value<string>("availability") ?? "";
+        bool supportsGeneration = model.Value<bool?>("supportsGeneration") ?? false;
+        JArray modelTags = model["tags"] as JArray ?? [];
         long modelVersionId = bestVersion?.Value<long?>("id") ?? 0;
         string versionName = bestVersion?.Value<string>("name") ?? "";
         string versionBaseModel = bestVersion?.Value<string>("baseModel") ?? "";
+        string earlyAccessEndsAt = bestVersion?.Value<string>("earlyAccessEndsAt") ?? "";
+        string air = bestVersion?.Value<string>("air") ?? "";
+        JArray trainedWords = bestVersion?["trainedWords"] as JArray ?? [];
         JArray versionFiles = bestVersion?["files"] as JArray ?? [];
         JObject bestFile = SelectBestFile(versionFiles);
         string downloadUrl = bestFile?.Value<string>("downloadUrl") ?? "";
@@ -102,6 +111,34 @@ public static class ModelResultBuilder
         {
             image = imgs.OfType<JObject>().FirstOrDefault(i => (i.Value<string>("type") ?? "") == "image") ?.Value<string>("url") ?? "";
         }
+        JArray downloadOptions = [];
+        if (model["modelVersions"] is JArray allVersions)
+        {
+            foreach (JObject ver in allVersions.OfType<JObject>())
+            {
+                JObject vFile = SelectBestFile(ver["files"] as JArray ?? []);
+                if (vFile is null)
+                {
+                    continue;
+                }
+                string vUrl = vFile.Value<string>("downloadUrl") ?? "";
+                if (string.IsNullOrWhiteSpace(vUrl))
+                {
+                    continue;
+                }
+                downloadOptions.Add(new JObject()
+                {
+                    ["modelVersionId"] = ver.Value<long?>("id") ?? 0,
+                    ["versionName"] = ver.Value<string>("name") ?? "",
+                    ["baseModel"] = ver.Value<string>("baseModel") ?? "",
+                    ["fileName"] = vFile.Value<string>("name") ?? "",
+                    ["downloadUrl"] = vUrl,
+                    ["fileSize"] = vFile.Value<long?>("sizeKB") is long vKb ? (JToken)(vKb * 1024) : null,
+                    ["earlyAccessEndsAt"] = ver.Value<string>("earlyAccessEndsAt") ?? "",
+                    ["air"] = ver.Value<string>("air") ?? ""
+                });
+            }
+        }
         return new JObject()
         {
             ["modelId"] = modelId,
@@ -111,15 +148,72 @@ public static class ModelResultBuilder
             ["description"] = modelDesc,
             ["creator"] = creator,
             ["downloads"] = downloads,
+            ["thumbsUpCount"] = thumbsUp,
+            ["nsfwLevel"] = nsfwLevel,
+            ["mode"] = mode,
+            ["availability"] = availability,
+            ["supportsGeneration"] = supportsGeneration,
+            ["tags"] = modelTags,
             ["versionName"] = versionName,
             ["baseModel"] = versionBaseModel,
+            ["earlyAccessEndsAt"] = earlyAccessEndsAt,
+            ["air"] = air,
+            ["trainedWords"] = trainedWords,
             ["image"] = image,
             ["downloadUrl"] = downloadUrl,
             ["downloadId"] = downloadId,
             ["fileName"] = fileName,
             ["fileSize"] = fileSize is null ? null : (JToken)fileSize,
-            ["openUrl"] = openUrl
+            ["openUrl"] = openUrl,
+            ["downloadOptions"] = downloadOptions
         };
+    }
+}
+
+/// <summary>Detects common quantization formats by inspecting filenames.</summary>
+public static class QuantDetector
+{
+    public static readonly (string Label, string[] Needles)[] Patterns =
+    [
+        ("GGUF",   [".gguf"]),
+        ("EXL2",   [".exl2", "-exl2", "_exl2"]),
+        ("AWQ",    ["awq"]),
+        ("GPTQ",   ["gptq"]),
+        ("AQLM",   ["aqlm"]),
+        ("EETQ",   ["eetq"]),
+        ("MLX",    [".mlx", "-mlx", "_mlx"]),
+        ("HQQ",    ["hqq"]),
+        ("FP8",    ["fp8", "f8_"]),
+        ("FP4",    ["fp4", "nf4", "f4_"]),
+        ("INT8",   ["int8", "-i8", "_i8"]),
+        ("INT4",   ["int4", "-i4", "_i4"]),
+        ("Q8",     ["q8_0", "q8_k"]),
+        ("Q6",     ["q6_k"]),
+        ("Q5",     ["q5_0", "q5_1", "q5_k"]),
+        ("Q4",     ["q4_0", "q4_1", "q4_k"]),
+        ("Q3",     ["q3_k"]),
+        ("Q2",     ["q2_k"])
+    ];
+
+    /// <summary>Returns a short quant label (e.g. "GGUF", "AWQ", "FP8") if detected in the filename, else "".</summary>
+    public static string Detect(string filename)
+    {
+        if (string.IsNullOrWhiteSpace(filename))
+        {
+            return "";
+        }
+        string lower = filename.ToLowerInvariant();
+        foreach ((string label, string[] needles) in Patterns)
+        {
+            foreach (string n in needles)
+            {
+                if (lower.Contains(n))
+                {
+                    return label;
+                }
+            }
+        }
+        return "";
     }
 }
 

@@ -107,11 +107,48 @@
         }
     };
 
+    const pipelineTagOptions = [
+        { value: 'All', label: 'All' },
+        { value: 'text-to-image', label: 'Text → Image' },
+        { value: 'image-to-image', label: 'Image → Image' },
+        { value: 'text-to-video', label: 'Text → Video' },
+        { value: 'image-to-video', label: 'Image → Video' },
+        { value: 'text-to-audio', label: 'Text → Audio' },
+        { value: 'text-to-speech', label: 'Text → Speech' },
+        { value: 'automatic-speech-recognition', label: 'Speech → Text' },
+        { value: 'image-to-text', label: 'Image → Text' },
+        { value: 'text-generation', label: 'Text Generation' },
+        { value: 'feature-extraction', label: 'Feature Extraction' }
+    ];
+    const libraryOptions = [
+        { value: 'All', label: 'All Libraries' },
+        { value: 'diffusers', label: 'Diffusers' },
+        { value: 'transformers', label: 'Transformers' },
+        { value: 'gguf', label: 'GGUF' },
+        { value: 'peft', label: 'PEFT (LoRA)' },
+        { value: 'safetensors', label: 'SafeTensors' },
+        { value: 'sentence-transformers', label: 'Sentence-Transformers' },
+        { value: 'onnx', label: 'ONNX' },
+        { value: 'mlx', label: 'MLX' },
+        { value: 'timm', label: 'timm' }
+    ];
+    const sortOptions = [
+        { value: 'trending', label: 'Trending' },
+        { value: 'downloads', label: 'Most Downloaded' },
+        { value: 'likes', label: 'Most Liked' },
+        { value: 'lastModified', label: 'Recently Updated' },
+        { value: 'createdAt', label: 'Newest' }
+    ];
+
     window.EnhancedDownloader.Providers.huggingface = {
         id: 'huggingface',
         displayName: 'Hugging Face',
-        supportsFilters: false,
+        supportsFilters: true,
         supportsNsfw: false,
+
+        getPipelineTagOptions: function () { return pipelineTagOptions; },
+        getLibraryOptions: function () { return libraryOptions; },
+        getSortOptions: function () { return sortOptions; },
 
         search: async function (params) {
             const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
@@ -121,7 +158,11 @@
             return await utils.genericRequestAsync('EnhancedDownloaderHuggingFaceSearch', {
                 query: params.query || '',
                 limit: params.limit || 24,
-                cursor: params.cursor || ''
+                cursor: params.cursor || '',
+                pipelineTag: params.type && params.type !== 'All' ? params.type : '',
+                library: params.baseModel && params.baseModel !== 'All' ? params.baseModel : '',
+                sort: params.sort || '',
+                author: params.author || ''
             });
         },
 
@@ -186,7 +227,8 @@
                         existing.add(dl);
                         const optBtn = document.createElement('div');
                         optBtn.className = 'sui_popover_model_button';
-                        optBtn.innerText = opt.fileName ? `Download: ${opt.fileName}` : 'Download File';
+                        const quant = opt.quantType ? `[${opt.quantType}] ` : '';
+                        optBtn.innerText = opt.fileName ? `Download: ${quant}${opt.fileName}` : 'Download File';
                         optBtn.onclick = () => {
                             applyToManualDownloader(item, dl, item.openUrl || '');
                         };
