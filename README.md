@@ -53,6 +53,13 @@ Instead of copy-pasting download URLs manually, you can browse model repositorie
 - **Model cards** — Visual cards with thumbnail, title, creator, download count, base model, and type badges
 - **Model popovers** — Click a card to see full details, description, download options, and action buttons
 
+### Recommended Models
+- **Curated list from the SwarmUI docs** — A "Recommended Models" panel surfaces the models recommended in the official [Image](https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Model%20Support.md), [Video](https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Video%20Model%20Support.md), and [Audio](https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Audio%20Model%20Support.md) Model Support docs
+- **Image, Video, and Audio columns** — Models are grouped by category, each with architecture, scale, and author chips plus a short note
+- **Variant dropdown** — Each model lists its download variants (FP8, BF16, GGUF, Nunchaku, distilled, LoRAs, etc.); pick one and hit Download to load it into the manual downloader, or Open to view the source page
+- **Recommended badge** — The current top picks are highlighted
+- **Collapsible** — The whole panel and each category's overflow can be collapsed; state is remembered
+
 ### Enhanced Download UI
 - **Two-column layout** — Manual URL download on the left, model browser on the right
 - **Recent folders** — The folder selector remembers your last 12 download destinations
@@ -213,6 +220,7 @@ SwarmUI-EnhancedDownloader/
 │   │   └── enhanced_downloader.css          # Extension styles (SwarmUI theme-aware)
 │   └── js/
 │       ├── components/
+│       │   ├── featured_models.js           # Recommended Models panel (image/video/audio columns)
 │       │   ├── model_browser.js             # Browser orchestrator (search, pagination, provider tabs)
 │       │   ├── model_card.js                # Card rendering and layout
 │       │   └── model_popover.js             # Detail popover with actions
@@ -224,6 +232,7 @@ SwarmUI-EnhancedDownloader/
 │       └── enhanced_downloader_utils.js     # Shared utilities (async API, URL loading, metadata)
 ├── WebAPI/
 │   ├── EnhancedDownloaderAPI.cs             # API endpoint registration
+│   ├── FeaturedModels.cs                    # Curated recommended-models list from the docs
 │   └── Providers/
 │       ├── CivitAIProvider.cs               # CivitAI search provider
 │       ├── EnhancedDownloaderProviderRegistry.cs  # Static provider registry
@@ -249,6 +258,7 @@ SwarmUI-EnhancedDownloader/
 | Endpoint | Permission | Description |
 |----------|-----------|-------------|
 | `ListProviders` | `enhanced_downloader` | Returns available providers and their capabilities |
+| `EnhancedDownloaderGetFeaturedModels` | `enhanced_downloader` | Returns the curated recommended-models list from the docs |
 | `EnhancedDownloaderGetDownloadRoots` | `enhanced_downloader` | Returns model folder paths for each model type |
 | `EnhancedDownloaderCivitaiSearch` | `enhanced_downloader_browse` | Searches CivitAI models |
 | `EnhancedDownloaderHuggingFaceSearch` | `enhanced_downloader_browse` | Searches Hugging Face models |
@@ -336,5 +346,5 @@ MIT License
 
 ---
 
-**Last Updated:** February 2026
+**Last Updated:** June 2026
 **Extension Version:** 1.0.0

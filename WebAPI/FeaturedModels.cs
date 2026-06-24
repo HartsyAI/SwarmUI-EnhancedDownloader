@@ -97,6 +97,52 @@ public static class FeaturedModels
                 D("Refiner", "https://huggingface.co/tencent/HunyuanImage-2.1/blob/main/dit/hunyuanimage-refiner.safetensors")
             ),
 
+            M("Krea 2", "image",
+                "Extremely smart and great quality. Has built-in censorship that strips NSFW terms.",
+                "DiT", "Krea AI", "12B", false,
+                D("Turbo FP8 (Recommended)", "https://huggingface.co/Comfy-Org/Krea-2/blob/main/diffusion_models/krea2_turbo_fp8_scaled.safetensors"),
+                D("Turbo NVFP4 (Weak GPUs)", "https://huggingface.co/Comfy-Org/Krea-2/blob/main/diffusion_models/krea2_turbo_nvfp4.safetensors"),
+                D("Turbo BF16", "https://huggingface.co/Comfy-Org/Krea-2/blob/main/diffusion_models/krea2_turbo_bf16.safetensors"),
+                D("Raw (Base) FP8", "https://huggingface.co/Comfy-Org/Krea-2/blob/main/diffusion_models/krea2_raw_fp8_scaled.safetensors"),
+                D("Raw (Base) BF16", "https://huggingface.co/Comfy-Org/Krea-2/blob/main/diffusion_models/krea2_raw_bf16.safetensors"),
+                D("Raw-to-Turbo LoRA", "https://huggingface.co/Comfy-Org/Krea-2/blob/main/loras/krea2_turbo_lora_rank_64_bf16.safetensors")
+            ),
+
+            M("Ideogram 4", "image",
+                "Advanced input understanding via long-form JSON prompts. Built-in censorship.",
+                "DiT", "Ideogram AI", "9B", false,
+                D("FP8 (Recommended)", "https://huggingface.co/Comfy-Org/Ideogram-4/blob/main/diffusion_models/ideogram4_fp8_scaled.safetensors"),
+                D("NVFP4", "https://huggingface.co/Comfy-Org/Ideogram-4/blob/main/diffusion_models/ideogram4_nvfp4_mixed.safetensors"),
+                D("Unconditional FP8 (Negative Model)", "https://huggingface.co/Comfy-Org/Ideogram-4/blob/main/diffusion_models/ideogram4_unconditional_fp8_scaled.safetensors"),
+                D("Unconditional NVFP4 (Negative Model)", "https://huggingface.co/Comfy-Org/Ideogram-4/blob/main/diffusion_models/ideogram4_unconditional_nvfp4_mixed.safetensors")
+            ),
+
+            M("HiDream O1", "image",
+                "Intelligent, fast, decent quality. Designed for LLM-written prompts, targets 2048x2048.",
+                "Pixel UiT", "HiDream", "8B", false,
+                D("Dev FP8 (Recommended)", "https://huggingface.co/Comfy-Org/HiDream-O1-Image/blob/main/checkpoints/hidream_o1_image_dev_fp8_scaled.safetensors"),
+                D("Dev BF16", "https://huggingface.co/Comfy-Org/HiDream-O1-Image/blob/main/checkpoints/hidream_o1_image_dev_bf16.safetensors"),
+                D("Base FP8", "https://huggingface.co/Comfy-Org/HiDream-O1-Image/blob/main/checkpoints/hidream_o1_image_fp8_scaled.safetensors"),
+                D("Base BF16", "https://huggingface.co/Comfy-Org/HiDream-O1-Image/blob/main/checkpoints/hidream_o1_image_bf16.safetensors"),
+                D("Dev LoRA (for Base model)", "https://huggingface.co/Kijai/hidream-O1-image_comfy/blob/main/loras/hidream_o1_dev_lora_rank_64_bf16_pruned_v1.safetensors")
+            ),
+
+            M("ERNIE", "image",
+                "Intelligent, good quality, fast. Strong base plus a very fast Turbo variant.",
+                "DiT", "Baidu", "8B", false,
+                D("Turbo BF16", "https://huggingface.co/Comfy-Org/ERNIE-Image/blob/main/diffusion_models/ernie-image-turbo.safetensors"),
+                D("Base BF16", "https://huggingface.co/Comfy-Org/ERNIE-Image/blob/main/diffusion_models/ernie-image.safetensors")
+            ),
+
+            M("Lens", "image",
+                "Lightweight 4B model with a fast Turbo variant. Eh quality but cheap to run.",
+                "MMDiT", "Microsoft", "4B", false,
+                D("Turbo FP8 (Recommended)", "https://huggingface.co/Comfy-Org/Lens/blob/main/diffusion_models/lens_turbo_mxfp8.safetensors"),
+                D("Base FP8", "https://huggingface.co/Comfy-Org/Lens/blob/main/diffusion_models/lens_mxfp8.safetensors"),
+                D("Turbo BF16", "https://huggingface.co/Comfy-Org/Lens/blob/main/diffusion_models/lens_turbo_bf16.safetensors"),
+                D("Base BF16", "https://huggingface.co/Comfy-Org/Lens/blob/main/diffusion_models/lens_bf16.safetensors")
+            ),
+
             M("Flux.1", "image",
                 "High quality, large ecosystem of finetunes and LoRAs. Outdated but still very popular.",
                 "MMDiT", "Black Forest Labs", "12B", false,
@@ -118,6 +164,14 @@ public static class FeaturedModels
                 D("HD FP8 Scaled", "https://huggingface.co/silveroxides/Chroma1-HD-fp8-scaled/blob/main/Chroma1-HD-fp8mixed-final.safetensors"),
                 D("GGUF Q8_0", "https://huggingface.co/silveroxides/Chroma-GGUF/blob/main/Chroma1-HD/Chroma1-HD-Q8_0.gguf"),
                 D("GGUF Q4_0", "https://huggingface.co/silveroxides/Chroma-GGUF/blob/main/Chroma1-HD/Chroma1-HD-Q4_0.gguf")
+            ),
+
+            M("Chroma Radiance", "image",
+                "Pixel-space Flux derivative, uncensored. Work in progress, expect limited quality. No VAE.",
+                "Pixel MMDiT", "Lodestone Rock", "8.9B", false,
+                D("Full 20M Dataset (1024)", "https://huggingface.co/lodestones/Chroma1-Radiance/blob/main/latest_x0_full_20M_dataset_run_1024.safetensors"),
+                D("Full 20M Dataset", "https://huggingface.co/lodestones/Chroma1-Radiance/blob/main/latest_x0_full_20M_dataset_run.safetensors"),
+                D("Latest x0", "https://huggingface.co/lodestones/Chroma1-Radiance/blob/main/latest_x0.safetensors")
             ),
 
             M("Kandinsky 5 Image", "image",
@@ -221,13 +275,28 @@ public static class FeaturedModels
             ),
 
             M("LTX Video 2", "video",
-                "First open source Audio+Video model. 19B, mixed quality but fun.",
-                "DiT", "Lightricks", "19B", false,
-                D("Dev FP8", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev-fp8.safetensors"),
-                D("Dev FP4", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev-fp4.safetensors"),
-                D("Dev BF16", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev.safetensors"),
-                D("Distilled FP8", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled-fp8.safetensors"),
-                D("Distilled BF16", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled.safetensors")
+                "First open source Audio+Video model. Mixed quality but fun. 2.3 is the newer upgrade.",
+                "DiT", "Lightricks", "19B, 22B", false,
+                D("2.3 Dev FP8", "https://huggingface.co/Lightricks/LTX-2.3-fp8/blob/main/ltx-2.3-22b-dev-fp8.safetensors"),
+                D("2.3 Distilled FP8", "https://huggingface.co/Lightricks/LTX-2.3-fp8/blob/main/ltx-2.3-22b-distilled-fp8.safetensors"),
+                D("2.3 Dev BF16", "https://huggingface.co/Lightricks/LTX-2.3/blob/main/ltx-2.3-22b-dev.safetensors"),
+                D("2.3 Distilled BF16", "https://huggingface.co/Lightricks/LTX-2.3/blob/main/ltx-2.3-22b-distilled.safetensors"),
+                D("2.3 Distilled Refiner LoRA", "https://huggingface.co/Lightricks/LTX-2.3/blob/main/ltx-2.3-22b-distilled-lora-384.safetensors"),
+                D("2 Dev FP8", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev-fp8.safetensors"),
+                D("2 Dev FP4", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev-fp4.safetensors"),
+                D("2 Dev BF16", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev.safetensors"),
+                D("2 Distilled FP8", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled-fp8.safetensors"),
+                D("2 Distilled BF16", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled.safetensors")
+            ),
+
+            #endregion
+
+            #region Audio Models
+
+            M("Ace Step 1.5", "audio",
+                "First natively-supported audio model. Music generation with lyrics and style prompts. Fast.",
+                "DiT", "StepFun", "2B", true,
+                D("Turbo", "https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/blob/main/split_files/diffusion_models/acestep_v1.5_turbo.safetensors")
             ),
 
             #endregion

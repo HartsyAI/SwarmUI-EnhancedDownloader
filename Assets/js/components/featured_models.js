@@ -7,6 +7,7 @@
     const COLLAPSE_KEY = 'enhanced_downloader_featured_collapsed';
     const EXPAND_IMAGE_KEY = 'enhanced_downloader_featured_expand_image';
     const EXPAND_VIDEO_KEY = 'enhanced_downloader_featured_expand_video';
+    const EXPAND_AUDIO_KEY = 'enhanced_downloader_featured_expand_audio';
 
     function createModelCard(model) {
         const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
@@ -161,7 +162,8 @@
                     <div class="enhanced-downloader-featured-about">
                         Models recommended in the SwarmUI docs. Pick a version from the dropdown then hit Download to load it into the manual downloader.
                         See the <a href="https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Model%20Support.md" target="_blank" rel="noreferrer">Image Model Support</a>
-                        and <a href="https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Video%20Model%20Support.md" target="_blank" rel="noreferrer">Video Model Support</a> docs for more details.
+                        <a href="https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Video%20Model%20Support.md" target="_blank" rel="noreferrer">Video Model Support</a>,
+                        and <a href="https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Audio%20Model%20Support.md" target="_blank" rel="noreferrer">Audio Model Support</a> docs for more details.
                     </div>
                     <div class="enhanced-downloader-featured-loading">Loading...</div>
                     <div class="enhanced-downloader-featured-columns"></div>
@@ -201,9 +203,13 @@
 
                 const imageModels = resp.models.filter(m => m.category === 'image');
                 const videoModels = resp.models.filter(m => m.category === 'video');
+                const audioModels = resp.models.filter(m => m.category === 'audio');
 
                 columnsEl.appendChild(buildColumn('Image Models', imageModels, EXPAND_IMAGE_KEY));
                 columnsEl.appendChild(buildColumn('Video Models', videoModels, EXPAND_VIDEO_KEY));
+                if (audioModels.length > 0) {
+                    columnsEl.appendChild(buildColumn('Audio Models', audioModels, EXPAND_AUDIO_KEY));
+                }
 
                 if (typeof applyTranslations === 'function') {
                     applyTranslations(card);
