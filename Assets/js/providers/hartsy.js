@@ -37,11 +37,10 @@
             if (!utils || !utils.genericRequestAsync) {
                 throw new Error('EnhancedDownloader utils not loaded');
             }
-            let tags = params.tags || '';
-            if (params.type && params.type !== 'All') {
-                const typeTag = params.type.toLowerCase();
-                tags = tags ? `${tags},${typeTag}` : typeTag;
-            }
+            // Hartsy has no CivitAI-style "type" concept; checkpoint vs LoRA is distinguished by
+            // architecture (e.g. "qwen-image" vs "qwen-image/lora"), so the type filter is not folded
+            // into the tag query here - doing so (e.g. tags=checkpoint) matches nothing.
+            const tags = params.tags || '';
             return await utils.genericRequestAsync('EnhancedDownloaderHartsySearch', {
                 query: params.query || '',
                 page: params.page || 1,

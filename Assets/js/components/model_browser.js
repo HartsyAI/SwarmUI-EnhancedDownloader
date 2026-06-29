@@ -202,9 +202,11 @@
                     query.placeholder = 'Search...';
                 }
 
-                typeFilter.disabled = !(prov && (prov.id === 'civitai' || prov.id === 'hartsy' || prov.id === 'huggingface'));
+                // Hartsy has no type concept (checkpoint vs LoRA is an architecture distinction), so its type filter stays disabled.
+                typeFilter.disabled = !(prov && (prov.id === 'civitai' || prov.id === 'huggingface'));
                 baseModelFilter.disabled = !isFilterable;
                 if (prov && prov.id === 'hartsy' && prov.getArchitectureOptions) {
+                    populateSelect(typeFilter, [{ value: 'All', label: 'All' }], 'All');
                     try {
                         const archOptions = await prov.getArchitectureOptions();
                         const formatted = archOptions.map(a => (typeof a === 'string') ? { value: a, label: a } : a);

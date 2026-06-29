@@ -3,6 +3,7 @@ using SwarmUI.Accounts;
 using SwarmUI.Core;
 using SwarmUI.Utils;
 using SwarmUI.WebAPI;
+using System.Net;
 using System.Net.Http;
 using System.Web;
 
@@ -35,6 +36,27 @@ public class HartsyProvider : IEnhancedDownloaderProvider
         {
             request.Headers.Add("X-API-Key", ModelsAPI.TokenTextLimiter.TrimToMatches(apiKey));
         }
+    }
+
+    /// <summary>Sends a GET to the Hartsy API with the API key, falling back to an anonymous (public) request if the key is
+    /// rejected (401 invalid key / 403 missing the models:read scope). This keeps public model browsing working even when
+    /// the user's saved key is invalid or lacks model permissions, instead of returning zero results.</summary>
+    private static async Task<(HttpStatusCode status, string body)> GetWithKeyFallbackAsync(string url, string apiKey)
+    {
+        async Task<(HttpStatusCode, string)> Send(string key)
+        {
+            using HttpRequestMessage request = new(HttpMethod.Get, url);
+            AddApiKeyHeader(request, key);
+            using HttpResponseMessage response = await ProviderHttpClient.Client.SendAsync(request);
+            return (response.StatusCode, await response.Content.ReadAsStringAsync());
+        }
+        (HttpStatusCode status, string body) = await Send(apiKey);
+        if (!string.IsNullOrEmpty(apiKey) && (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden))
+        {
+            Logs.Debug($"EnhancedDownloader Hartsy: API key rejected ({(int)status}), retrying as public.");
+            (status, body) = await Send("");
+        }
+        return (status, body);
     }
 
     /// <inheritdoc/>
@@ -79,15 +101,12 @@ public class HartsyProvider : IEnhancedDownloaderProvider
         await RateLimiter.WaitAsync();
         try
         {
-            using HttpRequestMessage request = new(HttpMethod.Get, url);
-            AddApiKeyHeader(request, apiKey);
-            using HttpResponseMessage response = await ProviderHttpClient.Client.SendAsync(request);
-            string resp = await response.Content.ReadAsStringAsync();
-            if (!response.IsSuccessStatusCode)
+            (HttpStatusCode status, string resp) = await GetWithKeyFallbackAsync(url, apiKey);
+            if ((int)status is < 200 or >= 300)
             {
                 string trimmed = resp.Length > 500 ? resp[..500] : resp;
-                Logs.Warning($"EnhancedDownloader Hartsy search failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
-                return new JObject() { ["success"] = false, ["error"] = $"Hartsy error {(int)response.StatusCode}: {trimmed}" };
+                Logs.Warning($"EnhancedDownloader Hartsy search failed: {(int)status} - {trimmed}");
+                return new JObject() { ["success"] = false, ["error"] = $"Hartsy error {(int)status}: {trimmed}" };
             }
             JObject responseJson = resp.ParseToJson();
             if (responseJson.Value<bool?>("success") != true)
@@ -191,13 +210,10 @@ public class HartsyProvider : IEnhancedDownloaderProvider
         await RateLimiter.WaitAsync();
         try
         {
-            using HttpRequestMessage request = new(HttpMethod.Get, url);
-            AddApiKeyHeader(request, apiKey);
-            using HttpResponseMessage response = await ProviderHttpClient.Client.SendAsync(request);
-            string resp = await response.Content.ReadAsStringAsync();
-            if (!response.IsSuccessStatusCode)
+            (HttpStatusCode status, string resp) = await GetWithKeyFallbackAsync(url, apiKey);
+            if ((int)status is < 200 or >= 300)
             {
-                Logs.Warning($"EnhancedDownloader Hartsy filter options failed: {(int)response.StatusCode}");
+                Logs.Warning($"EnhancedDownloader Hartsy filter options failed: {(int)status}");
                 return new JObject() { ["success"] = false, ["error"] = "Failed to load filter options." };
             }
             JObject responseJson = resp.ParseToJson();
@@ -257,15 +273,12 @@ public class HartsyProvider : IEnhancedDownloaderProvider
         await RateLimiter.WaitAsync();
         try
         {
-            using HttpRequestMessage request = new(HttpMethod.Get, url);
-            AddApiKeyHeader(request, apiKey);
-            using HttpResponseMessage response = await ProviderHttpClient.Client.SendAsync(request);
-            string resp = await response.Content.ReadAsStringAsync();
-            if (!response.IsSuccessStatusCode)
+            (HttpStatusCode status, string resp) = await GetWithKeyFallbackAsync(url, apiKey);
+            if ((int)status is < 200 or >= 300)
             {
                 string trimmed = resp.Length > 500 ? resp[..500] : resp;
-                Logs.Warning($"EnhancedDownloader Hartsy download info failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
-                return new JObject() { ["success"] = false, ["error"] = $"Hartsy error {(int)response.StatusCode}: {trimmed}" };
+                Logs.Warning($"EnhancedDownloader Hartsy download info failed: {(int)status} - {trimmed}");
+                return new JObject() { ["success"] = false, ["error"] = $"Hartsy error {(int)status}: {trimmed}" };
             }
             JObject responseJson = resp.ParseToJson();
             if (responseJson.Value<bool?>("success") != true)
