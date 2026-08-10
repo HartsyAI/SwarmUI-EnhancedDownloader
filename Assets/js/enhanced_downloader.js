@@ -254,7 +254,7 @@
             return false;
         }
         const url = modelDownloader.url;
-        if (url.dataset.enhancedDownloaderDone) {
+        if (url.dataset.enhancedDownloaderDone || url.nextElementSibling?.classList?.contains('enhanced-downloader-url-actions')) {
             return true;
         }
         url.dataset.enhancedDownloaderDone = 'true';
@@ -266,6 +266,7 @@
             <button type="button" class="basic-button enhanced-downloader-smallbtn">Clear</button>
         `;
         const [pasteBtn, clearBtn] = btnWrap.querySelectorAll('button');
+        pasteBtn.title = 'Reads your clipboard. Some browsers (e.g. Firefox) show their own "Paste" confirmation popup to allow this - click that popup, or just press Ctrl+V in the field instead.';
         pasteBtn.onclick = async () => {
             const statusArea = window.modelDownloader ? modelDownloader.urlStatusArea : null;
             if (!navigator.clipboard || !navigator.clipboard.readText) {
