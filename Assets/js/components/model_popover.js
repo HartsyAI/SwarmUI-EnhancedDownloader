@@ -14,92 +14,66 @@
      * @param {string} providerId - The active provider ID.
      * @param {number} renderId - Unique render ID for this card.
      * @param {HTMLElement} cardDiv - The card element to attach the menu button to.
+     * @param {Object} selection - The card's live version/format pick; the "current" copy/download/open actions here track it.
      * @returns {HTMLElement} The popover menu element (to be appended to the results container).
      */
-    function createModelPopover(item, providerId, renderId, cardDiv) {
+    function createModelPopover(item, providerId, renderId, cardDiv, selection) {
         const provider = getProvider(providerId);
         const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
-        const downloadOptions = Array.isArray(item.downloadOptions) ? item.downloadOptions : [];
-        const bestDownloadUrl = item.downloadUrl
-            ? `${item.downloadUrl}`
-            : (downloadOptions.length > 0 && downloadOptions[0] ? `${downloadOptions[0].downloadUrl}` : '');
-        const openUrl = item.openUrl ? `${item.openUrl}` : '';
+        const sel = selection || item;
 
         const popoverId = `enhanced-downloader-model-${renderId}`;
-        const menuDiv = createDiv(`popover_${popoverId}`, 'sui-popover sui_popover_model');
+        // scrollable_tall caps height, or a long menu measures taller than the viewport and renders off-screen.
+        const menuDiv = createDiv(`popover_${popoverId}`, 'sui-popover sui_popover_model sui_popover_scrollable_tall');
 
         const btnDownload = document.createElement('div');
         btnDownload.className = 'sui_popover_model_button';
         btnDownload.innerText = 'Download';
         btnDownload.onclick = () => {
+            const merged = Object.assign({}, item, sel);
             if (provider && provider.handleDownload) {
-                provider.handleDownload(item);
+                provider.handleDownload(merged);
             } else if (utils) {
-                utils.loadUrlIntoManualDownloader(bestDownloadUrl || openUrl);
+                utils.loadUrlIntoManualDownloader(sel.downloadUrl || sel.openUrl);
             }
         };
         menuDiv.appendChild(btnDownload);
 
         if (provider && typeof provider.getPopoverExtras === 'function') {
-            provider.getPopoverExtras(item, menuDiv);
+            provider.getPopoverExtras(item, menuDiv, selection);
         }
 
-        if (providerId !== 'civitai' && downloadOptions.length > 0) {
-            for (const opt of downloadOptions) {
-                if (!opt || !opt.downloadUrl) continue;
-                const optBtn = document.createElement('div');
-                optBtn.className = 'sui_popover_model_button';
-                optBtn.innerText = opt.fileName ? `Download: ${opt.fileName}` : 'Download File';
-                optBtn.onclick = () => {
-                    if (provider && provider.handleCardClick) {
-                        const fakeItem = Object.assign({}, item, { downloadUrl: `${opt.downloadUrl}` });
-                        provider.handleCardClick(fakeItem);
-                    } else if (utils) {
-                        utils.loadUrlIntoManualDownloader(`${opt.downloadUrl}`);
-                    }
-                };
-                menuDiv.appendChild(optBtn);
-            }
-        }
-
-        if (openUrl) {
-            const btnOpen = document.createElement('a');
+        if (sel.openUrl) {
+            const btnOpen = document.createElement('div');
             btnOpen.className = 'sui_popover_model_button';
             btnOpen.innerText = 'Open';
-            btnOpen.href = openUrl;
-            btnOpen.target = '_blank';
-            btnOpen.rel = 'noreferrer';
+            btnOpen.onclick = () => window.open(sel.openUrl, '_blank', 'noreferrer');
             menuDiv.appendChild(btnOpen);
         }
 
-        const addCopy = (label, value) => {
+        // valueOrGetter is a function for selection-tracking values, since this popover is only built once.
+        const addCopy = (label, valueOrGetter) => {
             const btn = document.createElement('div');
             btn.className = 'sui_popover_model_button';
             btn.innerText = label;
             btn.onclick = () => {
-                if (typeof copyText === 'function') {
+                const value = typeof valueOrGetter === 'function' ? valueOrGetter() : valueOrGetter;
+                if (typeof copyText === 'function' && value) {
                     copyText(value);
                 }
             };
             menuDiv.appendChild(btn);
         };
 
-        if (openUrl) addCopy('Copy Model Link', openUrl);
-        if (item.downloadUrl) addCopy('Copy Download Link', item.downloadUrl);
-        if (downloadOptions.length > 0) {
-            for (const opt of downloadOptions) {
-                if (opt && opt.downloadUrl && opt.fileName) {
-                    addCopy(`Copy Link: ${opt.fileName}`, `${opt.downloadUrl}`);
-                }
-            }
-        }
+        if (sel.openUrl) addCopy('Copy Model Link', () => sel.openUrl);
+        if (sel.downloadUrl) addCopy('Copy Download Link', () => sel.downloadUrl);
         if (item.torrent && item.torrent.magnetLink) {
             addCopy('Copy Magnet Link', item.torrent.magnetLink);
         }
         if (item.modelId) addCopy('Copy Model ID', `${item.modelId}`);
-        if (item.modelVersionId) addCopy('Copy Version ID', `${item.modelVersionId}`);
-        if (item.fileName) addCopy('Copy Filename', `${item.fileName}`);
-        if (item.fileSize) addCopy('Copy File Size (bytes)', `${item.fileSize}`);
+        if (sel.modelVersionId) addCopy('Copy Version ID', () => `${sel.modelVersionId}`);
+        if (sel.fileName) addCopy('Copy Filename', () => sel.fileName);
+        if (sel.fileSize) addCopy('Copy File Size (bytes)', () => `${sel.fileSize}`);
 
         const menuBtn = createDiv(null, 'model-block-menu-button');
         menuBtn.innerHTML = '&#x2630;';

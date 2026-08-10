@@ -161,6 +161,13 @@
                     folders.appendChild(opt);
                 }
                 folders.value = safe;
+                // Keep selectedFolder in sync too, or folder_browser_injection.js's run() wrapper overwrites this on download.
+                if (window.modelDownloader) {
+                    modelDownloader.selectedFolder = safe;
+                    if (typeof modelDownloader.updateSelectedFolderDisplay === 'function') {
+                        modelDownloader.updateSelectedFolderDisplay();
+                    }
+                }
                 addRecent(safe);
                 updatePreview();
             };
@@ -260,7 +267,11 @@
         `;
         const [pasteBtn, clearBtn] = btnWrap.querySelectorAll('button');
         pasteBtn.onclick = async () => {
+            const statusArea = window.modelDownloader ? modelDownloader.urlStatusArea : null;
             if (!navigator.clipboard || !navigator.clipboard.readText) {
+                if (statusArea) {
+                    statusArea.innerText = 'Clipboard access is not available in this browser. Paste into the URL field directly (Ctrl+V) instead.';
+                }
                 return;
             }
             try {
@@ -269,8 +280,15 @@
                     url.value = text.trim();
                     modelDownloader.urlInput();
                 }
+                else if (statusArea) {
+                    statusArea.innerText = 'Clipboard is empty.';
+                }
             }
-            catch {
+            catch (e) {
+                console.warn('Clipboard read failed:', e);
+                if (statusArea) {
+                    statusArea.innerText = 'Clipboard access was blocked. If your browser showed a permission prompt, click Paste again, or paste into the URL field directly (Ctrl+V).';
+                }
             }
         };
         clearBtn.onclick = () => {
@@ -402,7 +420,8 @@
     }
 
     function enhanceModelDownloader401Message() {
-        if (!window.ActiveModelDownload || !ActiveModelDownload.prototype || !ActiveModelDownload.prototype.download) {
+        // ActiveModelDownload is a top-level class in core's script, so it's never on window - check the bare name.
+        if (typeof ActiveModelDownload === 'undefined' || !ActiveModelDownload.prototype || !ActiveModelDownload.prototype.download) {
             return;
         }
         if (ActiveModelDownload.prototype.download._ed401) {
@@ -470,9 +489,31 @@
         ActiveModelDownload.prototype.download._ed401 = true;
     }
 
+    // Core's "Remove" button only removes the card, it never deletes the file - relabel it to make that clear.
+    function enhanceRemoveButtonLabel() {
+        if (typeof ActiveModelDownload === 'undefined' || !ActiveModelDownload.prototype || !ActiveModelDownload.prototype.isDone) {
+            return;
+        }
+        if (ActiveModelDownload.prototype.isDone._edClearLabel) {
+            return;
+        }
+        const origIsDone = ActiveModelDownload.prototype.isDone;
+        ActiveModelDownload.prototype.isDone = function () {
+            origIsDone.call(this);
+            // Core relabels this same button to "Remove" after its own 2000ms delay; fire just after that so ours wins.
+            setTimeout(() => {
+                if (this.cancelButton) {
+                    this.cancelButton.innerHTML = 'Clear<br><span style="font-size:0.7em;font-weight:normal;color:var(--text-soft);">(file stays on disk)</span>';
+                }
+            }, 2050);
+        };
+        ActiveModelDownload.prototype.isDone._edClearLabel = true;
+    }
+
     async function enhancedDownloaderInit() {
         await loadDownloadRoots();
         enhanceModelDownloader401Message();
+        enhanceRemoveButtonLabel();
         const start = Date.now();
         let retryInterval = DOM_RETRY_INTERVAL_INITIAL_MS;
         while (Date.now() - start < DOM_READY_TIMEOUT_MS) {

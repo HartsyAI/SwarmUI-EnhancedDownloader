@@ -34,9 +34,10 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         "diffusers", "transformers", "gguf", "peft", "sentence-transformers",
         "safetensors", "onnx", "mlx", "timm"
     };
+    // "trending" deliberately excluded - HuggingFace's live API rejects it with a 400.
     public static readonly HashSet<string> AllowedSorts = new(StringComparer.OrdinalIgnoreCase)
     {
-        "trending", "downloads", "likes", "lastModified", "createdAt"
+        "downloads", "likes", "lastModified", "createdAt"
     };
     public static readonly HashSet<string> AllowedImageHosts = new(StringComparer.OrdinalIgnoreCase)
     {

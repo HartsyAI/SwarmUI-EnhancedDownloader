@@ -21,23 +21,29 @@
         return result;
     }
 
+    // Fallback only - civitai.js getTypeOptions/getBaseModelOptions fetch the live list from CivitAI's /api/v1/enums.
     const defaultBaseModelOptions = [
         { value: 'All', label: 'All' },
         { value: 'SD 1.5', label: 'SD 1.5' },
         { value: 'SDXL 1.0', label: 'SDXL 1.0' },
         { value: 'Pony', label: 'Pony' },
         { value: 'Illustrious', label: 'Illustrious' },
-        { value: 'Flux.1 D', label: 'Flux.1 D' }
+        { value: 'NoobAI', label: 'NoobAI' },
+        { value: 'Flux.1 D', label: 'Flux.1 D' },
+        { value: 'Flux.2 D', label: 'Flux.2 D' },
+        { value: 'Qwen', label: 'Qwen' },
+        { value: 'Wan Video', label: 'Wan Video' }
     ];
     const civitaiTypeOptions = [
         { value: 'All', label: 'All' },
         { value: 'Checkpoint', label: 'Checkpoint' },
         { value: 'LORA', label: 'LoRA' },
         { value: 'LoCon', label: 'LoCon' },
-        { value: 'LyCORIS', label: 'LyCORIS' },
+        { value: 'DoRA', label: 'DoRA' },
         { value: 'TextualInversion', label: 'Textual Inversion' },
-        { value: 'ControlNet', label: 'ControlNet' },
-        { value: 'VAE', label: 'VAE' }
+        { value: 'Controlnet', label: 'ControlNet' },
+        { value: 'VAE', label: 'VAE' },
+        { value: 'Upscaler', label: 'Upscaler' }
     ];
     const defaultSortOptions = [
         { value: 'Most Downloaded', label: 'Most Downloaded' },
@@ -217,6 +223,15 @@
                 } else if (prov && prov.id === 'civitai') {
                     populateSelect(typeFilter, civitaiTypeOptions, state.lastType || 'LORA');
                     populateSelect(baseModelFilter, defaultBaseModelOptions, state.lastBaseModel || 'All');
+                    if (prov.getTypeOptions && prov.getBaseModelOptions) {
+                        try {
+                            const [typeOpts, baseOpts] = await Promise.all([prov.getTypeOptions(), prov.getBaseModelOptions()]);
+                            populateSelect(typeFilter, typeOpts, state.lastType || 'LORA');
+                            populateSelect(baseModelFilter, baseOpts, state.lastBaseModel || 'All');
+                        } catch (e) {
+                            console.warn('Failed to load live CivitAI filter options, using fallback list:', e);
+                        }
+                    }
                 } else if (prov && prov.id === 'huggingface') {
                     populateSelect(typeFilter, prov.getPipelineTagOptions ? prov.getPipelineTagOptions() : [], 'All');
                     populateSelect(baseModelFilter, prov.getLibraryOptions ? prov.getLibraryOptions() : [], 'All');
@@ -229,7 +244,7 @@
                     const civitaiSorts = prov.getSortOptions ? prov.getSortOptions() : defaultSortOptions;
                     populateSelect(sortFilter, civitaiSorts, state.lastSort || 'Most Downloaded');
                 } else if (prov && prov.id === 'huggingface') {
-                    populateSelect(sortFilter, prov.getSortOptions ? prov.getSortOptions() : [], 'trending');
+                    populateSelect(sortFilter, prov.getSortOptions ? prov.getSortOptions() : [], 'downloads');
                 }
 
                 const supportsPeriod = !!(prov && prov.supportsPeriod);
@@ -265,8 +280,8 @@
             const render = (items) => {
                 while (resultsEl.firstChild) resultsEl.removeChild(resultsEl.firstChild);
                 for (const item of (items || [])) {
-                    const { card: cardEl, renderId } = ModelCard.create(item, state.providerId);
-                    const popoverEl = ModelPopover.create(item, state.providerId, renderId, cardEl);
+                    const { card: cardEl, renderId, selection } = ModelCard.create(item, state.providerId);
+                    const popoverEl = ModelPopover.create(item, state.providerId, renderId, cardEl, selection);
                     resultsEl.appendChild(popoverEl);
                     resultsEl.appendChild(cardEl);
                 }

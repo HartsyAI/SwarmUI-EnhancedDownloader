@@ -4,6 +4,7 @@ using SwarmUI.Core;
 using SwarmUI.Utils;
 using SwarmUI.WebAPI;
 using System.Collections.Specialized;
+using System.IO;
 using System.Net.Http;
 using System.Web;
 
@@ -23,6 +24,8 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
     public static readonly ProviderCache TagCache = new(TimeSpan.FromMinutes(5));
     public static readonly ProviderCache VersionCache = new(TimeSpan.FromMinutes(2));
     public static readonly ProviderCache ImagesCache = new(TimeSpan.FromMinutes(5));
+    public static readonly ProviderCache EnumsCache = new(TimeSpan.FromHours(6));
+    public static readonly ProviderCache VersionFilesCache = new(TimeSpan.FromMinutes(5));
     public static readonly SemaphoreSlim RateLimiter = new(3, 3);
     public static readonly HashSet<string> AllowedSorts = ["Highest Rated", "Most Downloaded", "Newest", "Oldest", "Most Liked", "Most Discussed", "Most Collected"];
     public static readonly HashSet<string> AllowedPeriods = ["AllTime", "Year", "Month", "Week", "Day"];
@@ -393,6 +396,86 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
             ["hasApiKey"] = !string.IsNullOrEmpty(apiKey)
         };
         VersionCache.Set(cacheKey, result);
+        return result;
+    }
+
+    /// <summary>Fetches CivitAI's live model-type and base-model enum values. Cached for 6 hours.</summary>
+    public async Task<JObject> GetFilterOptionsAsync(Session session)
+    {
+        const string cacheKey = "civitai:enums";
+        if (EnumsCache.TryGet(cacheKey, out JObject cached))
+        {
+            return cached;
+        }
+        string apiKey = session.User.GetGenericData("civitai_api", "key");
+        string url = $"https://{SfwHost}/api/v1/enums";
+        JObject data = await FetchJsonAsync(url, "CivitAI enums", apiKey);
+        if (data.ContainsKey("error"))
+        {
+            return data;
+        }
+        JObject result = new()
+        {
+            ["success"] = true,
+            ["types"] = data["ModelType"] as JArray ?? [],
+            ["baseModels"] = data["BaseModel"] as JArray ?? []
+        };
+        EnumsCache.Set(cacheKey, result);
+        return result;
+    }
+
+    /// <summary>Fetches every downloadable file for a specific model version, not just the primary one.</summary>
+    public async Task<JObject> GetVersionFilesAsync(Session session, long modelVersionId)
+    {
+        if (modelVersionId <= 0)
+        {
+            return new JObject() { ["success"] = false, ["error"] = "Model version ID is required." };
+        }
+        string cacheKey = $"versionfiles:{modelVersionId}";
+        if (VersionFilesCache.TryGet(cacheKey, out JObject cached))
+        {
+            return cached;
+        }
+        string apiKey = session.User.GetGenericData("civitai_api", "key");
+        string url = $"https://{SfwHost}/api/v1/model-versions/{modelVersionId}";
+        JObject data = await FetchJsonAsync(url, $"CivitAI version files {modelVersionId}", apiKey);
+        if (data.ContainsKey("error"))
+        {
+            return data;
+        }
+        JArray rawFiles = data["files"] as JArray ?? [];
+        JArray files = [];
+        foreach (JObject f in rawFiles.OfType<JObject>())
+        {
+            string fname = f.Value<string>("name") ?? "";
+            if (!ImageFileHelper.IsModelFileExtension(Path.GetExtension(fname)))
+            {
+                continue;
+            }
+            string downloadUrl = f.Value<string>("downloadUrl") ?? "";
+            if (string.IsNullOrWhiteSpace(downloadUrl))
+            {
+                continue;
+            }
+            JObject meta = f["metadata"] as JObject;
+            files.Add(new JObject()
+            {
+                ["fileName"] = fname,
+                ["downloadUrl"] = downloadUrl,
+                ["fileSize"] = f.Value<long?>("sizeKB") is long sizeKb ? (JToken)(sizeKb * 1024) : null,
+                ["format"] = meta?.Value<string>("format") ?? "",
+                ["precision"] = meta?.Value<string>("fp") ?? "",
+                ["sizeLabel"] = meta?.Value<string>("size") ?? "",
+                ["primary"] = f.Value<bool?>("primary") ?? false
+            });
+        }
+        JObject result = new()
+        {
+            ["success"] = true,
+            ["modelVersionId"] = modelVersionId,
+            ["files"] = files
+        };
+        VersionFilesCache.Set(cacheKey, result);
         return result;
     }
 

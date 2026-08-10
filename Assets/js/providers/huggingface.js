@@ -133,7 +133,6 @@
         { value: 'timm', label: 'timm' }
     ];
     const sortOptions = [
-        { value: 'trending', label: 'Trending' },
         { value: 'downloads', label: 'Most Downloaded' },
         { value: 'likes', label: 'Most Liked' },
         { value: 'lastModified', label: 'Recently Updated' },
@@ -149,6 +148,22 @@
         getPipelineTagOptions: function () { return pipelineTagOptions; },
         getLibraryOptions: function () { return libraryOptions; },
         getSortOptions: function () { return sortOptions; },
+
+        /** File picker for the card: the repo's files are already in the search result (capped at 25), no fetch needed. */
+        getPrimaryOptions: function (item) {
+            const files = Array.isArray(item.downloadOptions) ? item.downloadOptions : [];
+            return files.filter(f => f && f.downloadUrl).map(f => {
+                const sizeStr = f.fileSize && typeof fileSizeStringify === 'function' ? fileSizeStringify(f.fileSize) : '';
+                const quant = f.quantType ? `[${f.quantType}] ` : '';
+                return {
+                    value: `${f.downloadUrl}`,
+                    label: `${quant}${f.fileName || 'File'}${sizeStr ? ` (${sizeStr})` : ''}`,
+                    downloadUrl: `${f.downloadUrl}`,
+                    fileName: f.fileName || '',
+                    fileSize: f.fileSize || null
+                };
+            });
+        },
 
         search: async function (params) {
             const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;

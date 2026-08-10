@@ -25,6 +25,8 @@ public static class EnhancedDownloaderAPI
         API.RegisterAPICall(EnhancedDownloaderCivitaiTags, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderCivitaiImages, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderCivitaiVersionCheck, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
+        API.RegisterAPICall(EnhancedDownloaderCivitaiFilterOptions, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
+        API.RegisterAPICall(EnhancedDownloaderCivitaiVersionFiles, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHuggingFaceSearch, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHuggingFaceFiles, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHuggingFaceImage, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
@@ -133,6 +135,21 @@ public static class EnhancedDownloaderAPI
         return await CivitAIProvider.Instance.CheckVersionAsync(session, modelVersionId);
     }
 
+    /// <summary>Returns CivitAI's live model-type and base-model enum values, used to keep the type/base-model filter dropdowns current.</summary>
+    [API.APIDescription("Returns CivitAI's live model-type and base-model enum values.", "\"success\": true, \"types\": [...], \"baseModels\": [...]")]
+    public static async Task<JObject> EnhancedDownloaderCivitaiFilterOptions(Session session)
+    {
+        return await CivitAIProvider.Instance.GetFilterOptionsAsync(session);
+    }
+
+    /// <summary>Fetches every downloadable file (all format/precision variants) for a specific CivitAI model version.</summary>
+    [API.APIDescription("Fetches every downloadable file for a specific CivitAI model version.", "\"success\": true, \"files\": [{ \"fileName\": \"...\", \"downloadUrl\": \"...\", \"format\": \"SafeTensor\", \"precision\": \"fp8\" }]")]
+    public static async Task<JObject> EnhancedDownloaderCivitaiVersionFiles(Session session,
+        [API.APIParameter("CivitAI model version ID.")] long modelVersionId = 0)
+    {
+        return await CivitAIProvider.Instance.GetVersionFilesAsync(session, modelVersionId);
+    }
+
     /// <summary>Searches Hugging Face for models matching the given query and filters.</summary>
     [API.APIDescription("Searches Hugging Face for models matching the given query and filters.", "\"success\": true, \"items\": [...]")]
     public static async Task<JObject> EnhancedDownloaderHuggingFaceSearch(Session session,
@@ -141,7 +158,7 @@ public static class EnhancedDownloaderAPI
         [API.APIParameter("Cursor for pagination.")] string cursor = "",
         [API.APIParameter("Pipeline tag filter (e.g. text-to-image).")] string pipelineTag = "",
         [API.APIParameter("Library filter (e.g. diffusers, transformers, gguf).")] string library = "",
-        [API.APIParameter("Sort order (trending, downloads, likes, lastModified, createdAt).")] string sort = "",
+        [API.APIParameter("Sort order (downloads, likes, lastModified, createdAt).")] string sort = "",
         [API.APIParameter("Filter by author/org.")] string author = "")
     {
         return await HuggingFaceProvider.Instance.SearchAsync(session, query, limit, cursor, pipelineTag, library, sort, author);

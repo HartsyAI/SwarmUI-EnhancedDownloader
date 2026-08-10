@@ -363,9 +363,34 @@
 }
 
 .enhanced-downloader-browser-results .enhanced-downloader-model-card.model-block {
-    height: 12.5rem;
+    height: auto;
+    min-height: 12.5rem;
+    overflow: visible;
     display: flex;
     white-space: normal;
+}
+
+.enhanced-downloader-model-card .ed-model-variant-row {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+    margin-top: 0.35rem;
+}
+
+.enhanced-downloader-model-card .ed-model-variant-row:empty {
+    display: none;
+}
+
+.ed-variant-select {
+    flex: 1;
+    min-width: 0;
+    font-size: 90%;
+}
+
+.ed-model-format-toggle {
+    flex-shrink: 0;
+    white-space: nowrap;
+    cursor: pointer;
 }
 
 .enhanced-downloader-browser-results .enhanced-downloader-model-card.model-block img {
@@ -380,6 +405,7 @@
 .enhanced-downloader-browser-results .enhanced-downloader-model-card .model-descblock {
     width: auto;
     height: auto;
+    overflow: visible;
     flex: 1;
     padding: 0.8rem 0.75rem 0.75rem 0;
     box-sizing: border-box;

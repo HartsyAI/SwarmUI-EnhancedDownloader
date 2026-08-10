@@ -40,6 +40,78 @@
         getSortOptions: function () { return sortOptions; },
         getPeriodOptions: function () { return periodOptions; },
 
+        /** Fetches CivitAI's live type/baseModel enums so the filter dropdowns track new architectures automatically. */
+        getFilterOptions: async function () {
+            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            if (!utils || !utils.genericRequestAsync) return { types: [], baseModels: [] };
+            const resp = await utils.genericRequestAsync('EnhancedDownloaderCivitaiFilterOptions', {});
+            if (resp && resp.success) {
+                return { types: resp.types || [], baseModels: resp.baseModels || [] };
+            }
+            throw new Error((resp && resp.error) || 'Failed to load CivitAI filter options');
+        },
+
+        getTypeOptions: async function () {
+            const { types } = await this.getFilterOptions();
+            return [{ value: 'All', label: 'All' }, ...types.map(t => ({ value: t, label: t === 'LORA' ? 'LoRA' : t }))];
+        },
+
+        getBaseModelOptions: async function () {
+            const { baseModels } = await this.getFilterOptions();
+            return [{ value: 'All', label: 'All' }, ...baseModels.map(b => ({ value: b, label: b }))];
+        },
+
+        /** Version picker for the card: one option per modelVersion, built from data already in the search result (no fetch). */
+        getPrimaryOptions: function (item) {
+            const versions = Array.isArray(item.downloadOptions) ? item.downloadOptions : [];
+            const modelId = item.modelId;
+            return versions.filter(v => v && v.downloadUrl).map(v => ({
+                value: `${v.modelVersionId}`,
+                label: v.versionName ? `${v.versionName}${v.baseModel ? ` [${v.baseModel}]` : ''}` : (v.fileName || 'Version'),
+                downloadUrl: `${v.downloadUrl}`,
+                openUrl: modelId ? `https://civitai.com/models/${modelId}?modelVersionId=${v.modelVersionId}` : (item.openUrl || ''),
+                fileName: v.fileName || '',
+                fileSize: v.fileSize || null,
+                modelVersionId: `${v.modelVersionId}`
+            }));
+        },
+
+        /** Format picker for the card: fetched lazily since it needs a request per version. */
+        getSecondaryOptionsLazy: async function (item, primaryOption) {
+            const versionId = primaryOption ? parseInt(primaryOption.value, 10)
+                : (typeof item.modelVersionId === 'number' ? item.modelVersionId : parseInt(item.modelVersionId, 10));
+            if (!versionId || isNaN(versionId)) return null;
+            const files = await this.getVersionFiles(versionId);
+            if (!Array.isArray(files) || files.length <= 1) return null;
+            return files.filter(f => f && f.downloadUrl).map(f => {
+                const parts = [f.format, f.precision, f.sizeLabel].filter(Boolean);
+                const sizeStr = f.fileSize && typeof fileSizeStringify === 'function' ? fileSizeStringify(f.fileSize) : '';
+                return {
+                    value: f.downloadUrl,
+                    label: `${parts.length ? parts.join(' ') : (f.fileName || 'File')}${sizeStr ? ` (${sizeStr})` : ''}`,
+                    downloadUrl: f.downloadUrl,
+                    fileName: f.fileName || '',
+                    fileSize: f.fileSize || null,
+                    primary: !!f.primary
+                };
+            });
+        },
+
+        /** Fetches every file (all format/precision variants) for a model version. */
+        getVersionFiles: async function (modelVersionId) {
+            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            if (!utils || !utils.genericRequestAsync) return [];
+            const id = typeof modelVersionId === 'number' ? modelVersionId : parseInt(modelVersionId, 10);
+            if (!id || isNaN(id)) return [];
+            try {
+                const resp = await utils.genericRequestAsync('EnhancedDownloaderCivitaiVersionFiles', { modelVersionId: id });
+                return (resp && resp.success && Array.isArray(resp.files)) ? resp.files : [];
+            } catch (e) {
+                console.warn('Failed to load CivitAI version files:', e);
+                return [];
+            }
+        },
+
         search: async function (params) {
             const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
             if (!utils || !utils.genericRequestAsync) {
@@ -146,25 +218,8 @@
             return badges;
         },
 
-        getPopoverExtras: function (item, menuDiv) {
+        getPopoverExtras: function (item, menuDiv, selection) {
             const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
-            const versions = Array.isArray(item.downloadOptions) ? item.downloadOptions : [];
-            if (versions.length > 1) {
-                for (const v of versions) {
-                    if (!v || !v.downloadUrl) continue;
-                    const btn = document.createElement('div');
-                    btn.className = 'sui_popover_model_button';
-                    const label = v.versionName ? v.versionName : (v.fileName || 'Version');
-                    const base = v.baseModel ? ` [${v.baseModel}]` : '';
-                    btn.innerText = `Download: ${label}${base}`;
-                    btn.onclick = () => {
-                        if (utils) {
-                            utils.loadUrlIntoManualDownloader(`${v.downloadUrl}`);
-                        }
-                    };
-                    menuDiv.appendChild(btn);
-                }
-            }
             const trainedWords = Array.isArray(item.trainedWords) ? item.trainedWords : [];
             if (trainedWords.length > 0) {
                 const triggerBtn = document.createElement('div');
@@ -197,8 +252,11 @@
                     examplesBtn.dataset.loading = 'true';
                     examplesBtn.innerText = 'Loading...';
                     try {
+                        const versionId = selection && selection.modelVersionId
+                            ? (typeof selection.modelVersionId === 'number' ? selection.modelVersionId : parseInt(selection.modelVersionId, 10))
+                            : (typeof item.modelVersionId === 'number' ? item.modelVersionId : parseInt(item.modelVersionId, 10));
                         const resp = await utils.genericRequestAsync('EnhancedDownloaderCivitaiImages', {
-                            modelVersionId: typeof item.modelVersionId === 'number' ? item.modelVersionId : parseInt(item.modelVersionId, 10),
+                            modelVersionId: versionId,
                             limit: 6,
                             includeNsfw: typeof item.nsfwLevel === 'number' && item.nsfwLevel >= 4
                         });
