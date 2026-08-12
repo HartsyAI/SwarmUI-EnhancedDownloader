@@ -553,11 +553,14 @@
             const origWS = window.makeWSRequest;
             window.makeWSRequest = function (name, payload, onData, timeout, onError, onOpen) {
                 if (name === 'DoModelDownloadWS' && typeof onError === 'function') {
+                    // ActiveModelDownload.download() sets _edDownloading then synchronously calls makeWSRequest, so
+                    // whichever instance is calling *this* invocation is always the most recently flagged one - take
+                    // the last match, not the first, or a second concurrent download misattributes this wiring to an
+                    // older still-in-flight one.
                     let inst = null;
                     for (const [id, download] of activeDownloads) {
                         if (download._edDownloading) {
                             inst = download;
-                            break;
                         }
                     }
                     if (inst) {
@@ -575,10 +578,13 @@
                             }
                             return onError(e);
                         };
-                        const wrappedOpen = function () {
+                        const wrappedOpen = function (socket) {
                             delete capturedInst._edDownloading;
                             if (typeof onOpen === 'function') {
-                                return onOpen();
+                                // Must forward the socket - ActiveModelDownload's onOpen closes over it to wire the
+                                // Cancel button's onclick (socket.send('{"signal":"cancel"}')); dropping it here left
+                                // Cancel looking enabled but silently no-op (socket was undefined in that closure).
+                                return onOpen(socket);
                             }
                         };
                         return origWS(name, payload, onData, timeout, wrappedErr, wrappedOpen);
