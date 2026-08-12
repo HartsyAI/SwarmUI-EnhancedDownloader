@@ -137,7 +137,7 @@ public class HartsyProvider : IEnhancedDownloaderProvider
                 bool isNsfw = item.Value<bool?>("is_nsfw") ?? false;
                 string subscriptionRequired = item.Value<string>("subscription_required") ?? "";
                 JArray itemTags = item["tags"] as JArray ?? [];
-                string openUrl = $"https://hartsy.ai/models/{modelId}";
+                string openUrl = $"https://hartsy.ai/Home?type=models&id={modelId}";
                 JObject resultItem = new()
                 {
                     ["modelId"] = modelId,

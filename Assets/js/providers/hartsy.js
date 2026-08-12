@@ -159,7 +159,7 @@
                         verBtn.className = 'sui_popover_model_button';
                         verBtn.innerText = `Download: ${label}${sizeStr}`;
                         verBtn.onclick = () => {
-                            this.handleDownload({ modelId: ver.id, downloadUrl: '', openUrl: `https://hartsy.ai/models/${ver.id}` });
+                            this.handleDownload({ modelId: ver.id, downloadUrl: '', openUrl: `https://hartsy.ai/Home?type=models&id=${ver.id}` });
                         };
                         menuDiv.appendChild(verBtn);
                     }
