@@ -17,6 +17,18 @@
         });
     };
 
+    /** If fileName is a GGUF file but url doesn't already look like one, append the `#.gguf` hint core's
+     * DoModelDownloadWS reads to pick the save extension (see civitai's getCivitaiMetadata for the same trick). */
+    window.EnhancedDownloader.Utils.appendExtensionHint = function appendExtensionHint(url, fileName) {
+        if (!url || !fileName) {
+            return url;
+        }
+        if (`${fileName}`.toLowerCase().endsWith('.gguf') && !`${url}`.toLowerCase().endsWith('.gguf')) {
+            return `${url}#.gguf`;
+        }
+        return url;
+    };
+
     /** Load a URL into the manual downloader, trigger validation, and scroll to it. */
     window.EnhancedDownloader.Utils.loadUrlIntoManualDownloader = function loadUrlIntoManualDownloader(url) {
         try {

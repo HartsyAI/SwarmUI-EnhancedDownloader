@@ -34,6 +34,7 @@ public static class EnhancedDownloaderAPI
         API.RegisterAPICall(EnhancedDownloaderHartsyFilterOptions, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHartsyDownload, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHartsyVersions, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
+        API.RegisterAPICall(EnhancedDownloaderHartsyModelDetails, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
     }
 
     /// <summary>Returns a list of all registered download providers with their capabilities.</summary>
@@ -222,5 +223,13 @@ public static class EnhancedDownloaderAPI
         [API.APIParameter("The Hartsy model ID.")] string modelId)
     {
         return await HartsyProvider.Instance.GetModelVersionsAsync(session, modelId);
+    }
+
+    /// <summary>Fetches full details (title, description, architecture, thumbnail) for a single Hartsy model.</summary>
+    [API.APIDescription("Fetches full details for a single Hartsy model.", "\"success\": true, \"title\": \"...\", \"image\": \"...\", \"description\": \"...\", \"architecture\": \"...\"")]
+    public static async Task<JObject> EnhancedDownloaderHartsyModelDetails(Session session,
+        [API.APIParameter("The Hartsy model ID.")] string modelId)
+    {
+        return await HartsyProvider.Instance.GetModelDetailsAsync(session, modelId);
     }
 }

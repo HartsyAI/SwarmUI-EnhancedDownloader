@@ -249,10 +249,127 @@
         return true;
     }
 
+    // Matches both the old `hartsy.ai/models/<id>` page link and the current `hartsy.ai/Home?type=models&id=<id>` link,
+    // since users may still have the old form saved/shared. Returns the model ID, or null if not a Hartsy model link.
+    function extractHartsyModelId(rawUrl) {
+        let parsed;
+        try {
+            parsed = new URL((rawUrl || '').trim());
+        }
+        catch {
+            return null;
+        }
+        if (!/(^|\.)hartsy\.ai$/i.test(parsed.hostname)) {
+            return null;
+        }
+        const pathParts = parsed.pathname.split('/').filter(Boolean);
+        if (pathParts[0] === 'models' && pathParts[1]) {
+            return decodeURIComponent(pathParts[1]);
+        }
+        if (pathParts[0] === 'Home' && parsed.searchParams.get('type') === 'models') {
+            const id = parsed.searchParams.get('id');
+            if (id) {
+                return id;
+            }
+        }
+        return null;
+    }
+
+    // Hartsy model page links (copied from the site or pasted from "Copy Model Link") aren't direct file downloads and
+    // carry no metadata core's urlInput() can parse - resolve them through the Hartsy API instead, mirroring how core
+    // handles CivitAI links, so pasting one populates the real download URL, name, and info instead of going stale.
+    function wrapUrlInputForHartsy() {
+        if (!window.modelDownloader || typeof modelDownloader.urlInput !== 'function' || modelDownloader.urlInput._enhancedDownloaderHartsy) {
+            return;
+        }
+        const origUrlInput = modelDownloader.urlInput.bind(modelDownloader);
+        let requestToken = 0;
+        const wrapped = () => {
+            const myToken = ++requestToken;
+            const modelId = extractHartsyModelId(modelDownloader.url.value);
+            if (!modelId) {
+                origUrlInput();
+                return;
+            }
+            modelDownloader.metadataZone.innerHTML = '';
+            modelDownloader.metadataZone.dataset.raw = '';
+            delete modelDownloader.metadataZone.dataset.image;
+            modelDownloader.imageSide.innerHTML = '';
+            modelDownloader.urlStatusArea.innerText = 'URL appears to be a Hartsy model link. Resolving download info...';
+            modelDownloader.button.disabled = true;
+            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            if (!utils || typeof utils.genericRequestAsync !== 'function') {
+                origUrlInput();
+                return;
+            }
+            Promise.all([
+                utils.genericRequestAsync('EnhancedDownloaderHartsyDownload', { modelId }),
+                // Details carries the preview (image/description/architecture); fetched separately since it's cacheable
+                // and doesn't record a download analytics event the way the download-info call does. Best-effort - a
+                // details failure shouldn't block resolving the actual download link below.
+                utils.genericRequestAsync('EnhancedDownloaderHartsyModelDetails', { modelId }).catch(() => null)
+            ]).then(([resp, details]) => {
+                if (myToken !== requestToken) {
+                    return;
+                }
+                const hasDetails = details && details.success;
+                const title = (hasDetails && details.title) || (resp && resp.success && resp.title) || modelId;
+                const cleanName = `${title}`.replaceAll(/[\\/:*?"<>|]/g, '-').replaceAll(' ', '_');
+                modelDownloader.name.value = cleanName;
+                modelDownloader.name.style.borderColor = '';
+
+                // Hartsy has no CivitAI-style "type" field; LoRA vs checkpoint is inferred from the architecture
+                // string (e.g. "qwen-image/lora"), per the same convention used in providers/hartsy.js.
+                if (modelDownloader.type && hasDetails && details.architecture) {
+                    modelDownloader.type.value = `${details.architecture}`.toLowerCase().endsWith('/lora') ? 'LoRA' : 'Stable-Diffusion';
+                }
+
+                if (hasDetails) {
+                    const descText = stripHtmlToText(details.description || '');
+                    const infoHtml = `
+                        <b>Hartsy Metadata</b>
+                        <br><b>Model</b>: ${escapeHtml(title)}
+                        ${details.architecture ? `<br><b>Architecture</b>: ${escapeHtml(details.architecture)}` : ''}
+                        ${details.author ? `<br><b>Author</b>: ${escapeHtml(details.author)}` : ''}
+                        ${Array.isArray(details.tags) && details.tags.length ? `<br><b>Tags</b>: ${escapeHtml(details.tags.join(', '))}` : ''}
+                        ${descText ? `<br><b>Description</b>: ${escapeHtml(descText)}` : ''}
+                    `;
+                    const rawMeta = JSON.stringify({
+                        'modelspec.title': title,
+                        'modelspec.description': `From https://hartsy.ai/Home?type=models&id=${modelId}\n${descText || ''}`,
+                        'modelspec.architecture': details.architecture || '',
+                    }, null, 2);
+                    if (typeof utils.setManualDownloaderInfo === 'function') {
+                        utils.setManualDownloaderInfo(infoHtml, rawMeta, details.image || '');
+                    }
+                }
+
+                if (!resp || !resp.success || !resp.downloadUrl) {
+                    modelDownloader.urlStatusArea.innerText = `Resolved "${title}" from Hartsy, but Hartsy has no direct download link available for this model yet.${resp && resp.error ? ` (${resp.error})` : ''}`;
+                    modelDownloader.button.disabled = true;
+                    return;
+                }
+
+                modelDownloader.url.value = utils.appendExtensionHint ? utils.appendExtensionHint(resp.downloadUrl, resp.fileName) : resp.downloadUrl;
+                modelDownloader.urlStatusArea.innerText = 'URL appears to be a Hartsy model link, and has been resolved to a direct download link.';
+                modelDownloader.nameInput();
+            }).catch(() => {
+                if (myToken !== requestToken) {
+                    return;
+                }
+                modelDownloader.urlStatusArea.innerText = 'Failed to contact Hartsy to resolve this model link.';
+                modelDownloader.button.disabled = true;
+            });
+        };
+        wrapped._enhancedDownloaderHartsy = true;
+        modelDownloader.urlInput = wrapped;
+    }
+
     function tryEnhanceUrlUI() {
         if (!window.modelDownloader || !modelDownloader.url) {
             return false;
         }
+        wrapUrlInputForHartsy();
         const url = modelDownloader.url;
         if (url.dataset.enhancedDownloaderDone || url.nextElementSibling?.classList?.contains('enhanced-downloader-url-actions')) {
             return true;

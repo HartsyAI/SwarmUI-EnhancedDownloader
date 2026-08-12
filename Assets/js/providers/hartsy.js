@@ -105,7 +105,8 @@
                         modelId: `${item.modelId}`
                     });
                     if (resp && resp.success && resp.downloadUrl) {
-                        utils.loadUrlIntoManualDownloader(resp.downloadUrl);
+                        const finalUrl = utils.appendExtensionHint ? utils.appendExtensionHint(resp.downloadUrl, resp.fileName) : resp.downloadUrl;
+                        utils.loadUrlIntoManualDownloader(finalUrl);
                         return;
                     }
                 } catch (e) {
