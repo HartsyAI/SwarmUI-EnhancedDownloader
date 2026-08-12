@@ -546,49 +546,41 @@
             return;
         }
 
-        const activeDownloads = new Map();
-        let nextDownloadId = 1;
+        // The instance whose download() is synchronously calling makeWSRequest right now. download() is a plain
+        // method call - `this` is unambiguous - and it calls makeWSRequest synchronously before returning, so this
+        // is always correct for the duration of that call. The previous approach matched by a shared "am I
+        // currently downloading" flag across all cards, which broke as soon as two downloads were in flight at
+        // once: the flag-clearing order depended on which card's WebSocket happened to open/error first, so a
+        // second concurrent download could get its Cancel wiring (and 401 message) attributed to a different
+        // card entirely - eg cancelling one card would actually cancel another's socket.
+        let currentDownloadInstance = null;
 
         if (typeof window.makeWSRequest === 'function' && !window.makeWSRequest._ed401) {
             const origWS = window.makeWSRequest;
             window.makeWSRequest = function (name, payload, onData, timeout, onError, onOpen) {
-                if (name === 'DoModelDownloadWS' && typeof onError === 'function') {
-                    // ActiveModelDownload.download() sets _edDownloading then synchronously calls makeWSRequest, so
-                    // whichever instance is calling *this* invocation is always the most recently flagged one - take
-                    // the last match, not the first, or a second concurrent download misattributes this wiring to an
-                    // older still-in-flight one.
-                    let inst = null;
-                    for (const [id, download] of activeDownloads) {
-                        if (download._edDownloading) {
-                            inst = download;
+                if (name === 'DoModelDownloadWS' && typeof onError === 'function' && currentDownloadInstance) {
+                    const capturedInst = currentDownloadInstance;
+                    const wrappedErr = function (e) {
+                        if (`${e}`.includes('401') || `${e}`.toLowerCase().includes('unauthorized')) {
+                            const link = `<a href="#" onclick="getRequiredElementById('usersettingstabbutton').click();getRequiredElementById('userinfotabbutton').click();">Open User Settings</a>`;
+                            const hint = `This download returned <b>401 Unauthorized</b>. This usually means the file is gated and requires authentication (or an API key) for the selected provider.<br>${link} to configure credentials, then retry.`;
+                            capturedInst.statusText.innerHTML = `Error: ${escapeHtml(e)}\n<br>${hint}<br><br><button class="basic-button" title="Restart the download" style="width:98%">Retry</button><br><br>`;
+                            capturedInst.statusText.querySelector('button').onclick = () => capturedInst.download();
+                            capturedInst.setBorderColor('#aa0000');
+                            capturedInst.isDone();
+                            return;
                         }
-                    }
-                    if (inst) {
-                        const capturedInst = inst;
-                        const wrappedErr = function (e) {
-                            delete capturedInst._edDownloading;
-                            if (`${e}`.includes('401') || `${e}`.toLowerCase().includes('unauthorized')) {
-                                const link = `<a href="#" onclick="getRequiredElementById('usersettingstabbutton').click();getRequiredElementById('userinfotabbutton').click();">Open User Settings</a>`;
-                                const hint = `This download returned <b>401 Unauthorized</b>. This usually means the file is gated and requires authentication (or an API key) for the selected provider.<br>${link} to configure credentials, then retry.`;
-                                capturedInst.statusText.innerHTML = `Error: ${escapeHtml(e)}\n<br>${hint}<br><br><button class="basic-button" title="Restart the download" style="width:98%">Retry</button><br><br>`;
-                                capturedInst.statusText.querySelector('button').onclick = () => capturedInst.download();
-                                capturedInst.setBorderColor('#aa0000');
-                                capturedInst.isDone();
-                                return;
-                            }
-                            return onError(e);
-                        };
-                        const wrappedOpen = function (socket) {
-                            delete capturedInst._edDownloading;
-                            if (typeof onOpen === 'function') {
-                                // Must forward the socket - ActiveModelDownload's onOpen closes over it to wire the
-                                // Cancel button's onclick (socket.send('{"signal":"cancel"}')); dropping it here left
-                                // Cancel looking enabled but silently no-op (socket was undefined in that closure).
-                                return onOpen(socket);
-                            }
-                        };
-                        return origWS(name, payload, onData, timeout, wrappedErr, wrappedOpen);
-                    }
+                        return onError(e);
+                    };
+                    const wrappedOpen = function (socket) {
+                        if (typeof onOpen === 'function') {
+                            // Must forward the socket - ActiveModelDownload's onOpen closes over it to wire the
+                            // Cancel button's onclick (socket.send('{"signal":"cancel"}')); dropping it here left
+                            // Cancel looking enabled but silently no-op (socket was undefined in that closure).
+                            return onOpen(socket);
+                        }
+                    };
+                    return origWS(name, payload, onData, timeout, wrappedErr, wrappedOpen);
                 }
                 return origWS(name, payload, onData, timeout, onError, onOpen);
             };
@@ -597,17 +589,13 @@
 
         const origDownload = ActiveModelDownload.prototype.download;
         ActiveModelDownload.prototype.download = function () {
-            const id = nextDownloadId++;
-            this._edDownloadId = id;
-            this._edDownloading = true;
-            activeDownloads.set(id, this);
+            const prevInstance = currentDownloadInstance;
+            currentDownloadInstance = this;
             try {
                 return origDownload.call(this);
             }
             finally {
-                setTimeout(() => {
-                    activeDownloads.delete(id);
-                }, 5000);
+                currentDownloadInstance = prevInstance;
             }
         };
         ActiveModelDownload.prototype.download._ed401 = true;
