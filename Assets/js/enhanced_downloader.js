@@ -128,10 +128,11 @@
         }
 
         const updatePreview = () => {
+            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
             const type = modelDownloader.type ? modelDownloader.type.value : '';
             const rootRaw = downloadRoots && downloadRoots[type] ? `${downloadRoots[type]}` : '';
             const root = (rootRaw || type).replaceAll('\\', '/').replaceAll(/\/+/g, '/').replace(/\/$/, '');
-            const folder = isOldDropdown ? (folders.value && folders.value !== '(None)' ? folders.value : '') : (modelDownloader.selectedFolder && modelDownloader.selectedFolder !== '(None)' ? modelDownloader.selectedFolder : '');
+            const folder = utils && utils.resolveSelectedFolder ? utils.resolveSelectedFolder(modelDownloader) : '';
             const nameVal = modelDownloader.name ? (modelDownloader.name.value || '') : '';
 
             const combined = `${root}/${folder ? folder + '/' : ''}${nameVal}`.replaceAll('\\', '/').replaceAll(/\/+/g, '/');
@@ -537,99 +538,40 @@
         return comp.tryEmbed();
     }
 
-    function enhanceModelDownloader401Message() {
-        // ActiveModelDownload is a top-level class in core's script, so it's never on window - check the bare name.
-        if (typeof ActiveModelDownload === 'undefined' || !ActiveModelDownload.prototype || !ActiveModelDownload.prototype.download) {
-            return;
+    // Core's ModelDownloaderUtil.run() builds an ActiveModelDownload, whose progress/resume behavior is buggy
+    // (overall_percent is a hardcoded placeholder, total size is never sent, and cancelling deletes the partial
+    // file instead of keeping it resumable - see WebAPI/Downloads/DownloadManager.cs for the replacement). Take
+    // over run() entirely rather than patching around ActiveModelDownload, the same way folder_browser_injection.js
+    // already wraps run() for its own folder sync. This runs after that wrap in the load order, so overwriting
+    // `mdl.run` here discards it - fine, since resolveSelectedFolder() (used by startFromManualDownloader) reads
+    // the same folder-browser state directly instead of depending on the hidden legacy <select> it used to sync.
+    function tryTakeOverDownloadRun() {
+        if (!window.modelDownloader || typeof modelDownloader.run !== 'function') {
+            return false;
         }
-        if (ActiveModelDownload.prototype.download._ed401) {
-            return;
+        if (modelDownloader.run._edTakeover) {
+            return true;
         }
-
-        // The instance whose download() is synchronously calling makeWSRequest right now. download() is a plain
-        // method call - `this` is unambiguous - and it calls makeWSRequest synchronously before returning, so this
-        // is always correct for the duration of that call. The previous approach matched by a shared "am I
-        // currently downloading" flag across all cards, which broke as soon as two downloads were in flight at
-        // once: the flag-clearing order depended on which card's WebSocket happened to open/error first, so a
-        // second concurrent download could get its Cancel wiring (and 401 message) attributed to a different
-        // card entirely - eg cancelling one card would actually cancel another's socket.
-        let currentDownloadInstance = null;
-
-        if (typeof window.makeWSRequest === 'function' && !window.makeWSRequest._ed401) {
-            const origWS = window.makeWSRequest;
-            window.makeWSRequest = function (name, payload, onData, timeout, onError, onOpen) {
-                if (name === 'DoModelDownloadWS' && typeof onError === 'function' && currentDownloadInstance) {
-                    const capturedInst = currentDownloadInstance;
-                    const wrappedErr = function (e) {
-                        if (`${e}`.includes('401') || `${e}`.toLowerCase().includes('unauthorized')) {
-                            const link = `<a href="#" onclick="getRequiredElementById('usersettingstabbutton').click();getRequiredElementById('userinfotabbutton').click();">Open User Settings</a>`;
-                            const hint = `This download returned <b>401 Unauthorized</b>. This usually means the file is gated and requires authentication (or an API key) for the selected provider.<br>${link} to configure credentials, then retry.`;
-                            capturedInst.statusText.innerHTML = `Error: ${escapeHtml(e)}\n<br>${hint}<br><br><button class="basic-button" title="Restart the download" style="width:98%">Retry</button><br><br>`;
-                            capturedInst.statusText.querySelector('button').onclick = () => capturedInst.download();
-                            capturedInst.setBorderColor('#aa0000');
-                            capturedInst.isDone();
-                            return;
-                        }
-                        return onError(e);
-                    };
-                    const wrappedOpen = function (socket) {
-                        if (typeof onOpen === 'function') {
-                            // Must forward the socket - ActiveModelDownload's onOpen closes over it to wire the
-                            // Cancel button's onclick (socket.send('{"signal":"cancel"}')); dropping it here left
-                            // Cancel looking enabled but silently no-op (socket was undefined in that closure).
-                            return onOpen(socket);
-                        }
-                    };
-                    return origWS(name, payload, onData, timeout, wrappedErr, wrappedOpen);
-                }
-                return origWS(name, payload, onData, timeout, onError, onOpen);
-            };
-            window.makeWSRequest._ed401 = true;
+        const downloads = window.EnhancedDownloader && window.EnhancedDownloader.Downloads;
+        if (!downloads || typeof downloads.startFromManualDownloader !== 'function') {
+            return false;
         }
-
-        const origDownload = ActiveModelDownload.prototype.download;
-        ActiveModelDownload.prototype.download = function () {
-            const prevInstance = currentDownloadInstance;
-            currentDownloadInstance = this;
-            try {
-                return origDownload.call(this);
-            }
-            finally {
-                currentDownloadInstance = prevInstance;
-            }
+        const run = function () {
+            downloads.startFromManualDownloader(modelDownloader);
         };
-        ActiveModelDownload.prototype.download._ed401 = true;
-    }
-
-    // Core's "Remove" button only removes the card, it never deletes the file - relabel it to make that clear.
-    function enhanceRemoveButtonLabel() {
-        if (typeof ActiveModelDownload === 'undefined' || !ActiveModelDownload.prototype || !ActiveModelDownload.prototype.isDone) {
-            return;
-        }
-        if (ActiveModelDownload.prototype.isDone._edClearLabel) {
-            return;
-        }
-        const origIsDone = ActiveModelDownload.prototype.isDone;
-        ActiveModelDownload.prototype.isDone = function () {
-            origIsDone.call(this);
-            // Core relabels this same button to "Remove" after its own 2000ms delay; fire just after that so ours wins.
-            setTimeout(() => {
-                if (this.cancelButton) {
-                    this.cancelButton.innerHTML = 'Clear<br><span style="font-size:0.7em;font-weight:normal;color:var(--text-soft);">(file stays on disk)</span>';
-                }
-            }, 2050);
-        };
-        ActiveModelDownload.prototype.isDone._edClearLabel = true;
+        run._edTakeover = true;
+        modelDownloader.run = run;
+        return true;
     }
 
     async function enhancedDownloaderInit() {
         await loadDownloadRoots();
-        enhanceModelDownloader401Message();
-        enhanceRemoveButtonLabel();
         const start = Date.now();
         let retryInterval = DOM_RETRY_INTERVAL_INITIAL_MS;
         while (Date.now() - start < DOM_READY_TIMEOUT_MS) {
-            if (tryEmbedDownloadsPanel() && tryEnhanceUrlUI() && tryEnhanceFolderUI() && tryEmbedCivitaiBrowserPanel() && tryEmbedFeaturedModelsPanel()) {
+            const downloads = window.EnhancedDownloader && window.EnhancedDownloader.Downloads;
+            const downloadsReady = downloads ? await downloads.init() : false;
+            if (tryEmbedDownloadsPanel() && tryEnhanceUrlUI() && tryEnhanceFolderUI() && tryTakeOverDownloadRun() && downloadsReady && tryEmbedCivitaiBrowserPanel() && tryEmbedFeaturedModelsPanel()) {
                 break;
             }
             await new Promise(r => setTimeout(r, retryInterval));

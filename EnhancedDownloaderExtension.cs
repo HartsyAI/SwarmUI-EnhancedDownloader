@@ -2,6 +2,7 @@ using SwarmUI.Accounts;
 using SwarmUI.Core;
 using SwarmUI.Utils;
 using SwarmUI.WebAPI;
+using Hartsy.Extensions.Downloads;
 using Microsoft.AspNetCore.Html;
 
 namespace Hartsy.Extensions;
@@ -20,6 +21,7 @@ public class EnhancedDownloaderExtension : Extension
     {
         ScriptFiles.Add("Assets/js/enhanced_downloader_utils.js");
         ScriptFiles.Add("Assets/js/download_history.js");
+        ScriptFiles.Add("Assets/js/downloads/download_manager.js");
         ScriptFiles.Add("Assets/js/folder_browser_injection.js");
         ScriptFiles.Add("Assets/js/providers/civitai.js");
         ScriptFiles.Add("Assets/js/providers/huggingface.js");
@@ -35,6 +37,7 @@ public class EnhancedDownloaderExtension : Extension
     /// <inheritdoc/>
     public override void OnInit()
     {
+        DownloadManager.Init();
         EnhancedDownloaderAPI.Register();
         BasicAPIFeatures.AcceptedAPIKeyTypes.Add("hartsy");
         if (!UserUpstreamApiKeys.KeysByType.ContainsKey("hartsy"))
