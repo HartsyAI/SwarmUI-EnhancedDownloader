@@ -14,19 +14,21 @@ namespace Hartsy.Extensions.Downloads;
 
 /// <summary>Owns every model download: starting, pausing (Cancel keeps the partial file), resuming via HTTP Range,
 /// and clearing. Download tasks run independently of any single request/connection - a page reload or closed tab
-/// does not stop a download in progress, and progress + resume state survive a full server restart via the
-/// on-disk manifest. This intentionally does not reuse core's `Utilities.DownloadFile`: that helper deletes the
-/// partial file on cancel or failure by design, which is the opposite of what resuming needs.</summary>
+/// does not stop a download in progress, and progress + resume state survive a full server restart via records
+/// persisted in SwarmUI's own user database (the same LiteDB-backed generic-data store this extension already
+/// uses for provider API keys - see <see cref="SaveRecord"/>). This intentionally does not reuse core's
+/// `Utilities.DownloadFile`: that helper deletes the partial file on cancel or failure by design, which is the
+/// opposite of what resuming needs.</summary>
 public static class DownloadManager
 {
-    /// <summary>All known downloads, keyed by ID. Source of truth in memory; <see cref="SaveManifest"/> mirrors it to disk.</summary>
+    /// <summary>All known downloads, keyed by ID. Source of truth in memory; <see cref="SaveRecord"/> mirrors each change to the database.</summary>
     private static readonly ConcurrentDictionary<string, DownloadRecord> Records = new();
 
-    private static readonly object ManifestFileLock = new();
+    /// <summary>The generic-data "dataname" this extension's download records are filed under in each user's
+    /// LiteDB-backed store - the same mechanism <c>session.User.GetGenericData("civitai_api", "key")</c> uses.</summary>
+    private const string GenericDataName = "enhanced_downloader_download";
 
-    private static string ManifestPath => Path.Combine(Program.DataDir, "EnhancedDownloader", "downloads.json");
-
-    /// <summary>Completed downloads older than this are dropped from the manifest at startup so it doesn't grow forever.</summary>
+    /// <summary>Completed downloads older than this are dropped from the database at startup so it doesn't grow forever.</summary>
     private static readonly long CompletedRetentionMs = TimeSpan.FromDays(7).Ticks / TimeSpan.TicksPerMillisecond;
 
     /// <summary>If a read produces no data for this long, the download is treated as stalled and errors out (resumable).</summary>
@@ -42,30 +44,30 @@ public static class DownloadManager
 
     private static long NowMs() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-    /// <summary>Loads the manifest from disk. Call once during extension init. Any download still marked
+    /// <summary>Loads every stored download record from the user database. Call once during extension init.
+    /// Scans across all users directly (rather than going through each `User` instance, which requires already
+    /// knowing which users exist) since this runs before any session has logged in. Any download still marked
     /// `Downloading` did not survive whatever stopped the process, so it's demoted to `Paused` - the partial
     /// bytes are still on disk and remain resumable.</summary>
     public static void Init()
     {
-        if (!File.Exists(ManifestPath))
+        string marker = $"///${GenericDataName}///";
+        List<SessionHandler.GenericDataStore> entries;
+        lock (Program.Sessions.DBLock)
         {
-            return;
-        }
-        JArray arr;
-        try
-        {
-            arr = JArray.Parse(File.ReadAllText(ManifestPath));
-        }
-        catch (Exception ex)
-        {
-            Logs.Warning($"Enhanced Downloader: failed to read downloads manifest, starting empty: {ex.ReadableString()}");
-            return;
+            entries = [.. Program.Sessions.GenericData.Find(d => d.ID.Contains(marker))];
         }
         long nowMs = NowMs();
-        foreach (JToken tok in arr)
+        foreach (SessionHandler.GenericDataStore entry in entries)
         {
-            if (tok is not JObject obj)
+            JObject obj;
+            try
             {
+                obj = JObject.Parse(entry.Data);
+            }
+            catch (Exception ex)
+            {
+                Logs.Warning($"Enhanced Downloader: failed to parse stored download record '{entry.ID}', skipping: {ex.ReadableString()}");
                 continue;
             }
             DownloadRecord rec = DownloadRecord.FromManifestObject(obj);
@@ -79,35 +81,47 @@ public static class DownloadManager
                 {
                     Records[rec.Id] = rec;
                 }
+                else
+                {
+                    lock (Program.Sessions.DBLock)
+                    {
+                        Program.Sessions.GenericData.Delete(entry.ID);
+                    }
+                }
                 continue;
             }
             if (rec.State == DownloadState.Downloading)
             {
                 rec.State = DownloadState.Paused;
             }
-            // The manifest's byte count is only persisted periodically during a transfer (see
+            // The stored byte count is only persisted periodically during a transfer (see
             // ProgressPersistIntervalMs), so after a crash it can lag what's actually on disk. The part file
             // itself is ground truth for what can be resumed from - trusting a stale lower count here would send
             // a Range request that doesn't line up with where FileMode.Append actually continues writing.
             rec.DownloadedBytes = File.Exists(rec.PartPath) ? new FileInfo(rec.PartPath).Length : 0;
             Records[rec.Id] = rec;
+            SaveRecord(rec); // persist the demotion/reconciliation so it's accurate on the next restart too
         }
-        SaveManifest();
     }
 
-    /// <summary>Writes the current in-memory state of every download to the manifest file. Writes to a temp file
-    /// and moves it into place so a crash mid-write can't corrupt the manifest that resume state depends on.</summary>
-    private static void SaveManifest()
+    /// <summary>Upserts one download record into its owning user's LiteDB-backed generic-data store - the same
+    /// store (and the same `User.SaveGenericData` method) this extension already uses for provider API keys.
+    /// Unlike a flat JSON manifest, this only ever touches the one document that changed, not every download.</summary>
+    private static void SaveRecord(DownloadRecord rec)
     {
-        JArray arr = [.. Records.Values.Select(r => r.ToManifestObject())];
-        lock (ManifestFileLock)
+        User user = Program.Sessions.GetUser(rec.UserId, makeNew: false);
+        if (user is null)
         {
-            string dir = Path.GetDirectoryName(ManifestPath);
-            Directory.CreateDirectory(dir);
-            string tempPath = $"{ManifestPath}.tmp";
-            File.WriteAllText(tempPath, arr.ToString());
-            File.Move(tempPath, ManifestPath, overwrite: true);
+            Logs.Warning($"Enhanced Downloader: could not persist download '{rec.Id}' - user '{rec.UserId}' not found.");
+            return;
         }
+        user.SaveGenericData(GenericDataName, rec.Id, rec.ToManifestObject().ToString());
+    }
+
+    /// <summary>Removes one download record from its owning user's generic-data store, called once Clear() has confirmed it's safe to forget.</summary>
+    private static void RemoveRecord(string userId, string id)
+    {
+        Program.Sessions.GetUser(userId, makeNew: false)?.DeleteGenericData(GenericDataName, id);
     }
 
     public static JObject ListForUser(Session session)
@@ -233,7 +247,7 @@ public static class DownloadManager
             UpdatedAtMs = nowMs
         };
         Records[rec.Id] = rec;
-        SaveManifest();
+        SaveRecord(rec);
         Kick(rec, session);
         return new JObject() { ["success"] = true, ["download"] = rec.ToNetObject() };
     }
@@ -257,7 +271,7 @@ public static class DownloadManager
         rec.ErrorMessage = null;
         rec.TransientNote = null;
         rec.UpdatedAtMs = NowMs();
-        SaveManifest();
+        SaveRecord(rec);
         Kick(rec, session);
         return new JObject() { ["success"] = true, ["download"] = rec.ToNetObject() };
     }
@@ -316,7 +330,7 @@ public static class DownloadManager
             return new JObject() { ["error"] = $"Failed to delete partial file: {ex.Message}" };
         }
         Records.TryRemove(rec.Id, out _);
-        SaveManifest();
+        RemoveRecord(rec.UserId, rec.Id);
         return new JObject() { ["success"] = true };
     }
 
@@ -414,7 +428,7 @@ public static class DownloadManager
                     if (nowTicks - lastPersistMs >= ProgressPersistIntervalMs)
                     {
                         rec.UpdatedAtMs = NowMs();
-                        SaveManifest();
+                        SaveRecord(rec);
                         lastPersistMs = nowTicks;
                     }
                 }
@@ -428,14 +442,14 @@ public static class DownloadManager
             rec.State = DownloadState.Completed;
             rec.PerSecond = 0;
             rec.UpdatedAtMs = NowMs();
-            SaveManifest();
+            SaveRecord(rec);
         }
         catch (OperationCanceledException)
         {
             rec.State = DownloadState.Paused;
             rec.PerSecond = 0;
             rec.UpdatedAtMs = NowMs();
-            SaveManifest();
+            SaveRecord(rec);
         }
         catch (Exception ex)
         {
@@ -443,7 +457,7 @@ public static class DownloadManager
             rec.ErrorMessage = ex is SwarmReadableErrorException ? ex.Message : "Failed to download the model due to an internal exception.";
             rec.PerSecond = 0;
             rec.UpdatedAtMs = NowMs();
-            SaveManifest();
+            SaveRecord(rec);
             if (ex is not SwarmReadableErrorException)
             {
                 Logs.Warning($"Enhanced Downloader: download '{rec.Name}' failed with internal exception: {ex.ReadableString()}");

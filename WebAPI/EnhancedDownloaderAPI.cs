@@ -3,6 +3,7 @@ using SwarmUI.Accounts;
 using SwarmUI.Core;
 using SwarmUI.Text2Image;
 using SwarmUI.WebAPI;
+using Hartsy.Extensions.Downloads;
 using Hartsy.Extensions.Providers;
 
 namespace Hartsy.Extensions;
@@ -35,6 +36,11 @@ public static class EnhancedDownloaderAPI
         API.RegisterAPICall(EnhancedDownloaderHartsyDownload, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHartsyVersions, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
         API.RegisterAPICall(EnhancedDownloaderHartsyModelDetails, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
+        API.RegisterAPICall(EnhancedDownloaderListDownloads, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
+        API.RegisterAPICall(EnhancedDownloaderStartDownload, false, Permissions.DownloadModels);
+        API.RegisterAPICall(EnhancedDownloaderResumeDownload, false, Permissions.DownloadModels);
+        API.RegisterAPICall(EnhancedDownloaderCancelDownload, false, Permissions.DownloadModels);
+        API.RegisterAPICall(EnhancedDownloaderClearDownload, false, Permissions.DownloadModels);
     }
 
     /// <summary>Returns a list of all registered download providers with their capabilities.</summary>
@@ -231,5 +237,49 @@ public static class EnhancedDownloaderAPI
         [API.APIParameter("The Hartsy model ID.")] string modelId)
     {
         return await HartsyProvider.Instance.GetModelDetailsAsync(session, modelId);
+    }
+
+    /// <summary>Lists every download (in progress, paused, errored, or recently completed) owned by the calling user.</summary>
+    [API.APIDescription("Lists every download owned by the calling user, in any state.",
+        "\"success\": true, \"downloads\": [{ \"id\": \"...\", \"state\": \"downloading\", \"downloadedBytes\": 123, \"totalBytes\": 456, \"perSecond\": 78, ... }]")]
+    public static Task<JObject> EnhancedDownloaderListDownloads(Session session)
+    {
+        return Task.FromResult(DownloadManager.ListForUser(session));
+    }
+
+    /// <summary>Starts a new resumable model download. Progress, pause, and resume state are tracked server-side and survive page reloads.</summary>
+    [API.APIDescription("Starts a new resumable model download.", "\"success\": true, \"download\": { \"id\": \"...\", \"state\": \"downloading\", ... }")]
+    public static Task<JObject> EnhancedDownloaderStartDownload(Session session,
+        [API.APIParameter("The URL to download a model from.")] string url,
+        [API.APIParameter("The model's sub-type, eg `Stable-Diffusion`, `LoRA`, etc.")] string type,
+        [API.APIParameter("The filename to use for the model.")] string name,
+        [API.APIParameter("Optional raw text of JSON metadata to inject into the model.")] string metadata = null,
+        [API.APIParameter("Optional preview image (URL or data URI) to inject as the model thumbnail.")] string image = null)
+    {
+        return Task.FromResult(DownloadManager.Start(session, url, type, name, metadata, image));
+    }
+
+    /// <summary>Resumes a paused or errored download from its last saved byte offset.</summary>
+    [API.APIDescription("Resumes a paused or errored download from its last saved byte offset.", "\"success\": true, \"download\": { \"id\": \"...\", \"state\": \"downloading\", ... }")]
+    public static Task<JObject> EnhancedDownloaderResumeDownload(Session session,
+        [API.APIParameter("The download ID to resume.")] string id)
+    {
+        return Task.FromResult(DownloadManager.Resume(session, id));
+    }
+
+    /// <summary>Cancels an in-progress download. The partial file is kept on disk so it can be resumed later.</summary>
+    [API.APIDescription("Cancels an in-progress download, keeping the partial file for a later resume.", "\"success\": true, \"download\": { \"id\": \"...\", \"state\": \"paused\", ... }")]
+    public static async Task<JObject> EnhancedDownloaderCancelDownload(Session session,
+        [API.APIParameter("The download ID to cancel.")] string id)
+    {
+        return await DownloadManager.CancelAsync(session, id);
+    }
+
+    /// <summary>Deletes a paused/errored download's partial file and forgets it, or just dismisses a completed one (the finished model file is untouched).</summary>
+    [API.APIDescription("Deletes a paused/errored download's partial file and forgets it, or dismisses a completed one without touching the finished model file.", "\"success\": true")]
+    public static Task<JObject> EnhancedDownloaderClearDownload(Session session,
+        [API.APIParameter("The download ID to clear.")] string id)
+    {
+        return Task.FromResult(DownloadManager.Clear(session, id));
     }
 }
