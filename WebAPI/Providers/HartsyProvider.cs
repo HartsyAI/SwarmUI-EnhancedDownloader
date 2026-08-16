@@ -137,7 +137,7 @@ public class HartsyProvider : IEnhancedDownloaderProvider
                 bool isNsfw = item.Value<bool?>("is_nsfw") ?? false;
                 string subscriptionRequired = item.Value<string>("subscription_required") ?? "";
                 JArray itemTags = item["tags"] as JArray ?? [];
-                string openUrl = $"https://hartsy.ai/models/{modelId}";
+                string openUrl = $"https://hartsy.ai/Home?type=models&id={modelId}";
                 JObject resultItem = new()
                 {
                     ["modelId"] = modelId,
@@ -253,6 +253,72 @@ public class HartsyProvider : IEnhancedDownloaderProvider
         catch (Exception ex)
         {
             Logs.Warning($"EnhancedDownloader Hartsy filter options failed: {ex.ReadableString()}");
+            return new JObject() { ["success"] = false, ["error"] = "Failed to contact Hartsy." };
+        }
+        finally
+        {
+            RateLimiter.Release();
+        }
+    }
+
+    public static readonly ProviderCache DetailsCache = new(TimeSpan.FromMinutes(5));
+
+    /// <summary>Fetches full details (title, description, architecture, thumbnail, etc) for a single Hartsy model. Unlike
+    /// <see cref="GetModelDownloadAsync"/> this doesn't record a download analytics event, so it's safe to cache and to call
+    /// just to build a preview (eg when a raw Hartsy model page link is resolved from the manual downloader).</summary>
+    public async Task<JObject> GetModelDetailsAsync(Session session, string modelId)
+    {
+        if (string.IsNullOrWhiteSpace(modelId))
+        {
+            return new JObject() { ["success"] = false, ["error"] = "Model ID is required." };
+        }
+        string cacheKey = $"hartsy:details:{modelId}";
+        if (DetailsCache.TryGet(cacheKey, out JObject cached))
+        {
+            return cached;
+        }
+        string apiKey = GetApiKey(session);
+        string url = $"{BaseUrl}/models/{Uri.EscapeDataString(modelId)}";
+        await RateLimiter.WaitAsync();
+        try
+        {
+            (HttpStatusCode status, string resp) = await GetWithKeyFallbackAsync(url, apiKey);
+            if ((int)status is < 200 or >= 300)
+            {
+                string trimmed = resp.Length > 500 ? resp[..500] : resp;
+                Logs.Warning($"EnhancedDownloader Hartsy model details failed: {(int)status} - {trimmed}");
+                return new JObject() { ["success"] = false, ["error"] = $"Hartsy error {(int)status}: {trimmed}" };
+            }
+            JObject responseJson = resp.ParseToJson();
+            if (responseJson.Value<bool?>("success") != true)
+            {
+                string errorMsg = responseJson["error"]?.Value<string>("message") ?? "Unknown error";
+                return new JObject() { ["success"] = false, ["error"] = $"Hartsy API error: {errorMsg}" };
+            }
+            JObject data = responseJson["data"] as JObject ?? [];
+            JObject result = new()
+            {
+                ["success"] = true,
+                ["modelId"] = data.Value<string>("id") ?? modelId,
+                ["title"] = data.Value<string>("title") ?? "",
+                ["description"] = data.Value<string>("description") ?? "",
+                ["architecture"] = data.Value<string>("architecture") ?? "",
+                ["author"] = data.Value<string>("author") ?? "",
+                ["image"] = data.Value<string>("thumbnail_url") ?? "",
+                ["fileName"] = data.Value<string>("file_name") ?? "",
+                ["fileSize"] = data.Value<long?>("file_size"),
+                ["downloadUrl"] = data.Value<string>("model_url") ?? "",
+                ["isNsfw"] = data.Value<bool?>("is_nsfw") ?? false,
+                ["subscriptionRequired"] = data.Value<string>("subscription_required") ?? "",
+                ["downloads"] = data.Value<long?>("downloads_count") ?? 0,
+                ["tags"] = data["tags"] as JArray ?? []
+            };
+            DetailsCache.Set(cacheKey, result);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Logs.Warning($"EnhancedDownloader Hartsy model details failed: {ex.ReadableString()}");
             return new JObject() { ["success"] = false, ["error"] = "Failed to contact Hartsy." };
         }
         finally

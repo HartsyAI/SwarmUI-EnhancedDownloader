@@ -128,10 +128,11 @@
         }
 
         const updatePreview = () => {
+            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
             const type = modelDownloader.type ? modelDownloader.type.value : '';
             const rootRaw = downloadRoots && downloadRoots[type] ? `${downloadRoots[type]}` : '';
             const root = (rootRaw || type).replaceAll('\\', '/').replaceAll(/\/+/g, '/').replace(/\/$/, '');
-            const folder = isOldDropdown ? (folders.value && folders.value !== '(None)' ? folders.value : '') : (modelDownloader.selectedFolder && modelDownloader.selectedFolder !== '(None)' ? modelDownloader.selectedFolder : '');
+            const folder = utils && utils.resolveSelectedFolder ? utils.resolveSelectedFolder(modelDownloader) : '';
             const nameVal = modelDownloader.name ? (modelDownloader.name.value || '') : '';
 
             const combined = `${root}/${folder ? folder + '/' : ''}${nameVal}`.replaceAll('\\', '/').replaceAll(/\/+/g, '/');
@@ -249,10 +250,127 @@
         return true;
     }
 
+    // Matches both the old `hartsy.ai/models/<id>` page link and the current `hartsy.ai/Home?type=models&id=<id>` link,
+    // since users may still have the old form saved/shared. Returns the model ID, or null if not a Hartsy model link.
+    function extractHartsyModelId(rawUrl) {
+        let parsed;
+        try {
+            parsed = new URL((rawUrl || '').trim());
+        }
+        catch {
+            return null;
+        }
+        if (!/(^|\.)hartsy\.ai$/i.test(parsed.hostname)) {
+            return null;
+        }
+        const pathParts = parsed.pathname.split('/').filter(Boolean);
+        if (pathParts[0] === 'models' && pathParts[1]) {
+            return decodeURIComponent(pathParts[1]);
+        }
+        if (pathParts[0] === 'Home' && parsed.searchParams.get('type') === 'models') {
+            const id = parsed.searchParams.get('id');
+            if (id) {
+                return id;
+            }
+        }
+        return null;
+    }
+
+    // Hartsy model page links (copied from the site or pasted from "Copy Model Link") aren't direct file downloads and
+    // carry no metadata core's urlInput() can parse - resolve them through the Hartsy API instead, mirroring how core
+    // handles CivitAI links, so pasting one populates the real download URL, name, and info instead of going stale.
+    function wrapUrlInputForHartsy() {
+        if (!window.modelDownloader || typeof modelDownloader.urlInput !== 'function' || modelDownloader.urlInput._enhancedDownloaderHartsy) {
+            return;
+        }
+        const origUrlInput = modelDownloader.urlInput.bind(modelDownloader);
+        let requestToken = 0;
+        const wrapped = () => {
+            const myToken = ++requestToken;
+            const modelId = extractHartsyModelId(modelDownloader.url.value);
+            if (!modelId) {
+                origUrlInput();
+                return;
+            }
+            modelDownloader.metadataZone.innerHTML = '';
+            modelDownloader.metadataZone.dataset.raw = '';
+            delete modelDownloader.metadataZone.dataset.image;
+            modelDownloader.imageSide.innerHTML = '';
+            modelDownloader.urlStatusArea.innerText = 'URL appears to be a Hartsy model link. Resolving download info...';
+            modelDownloader.button.disabled = true;
+            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            if (!utils || typeof utils.genericRequestAsync !== 'function') {
+                origUrlInput();
+                return;
+            }
+            Promise.all([
+                utils.genericRequestAsync('EnhancedDownloaderHartsyDownload', { modelId }),
+                // Details carries the preview (image/description/architecture); fetched separately since it's cacheable
+                // and doesn't record a download analytics event the way the download-info call does. Best-effort - a
+                // details failure shouldn't block resolving the actual download link below.
+                utils.genericRequestAsync('EnhancedDownloaderHartsyModelDetails', { modelId }).catch(() => null)
+            ]).then(([resp, details]) => {
+                if (myToken !== requestToken) {
+                    return;
+                }
+                const hasDetails = details && details.success;
+                const title = (hasDetails && details.title) || (resp && resp.success && resp.title) || modelId;
+                const cleanName = `${title}`.replaceAll(/[\\/:*?"<>|]/g, '-').replaceAll(' ', '_');
+                modelDownloader.name.value = cleanName;
+                modelDownloader.name.style.borderColor = '';
+
+                // Hartsy has no CivitAI-style "type" field; LoRA vs checkpoint is inferred from the architecture
+                // string (e.g. "qwen-image/lora"), per the same convention used in providers/hartsy.js.
+                if (modelDownloader.type && hasDetails && details.architecture) {
+                    modelDownloader.type.value = `${details.architecture}`.toLowerCase().endsWith('/lora') ? 'LoRA' : 'Stable-Diffusion';
+                }
+
+                if (hasDetails) {
+                    const descText = stripHtmlToText(details.description || '');
+                    const infoHtml = `
+                        <b>Hartsy Metadata</b>
+                        <br><b>Model</b>: ${escapeHtml(title)}
+                        ${details.architecture ? `<br><b>Architecture</b>: ${escapeHtml(details.architecture)}` : ''}
+                        ${details.author ? `<br><b>Author</b>: ${escapeHtml(details.author)}` : ''}
+                        ${Array.isArray(details.tags) && details.tags.length ? `<br><b>Tags</b>: ${escapeHtml(details.tags.join(', '))}` : ''}
+                        ${descText ? `<br><b>Description</b>: ${escapeHtml(descText)}` : ''}
+                    `;
+                    const rawMeta = JSON.stringify({
+                        'modelspec.title': title,
+                        'modelspec.description': `From https://hartsy.ai/Home?type=models&id=${modelId}\n${descText || ''}`,
+                        'modelspec.architecture': details.architecture || '',
+                    }, null, 2);
+                    if (typeof utils.setManualDownloaderInfo === 'function') {
+                        utils.setManualDownloaderInfo(infoHtml, rawMeta, details.image || '');
+                    }
+                }
+
+                if (!resp || !resp.success || !resp.downloadUrl) {
+                    modelDownloader.urlStatusArea.innerText = `Resolved "${title}" from Hartsy, but Hartsy has no direct download link available for this model yet.${resp && resp.error ? ` (${resp.error})` : ''}`;
+                    modelDownloader.button.disabled = true;
+                    return;
+                }
+
+                modelDownloader.url.value = utils.appendExtensionHint ? utils.appendExtensionHint(resp.downloadUrl, resp.fileName) : resp.downloadUrl;
+                modelDownloader.urlStatusArea.innerText = 'URL appears to be a Hartsy model link, and has been resolved to a direct download link.';
+                modelDownloader.nameInput();
+            }).catch(() => {
+                if (myToken !== requestToken) {
+                    return;
+                }
+                modelDownloader.urlStatusArea.innerText = 'Failed to contact Hartsy to resolve this model link.';
+                modelDownloader.button.disabled = true;
+            });
+        };
+        wrapped._enhancedDownloaderHartsy = true;
+        modelDownloader.urlInput = wrapped;
+    }
+
     function tryEnhanceUrlUI() {
         if (!window.modelDownloader || !modelDownloader.url) {
             return false;
         }
+        wrapUrlInputForHartsy();
         const url = modelDownloader.url;
         if (url.dataset.enhancedDownloaderDone || url.nextElementSibling?.classList?.contains('enhanced-downloader-url-actions')) {
             return true;
@@ -420,105 +538,40 @@
         return comp.tryEmbed();
     }
 
-    function enhanceModelDownloader401Message() {
-        // ActiveModelDownload is a top-level class in core's script, so it's never on window - check the bare name.
-        if (typeof ActiveModelDownload === 'undefined' || !ActiveModelDownload.prototype || !ActiveModelDownload.prototype.download) {
-            return;
+    // Core's ModelDownloaderUtil.run() builds an ActiveModelDownload, whose progress/resume behavior is buggy
+    // (overall_percent is a hardcoded placeholder, total size is never sent, and cancelling deletes the partial
+    // file instead of keeping it resumable - see WebAPI/Downloads/DownloadManager.cs for the replacement). Take
+    // over run() entirely rather than patching around ActiveModelDownload, the same way folder_browser_injection.js
+    // already wraps run() for its own folder sync. This runs after that wrap in the load order, so overwriting
+    // `mdl.run` here discards it - fine, since resolveSelectedFolder() (used by startFromManualDownloader) reads
+    // the same folder-browser state directly instead of depending on the hidden legacy <select> it used to sync.
+    function tryTakeOverDownloadRun() {
+        if (!window.modelDownloader || typeof modelDownloader.run !== 'function') {
+            return false;
         }
-        if (ActiveModelDownload.prototype.download._ed401) {
-            return;
+        if (modelDownloader.run._edTakeover) {
+            return true;
         }
-
-        const activeDownloads = new Map();
-        let nextDownloadId = 1;
-
-        if (typeof window.makeWSRequest === 'function' && !window.makeWSRequest._ed401) {
-            const origWS = window.makeWSRequest;
-            window.makeWSRequest = function (name, payload, onData, timeout, onError, onOpen) {
-                if (name === 'DoModelDownloadWS' && typeof onError === 'function') {
-                    let inst = null;
-                    for (const [id, download] of activeDownloads) {
-                        if (download._edDownloading) {
-                            inst = download;
-                            break;
-                        }
-                    }
-                    if (inst) {
-                        const capturedInst = inst;
-                        const wrappedErr = function (e) {
-                            delete capturedInst._edDownloading;
-                            if (`${e}`.includes('401') || `${e}`.toLowerCase().includes('unauthorized')) {
-                                const link = `<a href="#" onclick="getRequiredElementById('usersettingstabbutton').click();getRequiredElementById('userinfotabbutton').click();">Open User Settings</a>`;
-                                const hint = `This download returned <b>401 Unauthorized</b>. This usually means the file is gated and requires authentication (or an API key) for the selected provider.<br>${link} to configure credentials, then retry.`;
-                                capturedInst.statusText.innerHTML = `Error: ${escapeHtml(e)}\n<br>${hint}<br><br><button class="basic-button" title="Restart the download" style="width:98%">Retry</button><br><br>`;
-                                capturedInst.statusText.querySelector('button').onclick = () => capturedInst.download();
-                                capturedInst.setBorderColor('#aa0000');
-                                capturedInst.isDone();
-                                return;
-                            }
-                            return onError(e);
-                        };
-                        const wrappedOpen = function () {
-                            delete capturedInst._edDownloading;
-                            if (typeof onOpen === 'function') {
-                                return onOpen();
-                            }
-                        };
-                        return origWS(name, payload, onData, timeout, wrappedErr, wrappedOpen);
-                    }
-                }
-                return origWS(name, payload, onData, timeout, onError, onOpen);
-            };
-            window.makeWSRequest._ed401 = true;
+        const downloads = window.EnhancedDownloader && window.EnhancedDownloader.Downloads;
+        if (!downloads || typeof downloads.startFromManualDownloader !== 'function') {
+            return false;
         }
-
-        const origDownload = ActiveModelDownload.prototype.download;
-        ActiveModelDownload.prototype.download = function () {
-            const id = nextDownloadId++;
-            this._edDownloadId = id;
-            this._edDownloading = true;
-            activeDownloads.set(id, this);
-            try {
-                return origDownload.call(this);
-            }
-            finally {
-                setTimeout(() => {
-                    activeDownloads.delete(id);
-                }, 5000);
-            }
+        const run = function () {
+            downloads.startFromManualDownloader(modelDownloader);
         };
-        ActiveModelDownload.prototype.download._ed401 = true;
-    }
-
-    // Core's "Remove" button only removes the card, it never deletes the file - relabel it to make that clear.
-    function enhanceRemoveButtonLabel() {
-        if (typeof ActiveModelDownload === 'undefined' || !ActiveModelDownload.prototype || !ActiveModelDownload.prototype.isDone) {
-            return;
-        }
-        if (ActiveModelDownload.prototype.isDone._edClearLabel) {
-            return;
-        }
-        const origIsDone = ActiveModelDownload.prototype.isDone;
-        ActiveModelDownload.prototype.isDone = function () {
-            origIsDone.call(this);
-            // Core relabels this same button to "Remove" after its own 2000ms delay; fire just after that so ours wins.
-            setTimeout(() => {
-                if (this.cancelButton) {
-                    this.cancelButton.innerHTML = 'Clear<br><span style="font-size:0.7em;font-weight:normal;color:var(--text-soft);">(file stays on disk)</span>';
-                }
-            }, 2050);
-        };
-        ActiveModelDownload.prototype.isDone._edClearLabel = true;
+        run._edTakeover = true;
+        modelDownloader.run = run;
+        return true;
     }
 
     async function enhancedDownloaderInit() {
         await loadDownloadRoots();
-        enhanceModelDownloader401Message();
-        enhanceRemoveButtonLabel();
         const start = Date.now();
         let retryInterval = DOM_RETRY_INTERVAL_INITIAL_MS;
         while (Date.now() - start < DOM_READY_TIMEOUT_MS) {
-            if (tryEmbedDownloadsPanel() && tryEnhanceUrlUI() && tryEnhanceFolderUI() && tryEmbedCivitaiBrowserPanel() && tryEmbedFeaturedModelsPanel()) {
+            const downloads = window.EnhancedDownloader && window.EnhancedDownloader.Downloads;
+            const downloadsReady = downloads ? await downloads.init() : false;
+            if (tryEmbedDownloadsPanel() && tryEnhanceUrlUI() && tryEnhanceFolderUI() && tryTakeOverDownloadRun() && downloadsReady && tryEmbedCivitaiBrowserPanel() && tryEmbedFeaturedModelsPanel()) {
                 break;
             }
             await new Promise(r => setTimeout(r, retryInterval));
