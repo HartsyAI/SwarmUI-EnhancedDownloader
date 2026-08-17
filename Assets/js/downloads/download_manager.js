@@ -29,8 +29,12 @@
             return await u.genericRequestAsync(endpoint, payload);
         }
         catch (e) {
+            // genericRequestAsync rejects with the raw `data.error` string (core's genericRequest() would
+            // normally toast it itself, but genericRequestAsync passes its own errorHandle to suppress that
+            // and reject instead) - repackage it into the `{error}` shape every call site here expects.
             console.warn(`Enhanced Downloader: ${endpoint} failed:`, e);
-            return null;
+            const message = typeof e === 'string' ? e : (e && e.message) || 'Request failed.';
+            return { error: message };
         }
     }
 
@@ -268,8 +272,12 @@
             return;
         }
         mdl.button.disabled = false;
+        const errorMsg = (resp && resp.error) || 'unknown error';
         if (mdl.urlStatusArea) {
-            mdl.urlStatusArea.innerText = `Failed to start download: ${(resp && resp.error) || 'unknown error'}`;
+            mdl.urlStatusArea.innerText = `Failed to start download: ${errorMsg}`;
+        }
+        if (typeof showError === 'function') {
+            showError(`Failed to start download: ${errorMsg}`);
         }
     }
 
