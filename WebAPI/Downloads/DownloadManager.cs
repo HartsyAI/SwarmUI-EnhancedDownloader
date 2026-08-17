@@ -209,11 +209,11 @@ public static class DownloadManager
         string outPath = $"{folder}/{name}.{extension}";
         if (File.Exists(outPath))
         {
-            return new JObject() { ["error"] = "Model at that save path already exists." };
+            return new JObject() { ["error"] = $"A model already exists at '{outPath}' - rename it or choose a different destination." };
         }
         if (Records.Values.Any(r => r.UserId == session.User.UserID && string.Equals(r.OutPath, outPath, StringComparison.OrdinalIgnoreCase)))
         {
-            return new JObject() { ["error"] = "A download to this destination already exists - resume or clear it from the Downloads panel first." };
+            return new JObject() { ["error"] = $"A download to '{outPath}' already exists - resume or clear it from the Downloads panel first." };
         }
         if (!string.IsNullOrEmpty(image) && !string.IsNullOrWhiteSpace(metadata))
         {
