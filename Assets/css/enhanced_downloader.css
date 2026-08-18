@@ -434,6 +434,9 @@
     flex: 1;
     min-width: 0;
     font-size: 90%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .ed-model-format-toggle {
@@ -456,11 +459,13 @@
     height: auto;
     overflow: visible;
     flex: 1;
+    min-width: 0;
     padding: 0.8rem 0.75rem 0.75rem 0;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+    overflow-wrap: break-word;
 }
 
 .enhanced-downloader-browser-results .enhanced-downloader-model-card .ed-model-desc {
@@ -652,6 +657,9 @@
     flex: 1;
     min-width: 0;
     font-size: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .enhanced-downloader-featured-card .ed-model-actions .basic-button {

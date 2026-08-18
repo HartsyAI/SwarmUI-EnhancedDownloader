@@ -1,350 +1,316 @@
 # SwarmUI Enhanced Downloader
-===========================================================================
 
-![Enhanced Downloader](url_to_image_placeholder)
+![Enhanced Downloader overview](Assets/screenshots/overview.png)
 
-## Table of Contents
------------------
-
-1. [Introduction](#introduction)
-2. [Screenshots (TODO)](#screenshots-todo)
-3. [Features](#features)
-4. [Installation](#installation)
-5. [Usage](#usage)
-6. [Configuration](#configuration)
-7. [Providers](#providers)
-8. [Technical Architecture](#technical-architecture)
-9. [Permissions](#permissions)
-10. [Troubleshooting](#troubleshooting)
-11. [Contributing](#contributing)
-12. [License](#license)
-13. [Credits](#credits)
-
-## Introduction
----------------
-
-The Enhanced Downloader extension for SwarmUI replaces the default model download experience with a full-featured model browser. Search, preview, and download models from multiple providers — all without leaving SwarmUI.
-
-Instead of copy-pasting download URLs manually, you can browse model repositories directly from the **Utilities > Download Models** tab, view model cards with images and metadata, filter by type and architecture, and download to the correct folder with one click.
+A full-featured model browser for [SwarmUI](https://github.com/mcmonkeyprojects/SwarmUI)'s **Utilities > Model Downloader** tab. Search, preview, and download models from **CivitAI**, **Hugging Face**, and **Hartsy** without leaving SwarmUI or hand-typing a URL.
 
 > [!NOTE]
-> This extension enhances SwarmUI's built-in download utility. It does not replace it — the manual URL download workflow remains fully available alongside the browser.
+> This extension enhances SwarmUI's built-in Model Downloader. It does not replace it — the manual URL download workflow on the left is still core SwarmUI, just reorganized and given a few extra conveniences (recent folders, a folder browser, a destination preview, 401 recovery). The model browser on the right is new.
 
-## Screenshots (TODO)
--------------------
+## Table of Contents
 
-- **TODO**: Add a screenshot of the full Enhanced Downloader tab showing the two-column layout (manual download on left, model browser on right).
-- **TODO**: Add a screenshot of the Hartsy provider browser with search results and filter options.
-- **TODO**: Add a screenshot of the CivitAI provider browser showing type/base model filters and NSFW toggle.
-- **TODO**: Add a screenshot of the Hugging Face provider browser showing model cards with file listings.
-- **TODO**: Add a screenshot of the model popover/detail card that appears when clicking a model result.
-- **TODO**: Add a screenshot of the folder selector with recent folders and the "New Folder" option.
-- **TODO**: Add a screenshot of the destination path preview breadcrumbs during a download.
-- **TODO**: Add a screenshot of the 401 Unauthorized error message with the "Open User Settings" link.
+1. [Features](#features)
+2. [Installation](#installation)
+3. [Usage](#usage)
+4. [Providers](#providers)
+5. [Configuration](#configuration)
+6. [Network Connections](#network-connections)
+7. [Permissions](#permissions)
+8. [API Reference](#api-reference)
+9. [Troubleshooting](#troubleshooting)
+10. [Contributing](#contributing)
+11. [License](#license)
 
 ## Features
-------------
 
 ### Model Browser
-- **Multi-provider search** — Browse models from Hartsy, CivitAI, and Hugging Face in a unified interface
-- **Provider switching** — Toggle between providers with a single click; each provider retains its own search state
-- **Search with filters** — Filter by model type, base architecture, sort order, and tags (provider-dependent)
-- **Pagination** — Page-based and cursor-based pagination depending on the provider
-- **Model cards** — Visual cards with thumbnail, title, creator, download count, base model, and type badges
-- **Model popovers** — Click a card to see full details, description, download options, and action buttons
 
-### Recommended Models
-- **Curated list from the SwarmUI docs** — A "Recommended Models" panel surfaces the models recommended in the official [Image](https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Model%20Support.md), [Video](https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Video%20Model%20Support.md), and [Audio](https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Audio%20Model%20Support.md) Model Support docs
-- **Image, Video, and Audio columns** — Models are grouped by category, each with architecture, scale, and author chips plus a short note
-- **Variant dropdown** — Each model lists its download variants (FP8, BF16, GGUF, Nunchaku, distilled, LoRAs, etc.); pick one and hit Download to load it into the manual downloader, or Open to view the source page
-- **Recommended badge** — The current top picks are highlighted
-- **Collapsible** — The whole panel and each category's overflow can be collapsed; state is remembered
+![Recommended Models panel](Assets/screenshots/recommended_models.png)
 
-### Enhanced Download UI
-- **Two-column layout** — Manual URL download on the left, model browser on the right
-- **Recent folders** — The folder selector remembers your last 12 download destinations
-- **New folder creation** — Create custom subfolders directly from the dropdown
-- **Destination preview** — Live breadcrumb path showing exactly where the file will be saved
-- **Clipboard paste** — One-click paste button for the URL input
-- **401 error recovery** — When a download fails with 401 Unauthorized, shows a helpful message with a link to User Settings to configure API keys, plus a Retry button
+- **Three providers, one interface** — switch between Hartsy, CivitAI, and Hugging Face with a dropdown; each keeps its own search/filter state
+- **Filters** — model type / architecture, base model, sort, tags, and (CivitAI only) NSFW, per provider — see [Providers](#providers) for exactly what each one supports
+- **Page or cursor pagination**, whichever the active provider's API uses
+- **Model cards** — thumbnail, title, creator, download count, and type/base-model badges, plus a version/format picker on cards that have more than one downloadable file; click a card's thumbnail (or its **Download** button) to load that exact file's URL straight into the manual downloader on the left
 
-### Provider Capabilities
+  <img src="Assets/screenshots/model_card.png" alt="A single model card" width="380">
 
-| Provider | Search | Filters | NSFW | Pagination | API Key |
-|----------|--------|---------|------|------------|---------|
-| **Hartsy** | Yes | Architecture, tags, sort | No | Page-based | Optional |
-| **CivitAI** | Yes | Type, base model, sort | Yes | Cursor + page | Optional |
-| **Hugging Face** | Yes | No | No | Cursor-based | No |
+- **Recommended Models** — a curated panel pulled from the SwarmUI docs' [Image](https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Model%20Support.md), [Video](https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Video%20Model%20Support.md), and [Audio](https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Audio%20Model%20Support.md) docs — three columns, each model showing its architecture/scale/author and a variant dropdown (FP8, BF16, GGUF, NVFP4, LoRAs, etc.); pick a variant and hit **Download** to load it into the manual downloader, or **Open** to view the source page. Current top picks carry a **Recommended** badge. The panel and each column's overflow are independently collapsible, and remember their state.
+
+### Manual Downloader Enhancements
+
+![Manual downloader with CivitAI metadata loaded](Assets/screenshots/manual_download_loaded.png)
+
+- **CivitAI version + file selectors** — pasting a CivitAI link auto-populates dropdowns for every version and (when a version has more than one) every file, so you don't have to re-paste a URL to switch quants
+- **Folder browser** — a collapsible tree of your existing model folders, replacing the flat dropdown; create a subfolder inline without leaving the page
+
+  ![Folder browser widget](Assets/screenshots/folder_browser.png)
+
+- **Recent folders** — your last 12 destinations surface at the top of the picker
+- **Destination preview** — a live path showing exactly where the file will land, updating as you change type/folder/name
+- **Clipboard paste button** for the URL field
+- **401 error recovery** — a failed download that looks like a gated/auth error gets a plain-language explanation and a direct link to User Settings to add the relevant API key, instead of a bare stack of numbers
+- **Resumable downloads** — download state is persisted server-side, so a SwarmUI restart mid-download leaves it paused (not lost); pause, resume, retry, and clear all work per-download from the Downloads list under the manual downloader
 
 ### Performance
-- **Response caching** — Search results cached for 60 seconds to avoid redundant API calls
-- **Image caching** — Hugging Face preview images cached for 5 minutes with automatic eviction at 100 entries
-- **Rate limiting** — Concurrent request limits per provider (3 for CivitAI/Hartsy, 5 for Hugging Face)
-- **Download roots caching** — Model folder paths cached for 30 seconds with thread-safe access
+
+- Search results cached 60 seconds per provider/query to avoid redundant API calls
+- Hugging Face preview images cached 5 minutes (evicted past 100 entries)
+- Per-provider concurrent request caps (3 for CivitAI/Hartsy, 5 for Hugging Face) so a burst of card renders can't hammer an upstream API
+- Model folder paths cached 30 seconds
 
 ## Installation
---------------
 
-### Preferred Method (Via SwarmUI)
+### Preferred Method (via SwarmUI)
 
 1. Open your SwarmUI instance
-2. Navigate to `Server > Extensions`
-3. Find "Enhanced Downloader"
-4. Click Install
-5. Restart SwarmUI when prompted
+2. Go to `Server` > `Extensions`
+3. Find **Enhanced Downloader** and click **Install**
+4. Restart SwarmUI when prompted
 
 ### Manual Installation
 
 1. Close SwarmUI
-2. Clone this repository into `SwarmUI/src/Extensions/SwarmUI-EnhancedDownloader/`
-3. Restart SwarmUI (the build process will compile the extension automatically)
-4. Go to `Server > Extensions` and verify it is enabled
+2. Clone this repo into `SwarmUI/src/Extensions/SwarmUI-EnhancedDownloader/`:
+   ```bash
+   cd SwarmUI/src/Extensions/
+   git clone https://github.com/HartsyAI/SwarmUI-EnhancedDownloader.git
+   ```
+3. Restart SwarmUI (or use one of the `launch-*-dev` scripts, which rebuild on every launch) — the extension compiles automatically
+4. Confirm it's enabled under `Server` > `Extensions`
+
+No extra setup is required — every API key described below is optional, and every provider works anonymously out of the box.
 
 ## Usage
---------
 
-### Browsing Models
+### Browsing and downloading a model
 
-1. Open the **Utilities** tab in SwarmUI
-2. Click **Download Models**
-3. The model browser appears on the right side of the page
-4. Select a provider from the tabs at the top (Hartsy, CivitAI, or Hugging Face)
-5. Type a search query or browse the default results
-6. Use the filter dropdowns (if available for the selected provider) to narrow results
-7. Click a model card to open the detail popover
+1. Open **Utilities** > **Model Downloader**
+2. Pick a provider from the **Source** dropdown on the right (Hartsy is the default)
+3. Type a search query, or just scroll the default results
+4. Narrow with the filter dropdowns where the provider supports them
+5. Click a card's thumbnail, or its **Download** button, to load that file's URL into the **URL** field on the left
+6. Pick (or create) a destination folder, confirm the **Save as** name, and click **Download**
 
-### Downloading a Model
+Pasting a URL directly (CivitAI, Hugging Face, or any other direct-download link) works the same as it always has in SwarmUI — the browser on the right is a convenience on top, not a requirement.
 
-**From the browser:**
-1. Click a model card to open its popover
-2. Click the **Download** button (or select a specific file version for HuggingFace models)
-3. The download URL is automatically loaded into the manual downloader on the left
-4. Select or create a destination folder
-5. The download begins via SwarmUI's built-in download system
+### Recommended Models
 
-**From a URL:**
-1. Paste a model URL into the URL input on the left (or use the Paste button)
-2. Select a destination folder from the dropdown
-3. Click Download
+Open the **Recommended Models** panel, pick a variant from a model's dropdown, and click **Download** to load it into the manual downloader, or **Open** to view its source page first. This list mirrors the current docs' recommendations, so it changes as SwarmUI's own recommendations do.
 
-### Managing Folders
+### Managing downloads
 
-- The folder dropdown shows all available model type folders from your SwarmUI configuration
-- Recently used folders appear at the top of the dropdown for quick access
-- Select **New Folder** to create a custom subfolder within any model directory
-- The destination path preview (breadcrumbs) updates in real-time as you change selections
-
-## Configuration
-----------------
-
-### API Keys (Optional)
-
-Some providers support optional API keys for accessing gated or private models.
-
-1. Open the **User** tab in SwarmUI
-2. Navigate to **User Settings**
-3. Enter your API keys:
-   - **CivitAI API Key** — Allows downloading gated models and increases rate limits
-   - **Hartsy API Key** — Enables authenticated access to the Hartsy API
-
-> [!WARNING]
-> Never share your API keys. They are stored in your SwarmUI user data and are only sent to the respective provider APIs.
-
-### NSFW Filtering
-
-NSFW results from CivitAI are hidden by default. To enable them:
-
-1. The `enhanced_downloader_nsfw` permission must be granted to your user/group
-2. Toggle the NSFW switch in the CivitAI browser filters
-
-### Hartsy Custom URL
-
-For development or self-hosted Hartsy instances, a custom base URL can be configured per-user via the `hartsy_api` → `url` user data key.
+Downloads appear in the **Downloads** list under the manual downloader as soon as you start one. Each shows live progress (bytes, percentage, speed where known). An in-progress download can be **Cancel**ed (the partial file is kept); a paused or errored one can be **Resume**d/**Retry**d from where it left off, or **Clear**ed to delete the partial file. Completed downloads can be dismissed, or left visible via the **Show completed** toggle.
 
 ## Providers
------------
+
+| Provider | Search | Filters | NSFW | Pagination | API Key |
+|----------|--------|---------|------|------------|---------|
+| **Hartsy** | Yes | Architecture, tags, sort | No | Page-based | Optional |
+| **CivitAI** | Yes | Type, base model, sort, period, tag, username | Yes (permission-gated) | Cursor (searches) / page (browse) | Optional |
+| **Hugging Face** | Yes | Pipeline tag, library, sort, author | No | Cursor-based | Optional |
 
 ### Hartsy
 
-[Hartsy](https://hartsy.ai) is a curated model repository. The Enhanced Downloader uses the Hartsy API to search and browse available models.
+![Hartsy browse results](Assets/screenshots/hartsy_browse.png)
 
-**Filters:**
-- **Architecture** — Filter by model architecture (e.g., SDXL, SD 1.5, Flux)
-- **Tags** — Filter by content tags
-- **Sort** — Popular, Newest, or Downloads
+[Hartsy](https://hartsy.ai) is a curated model repository being built by the team behind this extension.
+
+> [!IMPORTANT]
+> **Hartsy.ai is not yet publicly released.** While it's in this pre-release state, the catalog only contains **base model repackages** (SDXL, FLUX.2, Krea 2, HunyuanImage, and similar — see the screenshot above) rather than community finetunes or LoRAs. Browsing and downloading through this provider works today, but expect the catalog to grow substantially once the site is live.
+
+**Filters:** architecture, tags, sort (newest/updated/title/downloads).
 
 **Notes:**
 - Hartsy is the default provider when the browser loads
-- Models hosted externally (CivitAI, Hugging Face) will link to their original source for download
-- Filter options (architectures, tags) are fetched dynamically from the Hartsy API
+- A pasted Hartsy model link (either `hartsy.ai/models/<id>` or `hartsy.ai/Home?type=models&id=<id>`) resolves through the Hartsy API automatically, the same way a CivitAI link does — you don't need to use the browser for it to work
+- If a specific model doesn't have a direct download link available yet, the manual downloader says so explicitly and disables the Download button, rather than failing silently
+- An optional Hartsy API key raises rate limits and unlocks anything gated; browsing works anonymously either way — an invalid or missing key falls back to a public/anonymous request automatically instead of returning zero results
 
 ### CivitAI
 
-[CivitAI](https://civitai.com) is the largest community model repository. The Enhanced Downloader searches the CivitAI v1 API.
+![CivitAI browse results](Assets/screenshots/civitai_browse.png)
 
-**Filters:**
-- **Type** — Checkpoint, LoRA, VAE, Controlnet, Upscaler, etc.
-- **Base Model** — SD 1.5, SDXL, Flux, etc.
-- **Sort** — Most Downloaded, Highest Rated, Newest
-- **NSFW** — Toggle (requires permission)
+[CivitAI](https://civitai.com) is the largest community model repository.
+
+**Filters:** type (Checkpoint, LoRA, VAE, ControlNet, etc.), base model, sort, time period, tag, username (also parseable straight out of `@username` in the search box).
 
 **Notes:**
-- Browse mode uses page-based pagination; search mode uses cursor-based pagination
-- An API key unlocks access to gated models and higher rate limits
-- File selection prioritizes `.safetensors` format
+- Browsing without a search query uses page-based pagination; searching by name uses CivitAI's cursor-based pagination
+- NSFW results require the `enhanced_downloader_nsfw` permission (see [Permissions](#permissions)) *and* toggling the NSFW checkbox — with both, requests route through `civitai.red` instead of `civitai.com`
+- An API key unlocks gated/early-access models and raises rate limits
+- File selection prioritizes `.safetensors`; pasting a model or version URL auto-populates version and file dropdowns in the manual downloader
 
 ### Hugging Face
 
-[Hugging Face](https://huggingface.co) hosts a wide range of machine learning models. The Enhanced Downloader searches the Hugging Face Hub API.
+![Hugging Face browse results](Assets/screenshots/huggingface_browse.png)
 
-**Features:**
-- Search by model name or keyword
-- View all downloadable files within a model repository
-- Preview images are fetched automatically (thumbnails, README images)
-- Click to select a specific file for download
+[Hugging Face](https://huggingface.co) hosts a huge range of ML models.
+
+**Filters:** pipeline tag (text-to-image, image-to-video, text-to-speech, etc.), library (diffusers, transformers, gguf, safetensors, etc.), sort, author.
 
 **Notes:**
-- No filter support (Hugging Face API limitations)
-- Preview images use a multi-strategy fetch: common filenames first, then API siblings, then README parsing
-- File listings show size and filter to model-relevant extensions (`.safetensors`, `.gguf`, `.ckpt`, etc.)
+- Preview images are fetched lazily with a multi-strategy lookup (common filenames, then the repo's file listing, then parsing the README), so a thumbnail may take a moment to appear or may not be available for every repo
+- File listings are filtered to model-relevant extensions (`.safetensors`, `.gguf`, `.ckpt`, etc.) and show file size
+- An API token unlocks gated/private repos
 
-## Technical Architecture
-----------------------
+## Configuration
 
-### Extension Structure
+### API Keys (all optional)
 
-```
-SwarmUI-EnhancedDownloader/
-├── Assets/
-│   ├── css/
-│   │   └── enhanced_downloader.css          # Extension styles (SwarmUI theme-aware)
-│   └── js/
-│       ├── components/
-│       │   ├── featured_models.js           # Recommended Models panel (image/video/audio columns)
-│       │   ├── model_browser.js             # Browser orchestrator (search, pagination, provider tabs)
-│       │   ├── model_card.js                # Card rendering and layout
-│       │   └── model_popover.js             # Detail popover with actions
-│       ├── providers/
-│       │   ├── civitai.js                   # CivitAI client (search, download, card click)
-│       │   ├── hartsy.js                    # Hartsy client (search, filters, download)
-│       │   └── huggingface.js               # Hugging Face client (search, files, images)
-│       ├── enhanced_downloader.js           # Main entry (layout, folder UI, URL UI, 401 handling)
-│       └── enhanced_downloader_utils.js     # Shared utilities (async API, URL loading, metadata)
-├── WebAPI/
-│   ├── EnhancedDownloaderAPI.cs             # API endpoint registration
-│   ├── FeaturedModels.cs                    # Curated recommended-models list from the docs
-│   └── Providers/
-│       ├── CivitAIProvider.cs               # CivitAI search provider
-│       ├── EnhancedDownloaderProviderRegistry.cs  # Static provider registry
-│       ├── HartsyProvider.cs                # Hartsy search provider
-│       ├── HuggingFaceProvider.cs           # Hugging Face search + files + images
-│       ├── IEnhancedDownloaderProvider.cs   # Provider interface
-│       └── ProviderHelpers.cs               # Cache, result builder, URL builder, file helpers
-├── EnhancedDownloaderExtension.cs           # Extension entry point
-└── SwarmUI-EnhancedDownloader.csproj        # Project file
-```
+Every provider works anonymously. Adding a key raises rate limits and/or unlocks gated content:
 
-### Design Patterns
+1. Open **User** > **User Settings**
+2. Add whichever keys you want under API Keys:
+   - **CivitAI API Key**
+   - **Hugging Face API Key**
+   - **Hartsy API Key**
 
-- **Provider pattern** — Each model source implements `IEnhancedDownloaderProvider` on the backend and a matching JS provider object on the frontend
-- **Singleton instances** — Providers are stateless singletons registered in `EnhancedDownloaderProviderRegistry`
-- **Normalized results** — `ModelResultBuilder` transforms provider-specific JSON into a unified card format
-- **Cache with TTL** — `ProviderCache` wraps `ConcurrentDictionary` with time-based expiry and lazy pruning
-- **Rate limiting** — `SemaphoreSlim` per provider prevents API abuse
-- **SwarmUI integration** — Uses SwarmUI's `Utilities.UtilWebClient`, `Logs`, `escapeHtml()`, `genericRequest()`, CSS variables, and permission system
+> [!WARNING]
+> Never share your API keys. They're stored in your SwarmUI user data and are only ever sent to the corresponding provider's API.
 
-### API Endpoints
+### NSFW filtering
 
-| Endpoint | Permission | Description |
-|----------|-----------|-------------|
-| `ListProviders` | `enhanced_downloader` | Returns available providers and their capabilities |
-| `EnhancedDownloaderGetFeaturedModels` | `enhanced_downloader` | Returns the curated recommended-models list from the docs |
-| `EnhancedDownloaderGetDownloadRoots` | `enhanced_downloader` | Returns model folder paths for each model type |
-| `EnhancedDownloaderCivitaiSearch` | `enhanced_downloader_browse` | Searches CivitAI models |
-| `EnhancedDownloaderHuggingFaceSearch` | `enhanced_downloader_browse` | Searches Hugging Face models |
-| `EnhancedDownloaderHuggingFaceFiles` | `enhanced_downloader_browse` | Lists files in a Hugging Face repo |
-| `EnhancedDownloaderHuggingFaceImage` | `enhanced_downloader_browse` | Fetches preview image for a Hugging Face model |
-| `EnhancedDownloaderHartsySearch` | `enhanced_downloader_browse` | Searches Hartsy models |
-| `EnhancedDownloaderHartsyFilterOptions` | `enhanced_downloader_browse` | Fetches Hartsy filter options (architectures, tags) |
+NSFW results are off by default and only apply to CivitAI (Hartsy and Hugging Face don't expose an NSFW toggle at all). To see them:
+
+1. Grant the `enhanced_downloader_nsfw` permission to your user/group under `Server` > `Users & Permissions`
+2. Check the NSFW box in the CivitAI browser's filter row
+
+## Network Connections
+
+This extension talks to external hosts only when you actively search, browse, or download through it — never in the background, and never without you having initiated the action:
+
+| Host | When | Why |
+|---|---|---|
+| `civitai.com` / `civitai.red` | Searching/browsing CivitAI, loading a pasted CivitAI URL's metadata, downloading a CivitAI file | CivitAI's public API + CDN (`civitai.red` is used instead of `civitai.com` specifically for NSFW-enabled requests) |
+| `huggingface.co` | Searching/browsing Hugging Face, loading file listings/preview images, downloading a file | The Hugging Face Hub API |
+| `hartsy.ai` | Searching/browsing Hartsy, resolving a pasted Hartsy link, downloading a Hartsy file | The Hartsy API |
+
+There's no way to disable the extension's network access short of disabling the extension itself (per [SwarmUI's extension standards](https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Making%20Extensions.md#extension-standards), everything above is a connection you triggered, not one made on your behalf).
 
 ## Permissions
------------
 
-This extension registers three permissions, all defaulting to the **POWERUSERS** group:
+Three permissions, all defaulting to **POWERUSERS**:
 
 | Permission | Description |
 |-----------|-------------|
-| `enhanced_downloader` | Base access to the Enhanced Downloader extension |
-| `enhanced_downloader_browse` | Permission to search and browse models across providers |
-| `enhanced_downloader_nsfw` | Permission to include NSFW results (CivitAI only) |
+| `enhanced_downloader` | Base access — listing providers, download roots, and the recommended-models list |
+| `enhanced_downloader_browse` | Searching/browsing models across providers |
+| `enhanced_downloader_nsfw` | Including NSFW results (CivitAI only) |
 
-Permissions can be configured in `Server > Users & Permissions`.
+Configure these under `Server` > `Users & Permissions`.
+
+Starting, resuming, canceling, or clearing an actual download uses SwarmUI core's own `Permissions.DownloadModels` permission, not one of the three above — a user needs that core permission regardless of whether they can browse.
+
+## API Reference
+
+All endpoints are SwarmUI `API.RegisterAPICall` handlers (POST, JSON in/out), registered in `WebAPI/EnhancedDownloaderAPI.cs`.
+
+### Discovery
+
+| Endpoint | Permission | Params | Returns |
+|---|---|---|---|
+| `ListProviders` | `enhanced_downloader` | — | `{providers:[{id, displayName, supportsFilters, supportsNsfw}]}` |
+| `EnhancedDownloaderGetDownloadRoots` | `enhanced_downloader` | — | `{roots:{modelType: folderPath}}` |
+| `EnhancedDownloaderGetFeaturedModels` | `enhanced_downloader` | — | `{models:[{name, category, note, architecture, author, scale, isRecommended, downloads:[{label, url}]}]}` |
+
+### CivitAI
+
+| Endpoint | Params | Returns |
+|---|---|---|
+| `EnhancedDownloaderCivitaiSearch` | `query`, `page`, `limit`, `cursor`, `type`, `baseModel`, `sort`, `includeNsfw`, `period`, `username`, `tag`, `supportsGeneration`, `fromPlatform` | `{mode:"cursor"\|"page", page, totalPages, totalItems, nextCursor, items}` |
+| `EnhancedDownloaderCivitaiFilterOptions` | — | `{types, baseModels}` (live from CivitAI's `/api/v1/enums`) |
+| `EnhancedDownloaderCivitaiTags` | `query`, `limit` | `{tags:[{name, modelCount}]}` |
+| `EnhancedDownloaderCivitaiImages` | `modelVersionId`, `limit`, `includeNsfw` | `{images:[{url, width, height, nsfwLevel, prompt, ...}]}` |
+| `EnhancedDownloaderCivitaiVersionFiles` | `modelVersionId` | `{files:[{fileName, downloadUrl, fileSize, format, precision, primary}]}` |
+| `EnhancedDownloaderCivitaiVersionCheck` | `modelVersionId` | `{requireAuth, canGenerate, earlyAccessEndsAt, hasApiKey, ...}` |
+
+All CivitAI endpoints require `enhanced_downloader_browse`.
+
+### Hugging Face
+
+| Endpoint | Params | Returns |
+|---|---|---|
+| `EnhancedDownloaderHuggingFaceSearch` | `query`, `limit`, `cursor`, `pipelineTag`, `library`, `sort`, `author` | `{mode:"cursor", nextCursor, totalItems, items}` |
+| `EnhancedDownloaderHuggingFaceFiles` | `modelId` (required), `limit` | `{files:[{fileName, downloadUrl, fileSize, quantType}], truncated}` |
+| `EnhancedDownloaderHuggingFaceImage` | `modelId` (required) | `{image:"data:image/...;base64,..."}` |
+
+All require `enhanced_downloader_browse`.
+
+### Hartsy
+
+| Endpoint | Params | Returns |
+|---|---|---|
+| `EnhancedDownloaderHartsySearch` | `query`, `page`, `limit`, `architecture`, `sort`, `tags` | `{mode:"page", page, totalPages, totalItems, hasMore, items}` |
+| `EnhancedDownloaderHartsyFilterOptions` | — | `{architectures, tags, uploadSources, subscriptionTiers}` |
+| `EnhancedDownloaderHartsyModelDetails` | `modelId` (required) | `{title, description, architecture, author, image, downloads, tags, ...}` (cached, no analytics recorded) |
+| `EnhancedDownloaderHartsyDownload` | `modelId` (required) | `{downloadUrl, fileName, fileSize, hashSha256, torrent?}` (records a download analytics event on Hartsy's side — not cached) |
+| `EnhancedDownloaderHartsyVersions` | `modelId` (required) | `{versions:[{id, title, versionLabel, architecture, ...}]}` |
+
+All require `enhanced_downloader_browse`.
+
+### Download lifecycle
+
+| Endpoint | Permission | Params | Returns |
+|---|---|---|---|
+| `EnhancedDownloaderListDownloads` | `enhanced_downloader` | — | `{downloads:[DownloadRecord]}` |
+| `EnhancedDownloaderStartDownload` | `Permissions.DownloadModels` | `url`, `type`, `name` (all required), `metadata`, `image` | `{download: DownloadRecord}` |
+| `EnhancedDownloaderResumeDownload` | `Permissions.DownloadModels` | `id` (required) | `{download: DownloadRecord}` |
+| `EnhancedDownloaderCancelDownload` | `Permissions.DownloadModels` | `id` (required) | `{download: DownloadRecord}` |
+| `EnhancedDownloaderClearDownload` | `Permissions.DownloadModels` | `id` (required) | `{success: true}` |
+
+A `DownloadRecord` looks like:
+```json
+{
+  "id": "...", "url": "...", "type": "...", "name": "...", "extension": "...", "image": "...",
+  "totalBytes": 0, "downloadedBytes": 0, "perSecond": 0,
+  "state": "downloading | paused | errored | completed",
+  "error": "...", "note": "...", "createdAtMs": 0, "updatedAtMs": 0
+}
+```
+
+Downloads are persisted per-user (LiteDB generic data) so a SwarmUI restart mid-download resumes as **paused**, not lost.
 
 ## Troubleshooting
------------------
 
-### 401 Unauthorized on Download
+### 401 Unauthorized on download
 
-**Problem:** Download fails with a 401 error
+The failure message will link straight to **User Settings** — add the relevant provider's API key there (see [Configuration](#configuration)) and retry from the Downloads list.
 
-**Solution:**
-1. The enhanced error message will show a link to **User Settings**
-2. Click the link and add your API key for the relevant provider (CivitAI, Hartsy)
-3. Click the **Retry** button on the failed download
+### No search results
 
-### No Search Results
+- Check your connection
+- Try a different query or loosen the filters
+- Check SwarmUI's logs for the underlying API error
+- For CivitAI, confirm your API key if you're after gated content
 
-**Problem:** Browser shows no results for a search query
+### Browser panel missing
 
-**Solution:**
-- Check your network connection
-- Try a different search term
-- Check SwarmUI logs for API error messages
-- For CivitAI, verify your API key if searching for gated content
+1. Confirm the extension is enabled under `Server` > `Extensions`
+2. Restart SwarmUI after enabling it
+3. Hard-refresh (`Ctrl`+`Shift`+`R`)
+4. Check the browser console for JS errors
 
-### Browser Not Appearing
+### Missing preview images
 
-**Problem:** The model browser panel is missing from the Download Models page
-
-**Solution:**
-1. Verify the extension is enabled in `Server > Extensions`
-2. Restart SwarmUI after enabling
-3. Hard-refresh the browser (`Ctrl + Shift + R`)
-4. Check the browser console for JavaScript errors
-
-### Missing Preview Images
-
-**Problem:** Model cards show no thumbnail
-
-**Solution:**
-- Hugging Face images are fetched lazily and may not be available for all models
-- CivitAI images depend on model authors uploading them
-- Check the browser console for image fetch errors
+Hugging Face images are fetched lazily and aren't guaranteed for every repo; CivitAI images depend on what the model's author uploaded. Check the browser console for fetch errors if a specific thumbnail seems stuck.
 
 ## Contributing
---------------
 
-Contributions welcome! Focus areas:
+Contributions welcome — areas that would help most:
 - Additional provider integrations
+- Wiring up the per-card extras popover (`model_popover.js`/`getPopoverExtras` exist but aren't currently attached to a visible trigger on the card)
+- A real download-history feature (`download_history.js` is currently a placeholder)
 - Improved model metadata display
-- Download queue management
 - Better error messages and user guidance
 
 ## License
--------
 
-MIT License
+MIT License — see [LICENSE](LICENSE).
 
 ## Credits
--------
 
 - [SwarmUI](https://github.com/mcmonkeyprojects/SwarmUI) by mcmonkey
 - [CivitAI](https://civitai.com) for their public model API
 - [Hugging Face](https://huggingface.co) for the Hub API
 - [Hartsy AI](https://hartsy.ai) for the Hartsy model platform
 - The [Hartsy Discord Community](https://discord.gg/nWfCupjhbm) for testing and feedback
-
----
-
-**Last Updated:** June 2026
-**Extension Version:** 1.0.0

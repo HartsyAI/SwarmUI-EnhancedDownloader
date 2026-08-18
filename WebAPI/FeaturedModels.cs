@@ -68,9 +68,9 @@ public static class FeaturedModels
                 D("Base BF16", "https://huggingface.co/Comfy-Org/z_image/blob/main/split_files/diffusion_models/z_image_bf16.safetensors")
             ),
 
-            M("Flux.2 Klein", "image",
-                "Great for editing and art variety. Smaller, faster Flux.2 variant. 4B is often smarter than 9B.",
-                "MMDiT", "Black Forest Labs", "4B, 9B", true,
+            M("Flux.2", "image",
+                "MMDiT family from Black Forest Labs. Klein is a smaller, faster variant great for editing/art variety (4B is often smarter than 9B); Dev is the smartest and largest at 32B but needs 64GB+ RAM.",
+                "MMDiT", "Black Forest Labs", "4B, 9B, 32B", true,
                 D("Klein 4B Distilled", "https://huggingface.co/Comfy-Org/flux2-klein-4B/blob/main/split_files/diffusion_models/flux-2-klein-4b.safetensors"),
                 D("Klein 4B Base", "https://huggingface.co/Comfy-Org/flux2-klein-4B/blob/main/split_files/diffusion_models/flux-2-klein-base-4b.safetensors"),
                 D("Klein 4B GGUF Q4", "https://huggingface.co/unsloth/FLUX.2-klein-4B-GGUF/blob/main/flux-2-klein-4b-Q4_K_M.gguf"),
@@ -79,17 +79,12 @@ public static class FeaturedModels
                 D("Klein 9B GGUF Q4", "https://huggingface.co/unsloth/FLUX.2-klein-9B-GGUF/blob/main/flux-2-klein-9b-Q4_K_M.gguf"),
                 D("Klein 9B Base FP8", "https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9b-fp8/blob/main/flux-2-klein-base-9b-fp8.safetensors"),
                 D("Klein 9B Base GGUF Q4", "https://huggingface.co/unsloth/FLUX.2-klein-base-9B-GGUF/blob/main/flux-2-klein-base-9b-Q4_K_M.gguf"),
-                D("Klein 9B KV-Cache FP8 (Faster Editing)", "https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-kv-fp8/blob/main/flux-2-klein-9b-kv-fp8.safetensors")
-            ),
-
-            M("Flux.2 Dev", "image",
-                "Smartest image model available. Massive 32B, needs 64GB+ RAM.",
-                "MMDiT", "Black Forest Labs", "32B", true,
+                D("Klein 9B KV-Cache FP8 (Faster Editing)", "https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-kv-fp8/blob/main/flux-2-klein-9b-kv-fp8.safetensors"),
                 D("Dev FP8 (Recommended)", "https://huggingface.co/silveroxides/FLUX.2-dev-fp8_scaled/blob/main/flux2-dev-fp8mixedfromscaled.safetensors"),
                 D("Dev Turbo FP8", "https://huggingface.co/silveroxides/FLUX.2-dev-fp8_scaled/blob/main/flux2-dev-turbo-fp8mixed.safetensors"),
-                D("Turbo LoRA", "https://huggingface.co/fal/FLUX.2-dev-Turbo/blob/main/comfy/Flux_2-Turbo-LoRA_comfyui.safetensors"),
-                D("GGUF Q6_K", "https://huggingface.co/city96/FLUX.2-dev-gguf/blob/main/flux2-dev-Q6_K.gguf"),
-                D("GGUF Q4_K_S", "https://huggingface.co/city96/FLUX.2-dev-gguf/blob/main/flux2-dev-Q4_K_S.gguf")
+                D("Dev Turbo LoRA", "https://huggingface.co/fal/FLUX.2-dev-Turbo/blob/main/comfy/Flux_2-Turbo-LoRA_comfyui.safetensors"),
+                D("Dev GGUF Q6_K", "https://huggingface.co/city96/FLUX.2-dev-gguf/blob/main/flux2-dev-Q6_K.gguf"),
+                D("Dev GGUF Q4_K_S", "https://huggingface.co/city96/FLUX.2-dev-gguf/blob/main/flux2-dev-Q4_K_S.gguf")
             ),
 
             M("Qwen Image", "image",
@@ -217,15 +212,29 @@ public static class FeaturedModels
 
             #region Video Models
 
-            M("LTX 2.5", "video",
-                "The current top leading video model. Official upgrade to LTX-2.3 with (partial) LoRA cross-compatibility. Audio+Video, minimal censorship. Gated - accept the license on the model page before downloading.",
-                "DiT", "Lightricks", "22B", true,
-                D("Dev int8", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors"),
-                D("Distilled int8", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors"),
-                D("Dev BF16", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-dev-transformer-bf16.safetensors"),
-                D("Distilled BF16", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-distilled-transformer-bf16.safetensors"),
-                D("Distilled NVFP4", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-distilled-transformer-nvfp4.safetensors"),
-                D("Distilled Refiner LoRA", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/loras/ltx-2.5-22b-distilled-lora-450-bf16.safetensors")
+            M("LTX", "video",
+                "The current top leading video model is LTX-2.5, an official upgrade to 2.3 with (partial) LoRA cross-compatibility (gated - accept the license on the model page before downloading). LTX-2 was the first open source Audio+Video model; the original LTX Video is very fast but lower quality. Each version is a real step up from the last.",
+                "DiT", "Lightricks", "3B, 19B, 22B", true,
+                D("2.5 Dev int8", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors"),
+                D("2.5 Distilled int8", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors"),
+                D("2.5 Dev BF16", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-dev-transformer-bf16.safetensors"),
+                D("2.5 Distilled BF16", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-distilled-transformer-bf16.safetensors"),
+                D("2.5 Distilled NVFP4", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-distilled-transformer-nvfp4.safetensors"),
+                D("2.5 Distilled Refiner LoRA", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/loras/ltx-2.5-22b-distilled-lora-450-bf16.safetensors"),
+                D("2.3 Dev FP8", "https://huggingface.co/Lightricks/LTX-2.3-fp8/blob/main/ltx-2.3-22b-dev-fp8.safetensors"),
+                D("2.3 Distilled FP8", "https://huggingface.co/Lightricks/LTX-2.3-fp8/blob/main/ltx-2.3-22b-distilled-fp8.safetensors"),
+                D("2.3 Dev BF16", "https://huggingface.co/Lightricks/LTX-2.3/blob/main/ltx-2.3-22b-dev.safetensors"),
+                D("2.3 Distilled BF16", "https://huggingface.co/Lightricks/LTX-2.3/blob/main/ltx-2.3-22b-distilled.safetensors"),
+                D("2.3 Distilled Refiner LoRA", "https://huggingface.co/Lightricks/LTX-2.3/blob/main/ltx-2.3-22b-distilled-lora-384.safetensors"),
+                D("2 Dev FP8", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev-fp8.safetensors"),
+                D("2 Dev FP4", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev-fp4.safetensors"),
+                D("2 Dev BF16", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev.safetensors"),
+                D("2 Distilled FP8", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled-fp8.safetensors"),
+                D("2 Distilled BF16", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled.safetensors"),
+                D("2 Spatial Upscaler x2", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-spatial-upscaler-x2-1.0.safetensors"),
+                D("Legacy v0.9.6 Dev", "https://huggingface.co/Lightricks/LTX-Video/blob/main/ltxv-2b-0.9.6-dev-04-25.safetensors"),
+                D("Legacy v0.9.6 Distilled", "https://huggingface.co/Lightricks/LTX-Video/blob/main/ltxv-2b-0.9.6-distilled-04-25.safetensors"),
+                D("Legacy v0.9.1", "https://huggingface.co/Lightricks/LTX-Video/blob/main/ltx-video-2b-v0.9.1.safetensors")
             ),
 
             M("MiniMax H3", "video",
@@ -235,29 +244,24 @@ public static class FeaturedModels
                 D("Ref2VA Pruned int8", "https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors")
             ),
 
-            M("Wan 2.1", "video",
-                "Best local video model. 14B for quality, 1.3B for speed. CausVid/Lightx2v LoRAs available for faster gen.",
-                "DiT", "Alibaba - Wan-AI", "1.3B, 14B", false,
-                D("T2V 14B FP8 (Recommended)", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_t2v_14B_fp8_scaled.safetensors"),
-                D("T2V 1.3B FP16", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_t2v_1.3B_fp16.safetensors"),
-                D("I2V 480p 14B FP8", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_i2v_480p_14B_fp8_scaled.safetensors"),
-                D("I2V 720p 14B FP8", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_i2v_720p_14B_fp8_scaled.safetensors"),
-                D("I2V 1.3B Fun-InP", "https://huggingface.co/alibaba-pai/Wan2.1-Fun-1.3B-InP/blob/main/diffusion_pytorch_model.safetensors"),
-                D("FLF2V 14B 720p FP8", "https://huggingface.co/Kijai/WanVideo_comfy/blob/main/Wan2_1-FLF2V-14B-720P_fp8_e4m3fn.safetensors"),
-                D("Lightx2v LoRA (Fast 14B)", "https://huggingface.co/Kijai/WanVideo_comfy/blob/main/Wan21_T2V_14B_lightx2v_cfg_step_distill_lora_rank32.safetensors"),
-                D("CausVid LoRA v2 (Fast 14B)", "https://huggingface.co/Kijai/WanVideo_comfy/blob/main/Wan21_CausVid_14B_T2V_lora_rank32_v2.safetensors"),
-                D("Phantom 14B FP8", "https://huggingface.co/Kijai/WanVideo_comfy/blob/main/Phantom-Wan-14B_fp8_e4m3fn.safetensors"),
-                D("Phantom 14B GGUF Q4", "https://huggingface.co/QuantStack/Phantom_Wan_14B-GGUF/blob/main/Phantom_Wan_14B-Q4_K_M.gguf")
-            ),
-
-            M("Wan 2.2", "video",
-                "Better photorealism than 2.1 but more complex (high+low noise pair for 14B). 5B variant is simpler.",
-                "DiT", "Alibaba - Wan-AI", "5B, 14B", true,
-                D("T2V 14B High Noise FP8", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors"),
-                D("T2V 14B Low Noise FP8", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors"),
-                D("I2V 14B High Noise FP8", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors"),
-                D("I2V 14B Low Noise FP8", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors"),
-                D("5B TI2V FP16", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors")
+            M("Wan", "video",
+                "Best local video model family. 2.2 improves photorealism over 2.1 but is more complex (high+low noise pair for 14B; 5B is simpler); 2.1 remains a great, simpler starting point with CausVid/Lightx2v LoRAs available for faster gen.",
+                "DiT", "Alibaba - Wan-AI", "1.3B, 5B, 14B", true,
+                D("2.2 T2V 14B High Noise FP8", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors"),
+                D("2.2 T2V 14B Low Noise FP8", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors"),
+                D("2.2 I2V 14B High Noise FP8", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors"),
+                D("2.2 I2V 14B Low Noise FP8", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors"),
+                D("2.2 5B TI2V FP16", "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors"),
+                D("2.1 T2V 14B FP8 (Recommended)", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_t2v_14B_fp8_scaled.safetensors"),
+                D("2.1 T2V 1.3B FP16", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_t2v_1.3B_fp16.safetensors"),
+                D("2.1 I2V 480p 14B FP8", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_i2v_480p_14B_fp8_scaled.safetensors"),
+                D("2.1 I2V 720p 14B FP8", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_i2v_720p_14B_fp8_scaled.safetensors"),
+                D("2.1 I2V 1.3B Fun-InP", "https://huggingface.co/alibaba-pai/Wan2.1-Fun-1.3B-InP/blob/main/diffusion_pytorch_model.safetensors"),
+                D("2.1 FLF2V 14B 720p FP8", "https://huggingface.co/Kijai/WanVideo_comfy/blob/main/Wan2_1-FLF2V-14B-720P_fp8_e4m3fn.safetensors"),
+                D("2.1 Lightx2v LoRA (Fast 14B)", "https://huggingface.co/Kijai/WanVideo_comfy/blob/main/Wan21_T2V_14B_lightx2v_cfg_step_distill_lora_rank32.safetensors"),
+                D("2.1 CausVid LoRA v2 (Fast 14B)", "https://huggingface.co/Kijai/WanVideo_comfy/blob/main/Wan21_CausVid_14B_T2V_lora_rank32_v2.safetensors"),
+                D("2.1 Phantom 14B FP8", "https://huggingface.co/Kijai/WanVideo_comfy/blob/main/Phantom-Wan-14B_fp8_e4m3fn.safetensors"),
+                D("2.1 Phantom 14B GGUF Q4", "https://huggingface.co/QuantStack/Phantom_Wan_14B-GGUF/blob/main/Phantom_Wan_14B-Q4_K_M.gguf")
             ),
 
             M("Hunyuan Video", "video",
@@ -275,30 +279,6 @@ public static class FeaturedModels
                 "MMDiT", "Tencent", "8B", false,
                 D("T2V 720p Distilled", "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/blob/main/split_files/diffusion_models/hunyuan_video_1.5_t2v_720p_distilled_bf16.safetensors"),
                 D("I2V 720p Distilled", "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/blob/main/split_files/diffusion_models/hunyuan_video_1.5_i2v_720p_distilled_bf16.safetensors")
-            ),
-
-            M("LTX Video", "video",
-                "Very fast but lower quality. Popular for Image2Video workflows. Each version is better than the last, but the docs call all of them 'pretty bad'.",
-                "DiT", "Lightricks", "3B", false,
-                D("v0.9.6 Dev (Latest)", "https://huggingface.co/Lightricks/LTX-Video/blob/main/ltxv-2b-0.9.6-dev-04-25.safetensors"),
-                D("v0.9.6 Distilled", "https://huggingface.co/Lightricks/LTX-Video/blob/main/ltxv-2b-0.9.6-distilled-04-25.safetensors"),
-                D("v0.9.1 (Older)", "https://huggingface.co/Lightricks/LTX-Video/blob/main/ltx-video-2b-v0.9.1.safetensors")
-            ),
-
-            M("LTX Video 2", "video",
-                "First open source Audio+Video model. Mixed quality but fun. 2.3 is the newer upgrade.",
-                "DiT", "Lightricks", "19B, 22B", false,
-                D("2.3 Dev FP8", "https://huggingface.co/Lightricks/LTX-2.3-fp8/blob/main/ltx-2.3-22b-dev-fp8.safetensors"),
-                D("2.3 Distilled FP8", "https://huggingface.co/Lightricks/LTX-2.3-fp8/blob/main/ltx-2.3-22b-distilled-fp8.safetensors"),
-                D("2.3 Dev BF16", "https://huggingface.co/Lightricks/LTX-2.3/blob/main/ltx-2.3-22b-dev.safetensors"),
-                D("2.3 Distilled BF16", "https://huggingface.co/Lightricks/LTX-2.3/blob/main/ltx-2.3-22b-distilled.safetensors"),
-                D("2.3 Distilled Refiner LoRA", "https://huggingface.co/Lightricks/LTX-2.3/blob/main/ltx-2.3-22b-distilled-lora-384.safetensors"),
-                D("2 Dev FP8", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev-fp8.safetensors"),
-                D("2 Dev FP4", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev-fp4.safetensors"),
-                D("2 Dev BF16", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-dev.safetensors"),
-                D("2 Distilled FP8", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled-fp8.safetensors"),
-                D("2 Distilled BF16", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-19b-distilled.safetensors"),
-                D("2 Spatial Upscaler x2", "https://huggingface.co/Lightricks/LTX-2/blob/main/ltx-2-spatial-upscaler-x2-1.0.safetensors")
             ),
 
             #endregion
