@@ -217,6 +217,17 @@ public static class FeaturedModels
 
             #region Video Models
 
+            M("LTX 2.5", "video",
+                "The current top leading video model. Official upgrade to LTX-2.3 with (partial) LoRA cross-compatibility. Audio+Video, minimal censorship. Gated - accept the license on the model page before downloading.",
+                "DiT", "Lightricks", "22B", true,
+                D("Dev int8", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors"),
+                D("Distilled int8", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors"),
+                D("Dev BF16", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-dev-transformer-bf16.safetensors"),
+                D("Distilled BF16", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-distilled-transformer-bf16.safetensors"),
+                D("Distilled NVFP4", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-distilled-transformer-nvfp4.safetensors"),
+                D("Distilled Refiner LoRA", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/loras/ltx-2.5-22b-distilled-lora-450-bf16.safetensors")
+            ),
+
             M("MiniMax H3", "video",
                 "The crown champion of video models - everything before it is outdated in comparison. Any2Video+Audio, minimal censorship. FL2VA for text/image2video, Ref2VA for reference-driven editing.",
                 "DiT", "MiniMax AI", "20B, 33B", true,
@@ -226,7 +237,7 @@ public static class FeaturedModels
 
             M("Wan 2.1", "video",
                 "Best local video model. 14B for quality, 1.3B for speed. CausVid/Lightx2v LoRAs available for faster gen.",
-                "DiT", "Alibaba - Wan-AI", "1.3B, 14B", true,
+                "DiT", "Alibaba - Wan-AI", "1.3B, 14B", false,
                 D("T2V 14B FP8 (Recommended)", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_t2v_14B_fp8_scaled.safetensors"),
                 D("T2V 1.3B FP16", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_t2v_1.3B_fp16.safetensors"),
                 D("I2V 480p 14B FP8", "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/blob/main/split_files/diffusion_models/wan2.1_i2v_480p_14B_fp8_scaled.safetensors"),
@@ -293,6 +304,13 @@ public static class FeaturedModels
             #endregion
 
             #region Audio Models
+
+            M("MiniMax Music 3", "audio",
+                "Music generation with lyrics and style prompts. Uses a dedicated LLM to build the song.",
+                "DiT", "Hailuo & MiniMax", "2B", true,
+                D("int8 (Recommended)", "https://huggingface.co/Comfy-Org/MiniMax-Music-3/blob/main/diffusion_models/minimax_music3_dit_int8_convrot.safetensors"),
+                D("FP16", "https://huggingface.co/Comfy-Org/MiniMax-Music-3/blob/main/diffusion_models/minimax_music3_dit_fp16.safetensors")
+            ),
 
             M("Ace Step 1.5", "audio",
                 "First natively-supported audio model. Music generation with lyrics and style prompts. Fast.",

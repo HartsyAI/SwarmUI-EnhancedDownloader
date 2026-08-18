@@ -233,6 +233,21 @@
     overflow: auto;
 }
 
+#Utilities-ModelDownloader-Tab .model-downloader-preview:has(.enhanced-downloader-meta-split) {
+    display: block;
+    padding: 0;
+    border: none;
+    background: none;
+}
+
+/* force our injected folder browser / destination preview onto their own line in core's flex field rows */
+#Utilities-ModelDownloader-Tab .model-downloader-field > .enhanced-downloader-new-folder,
+#Utilities-ModelDownloader-Tab .model-downloader-field > .enhanced-downloader-destination,
+#Utilities-ModelDownloader-Tab .model-downloader-field > #model_downloader_selected_folder,
+#Utilities-ModelDownloader-Tab .model-downloader-field > #model_downloader_folder_browser {
+    flex-basis: 100%;
+}
+
 @media (max-width: 900px) {
     #Utilities-ModelDownloader-Tab .enhanced-downloader-meta-split {
         grid-template-columns: 1fr;
