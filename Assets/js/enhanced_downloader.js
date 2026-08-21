@@ -23,6 +23,40 @@
         }
     }
 
+    let cachedRootTrim = null;
+
+    function normalizePath(path) {
+        return `${path || ''}`.replaceAll('\\', '/').replaceAll(/\/+/g, '/').replace(/\/$/, '');
+    }
+
+    function getRootTrim() {
+        if (cachedRootTrim !== null) {
+            return cachedRootTrim;
+        }
+        const paths = Object.values(downloadRoots || {}).map(normalizePath).filter(p => p);
+        if (!paths.length) {
+            return '';
+        }
+        if (paths.length === 1) {
+            const parts = paths[0].split('/');
+            cachedRootTrim = parts.slice(0, Math.max(0, parts.length - 2)).join('/');
+            return cachedRootTrim;
+        }
+        const split = paths.map(p => p.split('/'));
+        let shared = 0;
+        while (split.every(parts => parts[shared] !== undefined && parts[shared] === split[0][shared])) {
+            shared++;
+        }
+        cachedRootTrim = shared < 1 ? '' : split[0].slice(0, shared - 1).join('/');
+        return cachedRootTrim;
+    }
+
+    function toDisplayRoot(absoluteRoot) {
+        const root = normalizePath(absoluteRoot);
+        const trim = getRootTrim();
+        return trim && root.startsWith(`${trim}/`) ? root.slice(trim.length + 1) : root;
+    }
+
     function getRecents() {
         try {
             const raw = localStorage.getItem(RECENTS_KEY);
@@ -131,7 +165,7 @@
             const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
             const type = modelDownloader.type ? modelDownloader.type.value : '';
             const rootRaw = downloadRoots && downloadRoots[type] ? `${downloadRoots[type]}` : '';
-            const root = (rootRaw || type).replaceAll('\\', '/').replaceAll(/\/+/g, '/').replace(/\/$/, '');
+            const root = rootRaw ? toDisplayRoot(rootRaw) : normalizePath(type);
             const folder = utils && utils.resolveSelectedFolder ? utils.resolveSelectedFolder(modelDownloader) : '';
             const nameVal = modelDownloader.name ? (modelDownloader.name.value || '') : '';
 
@@ -383,6 +417,119 @@
         modelDownloader.urlInput = wrapped;
     }
 
+    const SAMPLE_MODEL_POOL_SIZE = 50;
+
+    function pickSampleHartsyModel(items) {
+        const usable = items.filter(item => item && item.name && !item.isNsfw);
+        if (!usable.length) {
+            return null;
+        }
+        return usable[Math.floor(Math.random() * usable.length)];
+    }
+
+    function applySampleHartsyModel(item) {
+        const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+        const title = `${item.name}`;
+        const cleanName = title.replaceAll(/[\\/:*?"<>|]/g, '-').replaceAll(' ', '_');
+        const architecture = `${item.baseModel || ''}`;
+        const downloadUrl = `${item.downloadUrl || ''}`;
+
+        if (modelDownloader.type && architecture) {
+            modelDownloader.type.value = architecture.toLowerCase().endsWith('/lora') ? 'LoRA' : 'Stable-Diffusion';
+            modelDownloader.type.dispatchEvent(new Event('change'));
+        }
+        modelDownloader.name.value = cleanName;
+        modelDownloader.name.dispatchEvent(new Event('input'));
+
+        if (downloadUrl) {
+            modelDownloader.url.value = utils.appendExtensionHint ? utils.appendExtensionHint(downloadUrl, item.fileName) : downloadUrl;
+            modelDownloader.nameInput();
+            modelDownloader.urlStatusArea.innerText = `Showing a Hartsy model to get you started: ${title}. Paste your own URL over it any time.`;
+        }
+        else {
+            modelDownloader.urlStatusArea.innerText = `Showing a Hartsy model to get you started: ${title}. Hartsy has not published a direct download link for this one yet, so paste a URL above to download something else.`;
+        }
+
+        if (typeof utils.setManualDownloaderInfo === 'function') {
+            const descText = stripHtmlToText(item.description || '');
+            const infoHtml = `
+                <b>Hartsy Model</b>
+                <br><b>Model</b>: ${escapeHtml(title)}
+                ${architecture ? `<br><b>Architecture</b>: ${escapeHtml(architecture)}` : ''}
+                ${item.creator ? `<br><b>Author</b>: ${escapeHtml(item.creator)}` : ''}
+                ${item.fileName ? `<br><b>File</b>: ${escapeHtml(item.fileName)}` : ''}
+                ${descText ? `<br><b>Description</b>: ${escapeHtml(descText)}` : ''}
+            `;
+            const rawMeta = JSON.stringify({
+                'modelspec.title': title,
+                'modelspec.description': `From ${item.openUrl || 'https://hartsy.ai'}\n${descText || ''}`,
+                'modelspec.architecture': architecture,
+            }, null, 2);
+            utils.setManualDownloaderInfo(infoHtml, rawMeta, item.image || '');
+        }
+    }
+
+    async function loadSampleHartsyModel() {
+        const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+        if (!utils || typeof utils.genericRequestAsync !== 'function' || !window.modelDownloader) {
+            return;
+        }
+        if (!modelDownloader.url || !modelDownloader.name) {
+            return;
+        }
+        if (modelDownloader.url.value.trim() || modelDownloader.name.value.trim()) {
+            return;
+        }
+        try {
+            const resp = await utils.genericRequestAsync('EnhancedDownloaderHartsySearch', { limit: SAMPLE_MODEL_POOL_SIZE });
+            if (!resp || !resp.success || !Array.isArray(resp.items)) {
+                return;
+            }
+            const item = pickSampleHartsyModel(resp.items);
+            if (!item || modelDownloader.url.value.trim() || modelDownloader.name.value.trim()) {
+                return;
+            }
+            applySampleHartsyModel(item);
+        }
+        catch (e) {
+            console.warn('Could not load a sample Hartsy model:', e);
+        }
+    }
+
+    function tryArmSampleModelLoad() {
+        const pane = document.getElementById('Utilities-ModelDownloader-Tab');
+        if (!pane) {
+            return false;
+        }
+        if (pane.dataset.enhancedDownloaderSampleArmed) {
+            return true;
+        }
+        pane.dataset.enhancedDownloaderSampleArmed = 'true';
+        let observer = null;
+        let done = false;
+        const runOnce = () => {
+            if (done) {
+                return;
+            }
+            done = true;
+            if (observer) {
+                observer.disconnect();
+            }
+            loadSampleHartsyModel();
+        };
+        if (pane.classList.contains('active')) {
+            runOnce();
+            return true;
+        }
+        observer = new MutationObserver(() => {
+            if (pane.classList.contains('active')) {
+                runOnce();
+            }
+        });
+        observer.observe(pane, { attributes: true, attributeFilter: ['class'] });
+        return true;
+    }
+
     function tryEnhanceUrlUI() {
         if (!window.modelDownloader || !modelDownloader.url) {
             return false;
@@ -584,6 +731,7 @@
         while (Date.now() - start < DOM_READY_TIMEOUT_MS) {
             const downloads = window.EnhancedDownloader && window.EnhancedDownloader.Downloads;
             const downloadsReady = downloads ? await downloads.init() : false;
+            tryArmSampleModelLoad();
             if (tryEmbedDownloadsPanel() && tryEnhanceUrlUI() && tryEnhanceFolderUI() && tryTakeOverDownloadRun() && downloadsReady && tryEmbedCivitaiBrowserPanel() && tryEmbedFeaturedModelsPanel()) {
                 break;
             }
