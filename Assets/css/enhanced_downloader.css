@@ -223,45 +223,14 @@
     border-radius: 0.5rem;
 }
 
-#Utilities-ModelDownloader-Tab .enhanced-downloader-meta-split {
-    display: grid;
-    grid-template-columns: 14rem 1fr;
-    gap: 0.75rem;
-    margin: 0.6rem 0 0.75rem;
-    padding: 0.6rem;
-    border: 1px solid var(--light-border);
-    border-radius: 0.75rem;
-    background: var(--background);
+#Utilities-ModelDownloader-Tab .model-downloader-preview {
+    background-color: var(--background);
 }
 
-#Utilities-ModelDownloader-Tab .enhanced-downloader-meta-split #model_downloader_imageside {
-    display: block;
-    width: 100%;
-    min-height: 10rem;
-    border-radius: 0.6rem;
-    overflow: hidden;
-}
-
-#Utilities-ModelDownloader-Tab .enhanced-downloader-meta-split #model_downloader_imageside img {
-    width: 100%;
-    height: auto;
-    border-radius: 0.6rem;
-}
-
-#Utilities-ModelDownloader-Tab .enhanced-downloader-meta-split #model_downloader_metadatazone {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    overflow: auto;
-}
-
-#Utilities-ModelDownloader-Tab .model-downloader-preview:has(.enhanced-downloader-meta-split) {
-    display: block;
-    padding: 0;
-    border: none;
-    background: none;
+@media (min-width: 769px) {
+    #Utilities-ModelDownloader-Tab .model-downloader-preview {
+        flex-direction: row-reverse;
+    }
 }
 
 #Utilities-ModelDownloader-Tab .model-downloader-field > .folder-browser-selected {
@@ -273,12 +242,6 @@
 #Utilities-ModelDownloader-Tab .model-downloader-field > .enhanced-downloader-destination,
 #Utilities-ModelDownloader-Tab .model-downloader-field > #model_downloader_folder_browser {
     flex-basis: 100%;
-}
-
-@media (max-width: 900px) {
-    #Utilities-ModelDownloader-Tab .enhanced-downloader-meta-split {
-        grid-template-columns: 1fr;
-    }
 }
 
 .enhanced-downloader-downloads-zone .ed-download-card .card {
@@ -385,6 +348,22 @@
 
 .enhanced-downloader-downloads-zone .ed-download-card .ed-download-actions .basic-button {
     flex: 1;
+}
+
+.enhanced-downloader-downloads-zone .ed-download-card .card:not(:has(.card-img-top)) {
+    grid-template-columns: 1fr;
+}
+
+.enhanced-downloader-downloads-zone .ed-download-card .card:not(:has(.card-img-top)) .ed-download-progress,
+.enhanced-downloader-downloads-zone .ed-download-card .card:not(:has(.card-img-top)) .ed-download-status,
+.enhanced-downloader-downloads-zone .ed-download-card .card:not(:has(.card-img-top)) .ed-download-actions {
+    grid-column: 1;
+    margin-left: 0.75rem;
+}
+
+.enhanced-downloader-downloads-zone .ed-download-card .card:not(:has(.card-img-top)) .ed-download-status {
+    padding-left: 0.75rem;
+    margin-left: 0;
 }
 
 @media (max-width: 900px) {

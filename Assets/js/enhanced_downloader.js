@@ -439,7 +439,7 @@
             modelDownloader.type.dispatchEvent(new Event('change'));
         }
         modelDownloader.name.value = cleanName;
-        modelDownloader.name.dispatchEvent(new Event('input'));
+        modelDownloader.name.dispatchEvent(new Event('change'));
 
         if (downloadUrl) {
             modelDownloader.url.value = utils.appendExtensionHint ? utils.appendExtensionHint(downloadUrl, item.fileName) : downloadUrl;
@@ -447,6 +447,8 @@
             modelDownloader.urlStatusArea.innerText = `Showing a Hartsy model to get you started: ${title}. Paste your own URL over it any time.`;
         }
         else {
+            modelDownloader.url.style.borderColor = '';
+            modelDownloader.name.style.borderColor = '';
             modelDownloader.urlStatusArea.innerText = `Showing a Hartsy model to get you started: ${title}. Hartsy has not published a direct download link for this one yet, so paste a URL above to download something else.`;
         }
 
@@ -616,16 +618,6 @@
             if (mainInner) {
                 mainInner.classList.add('enhanced-downloader-manual-inner');
             }
-            const metaZone = document.getElementById('model_downloader_metadatazone');
-            const imgSide = document.getElementById('model_downloader_imageside');
-            if (metaZone && imgSide && !metaZone.closest('.enhanced-downloader-meta-split')) {
-                const split = document.createElement('div');
-                split.className = 'enhanced-downloader-meta-split';
-                metaZone.insertAdjacentElement('beforebegin', split);
-                split.appendChild(imgSide);
-                split.appendChild(metaZone);
-            }
-
             const leftInfo = document.createElement('div');
             leftInfo.className = 'enhanced-downloader-section-info ed-info-left';
             leftInfo.innerHTML = `

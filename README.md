@@ -5,7 +5,7 @@
 A full-featured model browser for [SwarmUI](https://github.com/mcmonkeyprojects/SwarmUI)'s **Utilities > Model Downloader** tab. Search, preview, and download models from **CivitAI**, **Hugging Face**, and **Hartsy** without leaving SwarmUI or hand-typing a URL.
 
 > [!NOTE]
-> This extension enhances SwarmUI's built-in Model Downloader. It does not replace it. The manual URL download workflow on the left is still core SwarmUI, just reorganized and given a few extra conveniences (a folder browser, a destination preview, 401 recovery). The model browser on the right is new.
+> This extension enhances SwarmUI's built-in Model Downloader. It does not replace it. The manual URL download workflow on the left is still core SwarmUI, just reorganized and given a few extra conveniences (a starter model on arrival, a folder browser, a destination preview, 401 recovery). The model browser on the right is new.
 
 ## Table of Contents
 
@@ -43,11 +43,12 @@ A full-featured model browser for [SwarmUI](https://github.com/mcmonkeyprojects/
 > [!NOTE]
 > The **Version** and **File** dropdowns that appear when you paste a CivitAI link are core SwarmUI's, as of its 2026-08-17 Model Downloader update, not this extension's. The extension leaves them alone, and clears them when you replace the loaded model with a Hartsy link.
 
-- **Folder browser**: a collapsible tree of your existing model folders, shown in place of core's flat Folder dropdown, in the same field row; create a subfolder inline without leaving the page
+- **A model to start from**: opening the tab loads a random Hartsy model into the downloader, with its preview image, architecture, author and file name filled in, so the panel is never a blank form. It only fills empty fields, so it never overwrites a URL you pasted
+- **Folder browser**: a collapsible tree of your existing model folders, shown in place of core's flat Folder dropdown and sitting in the same field row; expand and collapse branches, or create a subfolder with **+ New Folder** without leaving the page
 
   ![Folder browser widget](Assets/screenshots/folder_browser.png)
 
-- **Destination preview**: a live path showing exactly where the file will land, updating as you change type/folder/name
+- **Destination preview**: a live path showing exactly where the file will land, updating as you change type/folder/name. It is shown relative to your model root (`Models/Lora/MyModel`) rather than as an absolute path, so a shared instance does not print the server's filesystem layout to every user
 - **Clipboard paste button** for the URL field
 - **401 error recovery**: a failed download that looks like a gated/auth error gets a plain-language explanation and a direct link to User Settings to add the relevant API key, instead of a bare stack of numbers
 - **Resumable downloads**: download state is persisted server-side, so a SwarmUI restart mid-download leaves it paused (not lost); pause, resume, retry, and clear all work per-download from the Downloads list under the manual downloader
@@ -100,7 +101,15 @@ Open the **Recommended Models** panel, pick a variant from a model's dropdown, a
 
 ### Managing downloads
 
-Downloads appear in the **Downloads** list under the manual downloader as soon as you start one. Each shows live progress (bytes, percentage, speed where known). An in-progress download can be **Cancel**ed (the partial file is kept); a paused or errored one can be **Resume**d/**Retry**d from where it left off, or **Clear**ed to delete the partial file. Completed downloads can be dismissed, or left visible via the **Show completed** toggle.
+Downloads appear in the **Downloads** list under the manual downloader as soon as you start one. Each shows live progress: bytes transferred, percentage, and speed where the server reports a total size.
+
+![A download in progress](Assets/screenshots/download_in_progress.png)
+
+An in-progress download can be **Cancel**ed, which keeps the partial file so it can be resumed. A paused or errored one can be **Resume**d or **Retry**d from where it left off, or **Clear**ed to delete the partial file.
+
+![A finished download](Assets/screenshots/download_complete.png)
+
+Finished downloads turn green and can be **Dismiss**ed. They are hidden by default; tick **Show completed** to keep them in the list.
 
 ## Providers
 
@@ -288,7 +297,7 @@ The failure message will link straight to **User Settings**. Add the relevant pr
 
 1. Confirm the extension is enabled under `Server` > `Extensions`
 2. Restart SwarmUI after enabling it
-3. Hard-refresh (`Ctrl`+`Shift`+`R`)
+3. Reload the page. Note that a browser hard-refresh on its own is not enough after an extension JS/CSS change: SwarmUI reads those files once per launch and serves them from memory, so the server has to restart first
 4. Check the browser console for JS errors
 
 ### Missing preview images
@@ -302,6 +311,7 @@ Contributions welcome. Areas that would help most:
 - Wiring up the per-card extras popover (`model_popover.js`/`getPopoverExtras` exist but aren't currently attached to a visible trigger on the card)
 - A real download-history feature (`download_history.js` is currently a placeholder)
 - Surfacing recent destination folders in the folder tree (the last 12 are still recorded to `localStorage`, but nothing displays them since the folder tree replaced core's dropdown)
+- Making **+ New Folder** show the folder it just created in the tree (it selects correctly and the download lands in the right place, but `buildFolderBrowser()` re-renders from `coreModelMap`, so a folder with no models in it yet never appears)
 - Improved model metadata display
 - Better error messages and user guidance
 
