@@ -122,6 +122,24 @@
         grid-template-columns: 1fr 1fr;
         align-items: start;
     }
+    .enhanced-downloader-layout > .enhanced-downloader-section-info {
+        grid-row: 1;
+        align-self: stretch;
+    }
+    .ed-info-left {
+        grid-column: 1;
+    }
+    .ed-info-right {
+        grid-column: 2;
+    }
+    .enhanced-downloader-col-left {
+        grid-column: 1;
+        grid-row: 2;
+    }
+    .enhanced-downloader-col-right {
+        grid-column: 2;
+        grid-row: 2;
+    }
 }
 
 .enhanced-downloader-section-info {
@@ -130,9 +148,12 @@
     border-radius: 0.5rem;
     background: var(--background-soft);
     color: var(--text-soft);
-    margin-bottom: 0.75rem;
     text-align: center;
     line-height: 1.25;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .enhanced-downloader-section-info .ed-info-title {
@@ -177,6 +198,8 @@
 
 #Utilities-ModelDownloader-Tab .enhanced-downloader-manual {
     width: 100%;
+    padding-left: 0;
+    padding-right: 0;
 }
 
 #Utilities-ModelDownloader-Tab .enhanced-downloader-manual-inner {
@@ -184,6 +207,7 @@
     border-radius: 0.75rem;
     background: var(--background-soft);
     padding: 0.75rem 0.9rem;
+    box-sizing: border-box;
 }
 
 #Utilities-ModelDownloader-Tab .enhanced-downloader-manual-inner hr {
@@ -240,10 +264,13 @@
     background: none;
 }
 
-/* force our injected folder browser / destination preview onto their own line in core's flex field rows */
+#Utilities-ModelDownloader-Tab .model-downloader-field > .folder-browser-selected {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
 #Utilities-ModelDownloader-Tab .model-downloader-field > .enhanced-downloader-new-folder,
 #Utilities-ModelDownloader-Tab .model-downloader-field > .enhanced-downloader-destination,
-#Utilities-ModelDownloader-Tab .model-downloader-field > #model_downloader_selected_folder,
 #Utilities-ModelDownloader-Tab .model-downloader-field > #model_downloader_folder_browser {
     flex-basis: 100%;
 }

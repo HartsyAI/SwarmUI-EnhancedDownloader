@@ -1,8 +1,7 @@
 (function () {
     'use strict';
 
-    function hideOldFolderRow(oldFolderDropdown) {
-        oldFolderDropdown.style.display = 'none';
+    function hideLegacyFolderRow(oldFolderDropdown) {
         const popover = document.getElementById('popover_modeldownloaderfolder');
         if (popover) {
             popover.style.display = 'none';
@@ -29,6 +28,15 @@
         if (oldFolderDropdown.nextElementSibling && oldFolderDropdown.nextElementSibling.classList.contains('enhanced-downloader-new-folder')) {
             oldFolderDropdown.nextElementSibling.style.display = 'none';
         }
+    }
+
+    function prepareFolderRow(oldFolderDropdown) {
+        oldFolderDropdown.style.display = 'none';
+        const fieldRow = oldFolderDropdown.closest('.model-downloader-field');
+        if (!fieldRow) {
+            hideLegacyFolderRow(oldFolderDropdown);
+        }
+        return fieldRow;
     }
 
     function syncHiddenDropdown(folderPath) {
@@ -58,9 +66,6 @@
         }
 
         const oldFolderDropdown = document.getElementById('model_downloader_folder');
-        if (oldFolderDropdown) {
-            hideOldFolderRow(oldFolderDropdown);
-        }
 
         let folderBrowser = document.getElementById('model_downloader_folder_browser');
         let selectedFolderDisplay = document.getElementById('model_downloader_selected_folder');
@@ -69,15 +74,22 @@
             if (!oldFolderDropdown) {
                 return false;
             }
-
-            const browserHTML = `<br><span style="font-weight: bold;">Destination Folder</span>: ` +
-                `<span id="model_downloader_selected_folder" class="folder-browser-selected">Root Folder</span>` +
-                `<div id="model_downloader_folder_browser" class="folder-browser" style="display: none;"></div>`;
-
-            oldFolderDropdown.insertAdjacentHTML('afterend', browserHTML);
+            const fieldRow = prepareFolderRow(oldFolderDropdown);
+            const chipHTML = `<span id="model_downloader_selected_folder" class="folder-browser-selected" title="Click to pick a destination folder">Root Folder</span>`;
+            const treeHTML = `<div id="model_downloader_folder_browser" class="folder-browser" style="display: none;"></div>`;
+            if (fieldRow) {
+                oldFolderDropdown.insertAdjacentHTML('afterend', chipHTML);
+                fieldRow.insertAdjacentHTML('afterend', treeHTML);
+            }
+            else {
+                oldFolderDropdown.insertAdjacentHTML('afterend', `<br><span style="font-weight: bold;">Destination Folder</span>: ${chipHTML}${treeHTML}`);
+            }
 
             folderBrowser = document.getElementById('model_downloader_folder_browser');
             selectedFolderDisplay = document.getElementById('model_downloader_selected_folder');
+        }
+        else if (oldFolderDropdown) {
+            oldFolderDropdown.style.display = 'none';
         }
 
         if (!folderBrowser || !selectedFolderDisplay) {

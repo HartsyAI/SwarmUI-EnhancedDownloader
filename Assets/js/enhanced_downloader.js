@@ -103,7 +103,7 @@
         `;
         const destinationPath = destination.querySelector('.path');
 
-        const isOldDropdown = folders.tagName === 'SELECT';
+        const isOldDropdown = folders.tagName === 'SELECT' && !modelDownloader.folderBrowser;
 
         let newWrap = null;
         let toggleBtn = null;
@@ -192,6 +192,7 @@
                 const origSelectFolder = modelDownloader.selectFolder.bind(modelDownloader);
                 const wrapped = (folderPath) => {
                     origSelectFolder(folderPath);
+                    addRecent(folderPath);
                     updatePreview();
                 };
                 wrapped._enhancedDownloaderWrapped = true;
@@ -276,6 +277,21 @@
         return null;
     }
 
+    function clearCoreVersionFileSelectors() {
+        if (!window.modelDownloader) {
+            return;
+        }
+        for (const [select, wrap] of [[modelDownloader.versionSelect, modelDownloader.versionWrap], [modelDownloader.fileSelect, modelDownloader.fileWrap]]) {
+            if (select) {
+                select.innerHTML = '';
+                select.onchange = null;
+            }
+            if (wrap) {
+                wrap.style.display = 'none';
+            }
+        }
+    }
+
     // Hartsy model page links (copied from the site or pasted from "Copy Model Link") aren't direct file downloads and
     // carry no metadata core's urlInput() can parse - resolve them through the Hartsy API instead, mirroring how core
     // handles CivitAI links, so pasting one populates the real download URL, name, and info instead of going stale.
@@ -296,6 +312,7 @@
             modelDownloader.metadataZone.dataset.raw = '';
             delete modelDownloader.metadataZone.dataset.image;
             modelDownloader.imageSide.innerHTML = '';
+            clearCoreVersionFileSelectors();
             modelDownloader.urlStatusArea.innerText = 'URL appears to be a Hartsy model link. Resolving download info...';
             modelDownloader.button.disabled = true;
             const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
@@ -443,8 +460,6 @@
             left.className = 'enhanced-downloader-col enhanced-downloader-col-left';
             const right = document.createElement('div');
             right.className = 'enhanced-downloader-col enhanced-downloader-col-right';
-            layout.appendChild(left);
-            layout.appendChild(right);
             wrapper.insertBefore(layout, wrapper.firstChild);
             left.appendChild(main);
             right.appendChild(sidebar);
@@ -465,29 +480,27 @@
             }
 
             const leftInfo = document.createElement('div');
-            leftInfo.className = 'enhanced-downloader-section-info';
+            leftInfo.className = 'enhanced-downloader-section-info ed-info-left';
             leftInfo.innerHTML = `
 <div class="ed-info-title">Manual Download</div>
 <ul class="ed-info-list">
   <li><b>Purpose:</b> Download a model from a direct URL into Swarm’s model folders.</li>
-  <li><b>Allowed files:</b> Model files (<code>.safetensors</code>, <code>.gguf</code>, <code>.ckpt</code>, <code>.pt</code>, <code>.sft</code>).</li>
-  <li><b>Hugging Face:</b> Paste a direct file URL.</li>
-  <li><b>CivitAI:</b> Paste any CivitAI model/file URL; Swarm will auto-load metadata.</li>
-  <li><b>Direct links:</b> Non-HF/CivitAI links must be direct downloads (not HTML pages).</li>
+  <li><b>Allowed files:</b> <code>.safetensors</code>, <code>.gguf</code>, <code>.ckpt</code>, <code>.pt</code>, <code>.sft</code>.</li>
+  <li><b>Metadata:</b> CivitAI, Hugging Face and Hartsy links load their details automatically.</li>
+  <li><b>Anything else:</b> Must be a direct download URL, not the HTML page around it.</li>
 </ul>`;
-            left.insertBefore(leftInfo, left.firstChild);
 
             const rightInfo = document.createElement('div');
-            rightInfo.className = 'enhanced-downloader-section-info';
+            rightInfo.className = 'enhanced-downloader-section-info ed-info-right';
             rightInfo.innerHTML = `
 <div class="ed-info-title">Model Browser</div>
 <ul class="ed-info-list">
-  <li><b>Source:</b> CivitAI model search + filters.</li>
-  <li><b>Download:</b> Pick a result and download directly into your Swarm model folders.</li>
-  <li><b>Gated models:</b> If you see <b>401 Unauthorized</b>, enter your CivitAI API key and retry.</li>
-  <li><b>Tip:</b> Use filters (type/base model/sort) to narrow results before paging.</li>
+  <li><b>Sources:</b> Search Hartsy, CivitAI or Hugging Face, each with its own filters.</li>
+  <li><b>Recommended:</b> The panel below tracks the models the SwarmUI docs recommend.</li>
+  <li><b>Download:</b> Pick a result to load its URL into the manual downloader on the left.</li>
+  <li><b>Gated models:</b> A <b>401</b> means that provider wants an API key; add one in User Settings.</li>
 </ul>`;
-            right.insertBefore(rightInfo, right.firstChild);
+            layout.append(leftInfo, left, rightInfo, right);
 
             wrapper.dataset.enhancedDownloaderLayoutDone = 'true';
         }
