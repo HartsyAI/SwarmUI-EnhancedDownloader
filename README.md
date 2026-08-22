@@ -5,7 +5,7 @@
 A full-featured model browser for [SwarmUI](https://github.com/mcmonkeyprojects/SwarmUI)'s **Utilities > Model Downloader** tab. Search, preview, and download models from **CivitAI**, **Hugging Face**, and **Hartsy** without leaving SwarmUI or hand-typing a URL.
 
 > [!NOTE]
-> This extension enhances SwarmUI's built-in Model Downloader. It does not replace it. The manual URL download workflow on the left is still core SwarmUI, just reorganized and given a few extra conveniences (a starter model on arrival, a folder browser, a destination preview, 401 recovery). The model browser on the right is new.
+> This extension enhances SwarmUI's built-in Model Downloader. It does not replace it. The manual URL download workflow on the left is still core SwarmUI, just reorganized and given a few extra conveniences (a starter model on arrival, a folder browser, a destination preview). The model browser on the right is new.
 
 ## Table of Contents
 
@@ -50,7 +50,7 @@ A full-featured model browser for [SwarmUI](https://github.com/mcmonkeyprojects/
 
 - **Destination preview**: a live path showing exactly where the file will land, updating as you change type/folder/name. It is shown relative to your model root (`Models/Lora/MyModel`) rather than as an absolute path, so a shared instance does not print the server's filesystem layout to every user
 - **Clipboard paste button** for the URL field
-- **401 error recovery**: a failed download that looks like a gated/auth error gets a plain-language explanation and a direct link to User Settings to add the relevant API key, instead of a bare stack of numbers
+- **Auth error messages**: a download refused with a 401 or 403 shows the provider's own stated reason and which API key to set, using core SwarmUI's shared download error handling, plus a direct link to User Settings
 - **Resumable downloads**: download state is persisted server-side, so a SwarmUI restart mid-download leaves it paused (not lost); pause, resume, retry, and clear all work per-download from the Downloads list under the manual downloader
 
 ### Performance
@@ -282,9 +282,9 @@ Downloads are persisted per-user (LiteDB generic data) so a SwarmUI restart mid-
 
 ## Troubleshooting
 
-### 401 Unauthorized on download
+### A download is refused (401 or 403)
 
-The failure message will link straight to **User Settings**. Add the relevant provider's API key there (see [Configuration](#configuration)) and retry from the Downloads list.
+The failure message names the provider that refused it, quotes the reason that provider gave, and says whether an API key was sent. Add or check the relevant provider's API key in **User Settings** (see [Configuration](#configuration)), then Retry from the Downloads list.
 
 ### No search results
 

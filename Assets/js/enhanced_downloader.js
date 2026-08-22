@@ -637,7 +637,7 @@
   <li><b>Sources:</b> Search Hartsy, CivitAI or Hugging Face, each with its own filters.</li>
   <li><b>Recommended:</b> The panel below tracks the models the SwarmUI docs recommend.</li>
   <li><b>Download:</b> Pick a result to load its URL into the manual downloader on the left.</li>
-  <li><b>Gated models:</b> A <b>401</b> means that provider wants an API key; add one in User Settings.</li>
+  <li><b>Gated models:</b> If a download is refused, the error says which provider refused it and why; add that provider's API key in User Settings.</li>
 </ul>`;
             layout.append(leftInfo, left, rightInfo, right);
 

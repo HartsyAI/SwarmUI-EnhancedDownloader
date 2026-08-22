@@ -39,9 +39,6 @@ public static class DownloadManager
 
     private const int ReadBufferSize = 256 * 1024;
 
-    /// <summary>Query-string-safe token characters, mirroring core's own sanitization for the same API keys.</summary>
-    private static string SanitizeKey(string key) => ModelsAPI.TokenTextLimiter.TrimToMatches(key);
-
     private static long NowMs() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
     /// <summary>Loads every stored download record from the user database. Call once during extension init.
@@ -158,34 +155,15 @@ public static class DownloadManager
         return (extension, folder);
     }
 
-    /// <summary>Mirrors core's per-host auth handling: civitai.com is rewritten to civitai.red with a `?token=` query
-    /// param, huggingface.co gets a Bearer header. The API keys are resolved fresh from the session here and never
-    /// stored on the record, so they never end up in the on-disk manifest.</summary>
-    private static (string RequestUrl, Dictionary<string, string> Headers) ResolveRequest(Session session, string originalUrl)
+    /// <summary>Applies core's per-host auth handling (Civitai token, HuggingFace bearer) and returns its auth-failure
+    /// hint alongside. The API keys are resolved fresh from the session here and never stored on the record, so they
+    /// never end up in the on-disk manifest.</summary>
+    private static (string RequestUrl, Dictionary<string, string> Headers, string AuthHint) ResolveRequest(Session session, string originalUrl)
     {
         string url = originalUrl.Split('#')[0];
-        if (url.StartsWith("https://civitai.com/"))
-        {
-            url = $"https://civitai.red/{url["https://civitai.com/".Length..]}";
-        }
         Dictionary<string, string> headers = [];
-        if (url.StartsWith("https://civitai.red/"))
-        {
-            string key = session.User.GetGenericData("civitai_api", "key");
-            if (!string.IsNullOrEmpty(key) && !url.Contains("?token=") && !url.Contains("&token="))
-            {
-                url += (url.Contains('?') ? "&token=" : "?token=") + SanitizeKey(key);
-            }
-        }
-        else if (url.StartsWith("https://huggingface.co/"))
-        {
-            string key = session.User.GetGenericData("huggingface_api", "key");
-            if (!string.IsNullOrEmpty(key))
-            {
-                headers["Authorization"] = $"Bearer {SanitizeKey(key)}";
-            }
-        }
-        return (url, headers);
+        string authHint = Utilities.ApplyDownloadAPIKey(ref url, headers, session);
+        return (url, headers, authHint);
     }
 
     /// <summary>Starts a brand new download. Returns `{ error }` for any validation failure (bad URL, refused model
@@ -278,9 +256,9 @@ public static class DownloadManager
 
     private static void Kick(DownloadRecord rec, Session session)
     {
-        (string requestUrl, Dictionary<string, string> headers) = ResolveRequest(session, rec.Url);
+        (string requestUrl, Dictionary<string, string> headers, string authHint) = ResolveRequest(session, rec.Url);
         rec.Canceller = new CancellationTokenSource();
-        rec.PumpTask = RunDownloadAsync(rec, requestUrl, headers);
+        rec.PumpTask = RunDownloadAsync(rec, requestUrl, headers, authHint);
     }
 
     /// <summary>Cancels an in-progress download, keeping the partial file for a later Resume. Awaits (briefly) for
@@ -337,7 +315,7 @@ public static class DownloadManager
     /// <summary>The actual transfer. Resumable: if `rec.DownloadedBytes` is already positive and the part file
     /// exists, requests a Range continuation with If-Range so a changed remote file restarts instead of splicing
     /// mismatched bytes together. Runs detached from any specific request/connection - only `rec.Canceller` stops it.</summary>
-    private static async Task RunDownloadAsync(DownloadRecord rec, string requestUrl, Dictionary<string, string> headers)
+    private static async Task RunDownloadAsync(DownloadRecord rec, string requestUrl, Dictionary<string, string> headers, string authHint)
     {
         CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(Program.GlobalProgramCancel, rec.Canceller.Token);
         try
@@ -360,7 +338,20 @@ public static class DownloadManager
             using HttpResponseMessage response = await Utilities.DownloaderWebClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, linked.Token);
             if (response.StatusCode != HttpStatusCode.OK && response.StatusCode != HttpStatusCode.PartialContent)
             {
-                throw new SwarmReadableErrorException($"Failed to download: got response code {(int)response.StatusCode} {response.StatusCode}");
+                string message = $"Failed to download: got response code {(int)response.StatusCode} {response.StatusCode}";
+                if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+                {
+                    string reason = await Utilities.GetResponseErrorReason(response);
+                    if (reason is not null)
+                    {
+                        message += $" (\"{reason}\")";
+                    }
+                    if (authHint is not null)
+                    {
+                        message += $". {authHint}";
+                    }
+                }
+                throw new SwarmReadableErrorException(message);
             }
             bool serverHonoredRange = response.StatusCode == HttpStatusCode.PartialContent
                 && response.Content.Headers.ContentRange is not null

@@ -62,9 +62,8 @@
         if (rec.state === 'errored') {
             const msg = rec.error || 'Unknown error.';
             let html = `Error: ${escapeHtml(msg)}`;
-            if (/401|unauthorized/i.test(msg)) {
-                const link = `<a href="#" onclick="getRequiredElementById('usersettingstabbutton').click();getRequiredElementById('userinfotabbutton').click();">Open User Settings</a>`;
-                html += `<br>This usually means the file is gated and requires authentication (or an API key) for the selected provider. ${link} to configure credentials, then retry.`;
+            if (msg.includes('got response code 401') || msg.includes('got response code 403')) {
+                html += `<br>Set or check your <a href="#" onclick="getRequiredElementById('usersettingstabbutton').click();getRequiredElementById('userinfotabbutton').click();">API Key</a> in User Settings.`;
             }
             else if (rec.downloadedBytes > 0) {
                 html += `<br>${formatBytes(rec.downloadedBytes)} was already saved and will resume from there.`;
