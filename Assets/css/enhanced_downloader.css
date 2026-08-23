@@ -225,6 +225,7 @@
 
 #Utilities-ModelDownloader-Tab .model-downloader-preview {
     background-color: var(--background);
+    min-height: 12rem;
 }
 
 @media (min-width: 769px) {

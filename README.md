@@ -5,7 +5,7 @@
 A full-featured model browser for [SwarmUI](https://github.com/mcmonkeyprojects/SwarmUI)'s **Utilities > Model Downloader** tab. Search, preview, and download models from **CivitAI**, **Hugging Face**, and **Hartsy** without leaving SwarmUI or hand-typing a URL.
 
 > [!NOTE]
-> This extension enhances SwarmUI's built-in Model Downloader. It does not replace it. The manual URL download workflow on the left is still core SwarmUI, just reorganized and given a few extra conveniences (a starter model on arrival, a folder browser, a destination preview). The model browser on the right is new.
+> This extension enhances SwarmUI's built-in Model Downloader. It does not replace it. The manual URL download workflow on the left is still core SwarmUI, just reorganized and given a few extra conveniences (a folder browser, a destination preview). The model browser on the right is new.
 
 ## Table of Contents
 
@@ -43,7 +43,6 @@ A full-featured model browser for [SwarmUI](https://github.com/mcmonkeyprojects/
 > [!NOTE]
 > The **Version** and **File** dropdowns that appear when you paste a CivitAI link are core SwarmUI's, as of its 2026-08-17 Model Downloader update, not this extension's. The extension leaves them alone, and clears them when you replace the loaded model with a Hartsy link.
 
-- **A model to start from**: opening the tab loads a random Hartsy model into the downloader, with its preview image, architecture, author and file name filled in, so the panel is never a blank form. It only fills empty fields, so it never overwrites a URL you pasted
 - **Folder browser**: a collapsible tree of your existing model folders, shown in place of core's flat Folder dropdown and sitting in the same field row; expand and collapse branches, or create a subfolder with **+ New Folder** without leaving the page
 
   ![Folder browser widget](Assets/screenshots/folder_browser.png)
