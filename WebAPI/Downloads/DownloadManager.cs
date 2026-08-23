@@ -39,6 +39,9 @@ public static class DownloadManager
 
     private const int ReadBufferSize = 256 * 1024;
 
+    /// <summary>Query-string-safe token characters, mirroring core's own sanitization for the same API keys.</summary>
+    private static string SanitizeKey(string key) => ModelsAPI.TokenTextLimiter.TrimToMatches(key);
+
     private static long NowMs() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
     /// <summary>Loads every stored download record from the user database. Call once during extension init.
@@ -155,15 +158,78 @@ public static class DownloadManager
         return (extension, folder);
     }
 
-    /// <summary>Applies core's per-host auth handling (Civitai token, HuggingFace bearer) and returns its auth-failure
-    /// hint alongside. The API keys are resolved fresh from the session here and never stored on the record, so they
-    /// never end up in the on-disk manifest.</summary>
+    /// <summary>Applies per-host auth handling (Civitai token, HuggingFace bearer) and returns the hint to show if the
+    /// host refuses with an auth error. The API keys are resolved fresh from the session here and never stored on the
+    /// record, so they never end up in the on-disk manifest.</summary>
     private static (string RequestUrl, Dictionary<string, string> Headers, string AuthHint) ResolveRequest(Session session, string originalUrl)
     {
         string url = originalUrl.Split('#')[0];
         Dictionary<string, string> headers = [];
-        string authHint = Utilities.ApplyDownloadAPIKey(ref url, headers, session);
+        // TODO: SwarmUI PR pending. Once merged, delete the body below and use core's shared version instead:
+        // string authHint = Utilities.ApplyDownloadAPIKey(ref url, headers, session);
+        // return (url, headers, authHint);
+        if (url.StartsWith("https://civitai.com/"))
+        {
+            url = $"https://civitai.red/{url["https://civitai.com/".Length..]}";
+        }
+        string authHint = null;
+        if (url.StartsWith("https://civitai.red/"))
+        {
+            string key = session.User.GetGenericData("civitai_api", "key");
+            bool hasToken = url.Contains("?token=") || url.Contains("&token=");
+            if (!string.IsNullOrEmpty(key) && !hasToken)
+            {
+                url += (url.Contains('?') ? "&token=" : "?token=") + SanitizeKey(key);
+                hasToken = true;
+            }
+            authHint = hasToken ? "Civitai refused this download despite your API key. Make sure your Civitai API key in the User Settings page is valid, and that your Civitai account has access to this model (early access may require a purchase or subscription)."
+                : "Civitai refused this download, and you do not have a Civitai API key set. If this model is gated or early-access, set your Civitai API key in the User Settings page to download it.";
+        }
+        else if (url.StartsWith("https://huggingface.co/"))
+        {
+            string key = session.User.GetGenericData("huggingface_api", "key");
+            if (!string.IsNullOrEmpty(key))
+            {
+                headers["Authorization"] = $"Bearer {SanitizeKey(key)}";
+                authHint = "Hugging Face refused this download despite your API key. Make sure your Hugging Face API key in the User Settings page is valid, and that your account has been granted access to this model (gated models require accepting the terms on the model's page).";
+            }
+            else
+            {
+                authHint = "Hugging Face refused this download, and you do not have a Hugging Face API key set. If this model is gated or private, set your Hugging Face API key in the User Settings page to download it.";
+            }
+        }
         return (url, headers, authHint);
+    }
+
+    /// <summary>Extracts the server's stated reason from a failed HTTP response, if it provides one in a recognizable format. Returns null if none.</summary>
+    // TODO: SwarmUI PR pending. Once merged, delete this and call Utilities.GetResponseErrorReason instead.
+    private static async Task<string> GetResponseErrorReason(HttpResponseMessage response)
+    {
+        if (response.Headers.TryGetValues("x-error-message", out IEnumerable<string> errHeader))
+        {
+            string headerReason = errHeader.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(headerReason))
+            {
+                return Utilities.CleanTrashTextForDebug(headerReason);
+            }
+        }
+        if (response.Content?.Headers.ContentType?.MediaType == "application/json")
+        {
+            try
+            {
+                JObject data = JObject.Parse(await response.Content.ReadAsStringAsync());
+                string reason = data.Value<string>("message") ?? data.Value<string>("error");
+                if (!string.IsNullOrWhiteSpace(reason))
+                {
+                    return Utilities.CleanTrashTextForDebug(reason);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logs.Verbose($"Could not parse an error reason from failed download response body: {ex.ReadableString()}");
+            }
+        }
+        return null;
     }
 
     /// <summary>Starts a brand new download. Returns `{ error }` for any validation failure (bad URL, refused model
@@ -341,7 +407,8 @@ public static class DownloadManager
                 string message = $"Failed to download: got response code {(int)response.StatusCode} {response.StatusCode}";
                 if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
                 {
-                    string reason = await Utilities.GetResponseErrorReason(response);
+                    // TODO: SwarmUI PR pending. Once merged, switch to Utilities.GetResponseErrorReason(response).
+                    string reason = await GetResponseErrorReason(response);
                     if (reason is not null)
                     {
                         message += $" (\"{reason}\")";
