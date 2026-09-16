@@ -212,8 +212,15 @@ public static class FeaturedModels
 
             #region Video Models
 
+            M("MiniMax H3", "video",
+                "The crown champion of video models - everything before it is outdated in comparison. Any2Video+Audio, minimal censorship. FL2VA for text/image2video, Ref2VA for reference-driven editing.",
+                "DiT", "MiniMax AI", "20B, 33B", true,
+                D("FL2VA Pruned int8", "https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors"),
+                D("Ref2VA Pruned int8", "https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors")
+            ),
+
             M("LTX", "video",
-                "The current top leading video model is LTX-2.5, an official upgrade to 2.3 with (partial) LoRA cross-compatibility (gated - accept the license on the model page before downloading). LTX-2 was the first open source Audio+Video model; the original LTX Video is very fast but lower quality. Each version is a real step up from the last.",
+                "LTX-2.5 is an official upgrade to 2.3 with (partial) LoRA cross-compatibility (gated - accept the license on the model page before downloading). LTX-2 was the first open source Audio+Video model; the original LTX Video is very fast but lower quality. Each version is a real step up from the last.",
                 "DiT", "Lightricks", "3B, 19B, 22B", true,
                 D("2.5 Dev int8", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors"),
                 D("2.5 Distilled int8", "https://huggingface.co/Lightricks/LTX-2.5/blob/main/diffusion_models/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors"),
@@ -235,13 +242,6 @@ public static class FeaturedModels
                 D("Legacy v0.9.6 Dev", "https://huggingface.co/Lightricks/LTX-Video/blob/main/ltxv-2b-0.9.6-dev-04-25.safetensors"),
                 D("Legacy v0.9.6 Distilled", "https://huggingface.co/Lightricks/LTX-Video/blob/main/ltxv-2b-0.9.6-distilled-04-25.safetensors"),
                 D("Legacy v0.9.1", "https://huggingface.co/Lightricks/LTX-Video/blob/main/ltx-video-2b-v0.9.1.safetensors")
-            ),
-
-            M("MiniMax H3", "video",
-                "The crown champion of video models - everything before it is outdated in comparison. Any2Video+Audio, minimal censorship. FL2VA for text/image2video, Ref2VA for reference-driven editing.",
-                "DiT", "MiniMax AI", "20B, 33B", true,
-                D("FL2VA Pruned int8", "https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors"),
-                D("Ref2VA Pruned int8", "https://huggingface.co/Comfy-Org/MiniMax-H3/blob/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors")
             ),
 
             M("Wan", "video",
@@ -285,16 +285,23 @@ public static class FeaturedModels
 
             #region Audio Models
 
+            M("YuE2", "audio",
+                "The best music model available, ahead of everything else here. Writes a full plan (melody, chords, and so on) with one model, then a second turns that plan into music. Ships its own audio VAE and text encoder in the file. Sing-along lyrics need phonetic spelling, so write \"Swarm-you-eye\" rather than \"SwarmUI\".",
+                "LM", "M-A-P", "3B", true,
+                D("int8 (Recommended)", "https://huggingface.co/Comfy-Org/YuE2/blob/main/checkpoints/yue2_3b_int8_convrot.safetensors"),
+                D("BF16", "https://huggingface.co/Comfy-Org/YuE2/blob/main/checkpoints/yue2_3b_bf16.safetensors")
+            ),
+
             M("MiniMax Music 3", "audio",
                 "Music generation with lyrics and style prompts. Uses a dedicated LLM to build the song.",
-                "DiT", "Hailuo & MiniMax", "2B", true,
+                "DiT", "Hailuo & MiniMax", "2B", false,
                 D("int8 (Recommended)", "https://huggingface.co/Comfy-Org/MiniMax-Music-3/blob/main/diffusion_models/minimax_music3_dit_int8_convrot.safetensors"),
                 D("FP16", "https://huggingface.co/Comfy-Org/MiniMax-Music-3/blob/main/diffusion_models/minimax_music3_dit_fp16.safetensors")
             ),
 
             M("Ace Step 1.5", "audio",
                 "First natively-supported audio model. Music generation with lyrics and style prompts. Fast.",
-                "DiT", "StepFun", "2B", true,
+                "DiT", "StepFun", "2B", false,
                 D("Turbo", "https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/blob/main/split_files/diffusion_models/acestep_v1.5_turbo.safetensors")
             ),
 

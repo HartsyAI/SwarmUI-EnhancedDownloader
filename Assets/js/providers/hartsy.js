@@ -40,7 +40,8 @@
             // Hartsy has no CivitAI-style "type" concept; checkpoint vs LoRA is distinguished by
             // architecture (e.g. "qwen-image" vs "qwen-image/lora"), so the type filter is not folded
             // into the tag query here - doing so (e.g. tags=checkpoint) matches nothing.
-            const tags = params.tags || '';
+            // The browser passes the tag box as `tag`; accept both spellings so the filter is not silently dropped.
+            const tags = params.tags || params.tag || '';
             return await utils.genericRequestAsync('EnhancedDownloaderHartsySearch', {
                 query: params.query || '',
                 page: params.page || 1,
@@ -79,10 +80,23 @@
             return { architectures: [], tags: [], uploadSources: [], subscriptionTiers: [] };
         },
 
+        // Hartsy has no type concept; a LoRA is an architecture suffix, so "every LoRA" is a comma-joined
+        // architecture list. The `lora` tag is not usable for this: base models carry it too.
+        loraArchitectures: function (architectures) {
+            return (architectures || [])
+                .map(a => a && a.id)
+                .filter(id => id && id.toLowerCase().endsWith('/lora'))
+                .join(',');
+        },
+
         getArchitectureOptions: async function () {
             const options = await this.getFilterOptions();
             const archs = options.architectures || [];
             const result = [{ value: 'All', label: 'All' }];
+            const loras = this.loraArchitectures(archs);
+            if (loras) {
+                result.push({ value: loras, label: 'LoRAs' });
+            }
             for (const arch of archs) {
                 if (arch && arch.id) {
                     const count = arch.modelCount || 0;
@@ -94,6 +108,12 @@
                 }
             }
             return result;
+        },
+
+        /** Browsing opens on LoRAs: the base models are mostly repackages a user can get anywhere. */
+        getDefaultArchitecture: async function () {
+            const options = await this.getFilterOptions();
+            return this.loraArchitectures(options.architectures) || 'All';
         },
 
         getVersionGroups: async function (modelId) {

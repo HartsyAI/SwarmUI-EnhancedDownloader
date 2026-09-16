@@ -216,7 +216,8 @@
                     try {
                         const archOptions = await prov.getArchitectureOptions();
                         const formatted = archOptions.map(a => (typeof a === 'string') ? { value: a, label: a } : a);
-                        populateSelect(baseModelFilter, formatted, 'All');
+                        const defaultArch = prov.getDefaultArchitecture ? await prov.getDefaultArchitecture() : 'All';
+                        populateSelect(baseModelFilter, formatted, defaultArch);
                     } catch {
                         populateSelect(baseModelFilter, [{ value: 'All', label: 'All' }], 'All');
                     }
@@ -394,7 +395,7 @@
                         const total = resp.totalItems || 0;
                         let statusText = `Found ${total} results`;
                         if (total === 0 && state.providerId === 'civitai' && !state.lastIncludeNsfw && prov.supportsNsfw && !nsfwToggle.disabled) {
-                            statusText += ' — no SFW matches; enable NSFW to search civitai.red.';
+                            statusText += ', no SFW matches; enable NSFW to search civitai.red.';
                         }
                         statusEl.textContent = statusText;
                         render(resp.items || []);
