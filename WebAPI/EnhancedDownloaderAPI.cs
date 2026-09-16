@@ -223,8 +223,8 @@ public static class EnhancedDownloaderAPI
         return await HartsyProvider.Instance.GetModelDownloadAsync(session, modelId);
     }
 
-    /// <summary>Fetches version variants (different architectures) for a Hartsy model.</summary>
-    [API.APIDescription("Fetches version variants for a Hartsy model.", "\"success\": true, \"versions\": [{ \"id\": \"...\", \"architecture\": \"...\", ... }]")]
+    /// <summary>Fetches a Hartsy model family's versions, each with the precision variants that version ships in.</summary>
+    [API.APIDescription("Fetches a Hartsy model family's versions, each with its precision variants.", "\"success\": true, \"familyId\": \"...\", \"groups\": [{ \"key\": \"...\", \"label\": \"Original\", \"precisions\": [\"q4_k_s\"], \"primary\": { ... }, \"variants\": [{ ... }] }]")]
     public static async Task<JObject> EnhancedDownloaderHartsyVersions(Session session,
         [API.APIParameter("The Hartsy model ID.")] string modelId)
     {

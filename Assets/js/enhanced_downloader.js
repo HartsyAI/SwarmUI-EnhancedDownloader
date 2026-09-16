@@ -308,6 +308,10 @@
                 return id;
             }
         }
+        // Torrent links share this path, and resolving one as a model would swap it for the file link.
+        if (pathParts[0] === 'download' && pathParts[1] && parsed.searchParams.get('type') !== 'torrent') {
+            return decodeURIComponent(pathParts[1]);
+        }
         return null;
     }
 

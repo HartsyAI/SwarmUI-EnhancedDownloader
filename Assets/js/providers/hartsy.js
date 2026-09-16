@@ -96,26 +96,63 @@
             return result;
         },
 
-        handleDownload: async function (item) {
+        getVersionGroups: async function (modelId) {
+            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            if (!modelId || !utils || !utils.genericRequestAsync) return [];
+            try {
+                const resp = await utils.genericRequestAsync('EnhancedDownloaderHartsyVersions', {
+                    modelId: `${modelId}`
+                });
+                return (resp && resp.success && Array.isArray(resp.groups)) ? resp.groups : [];
+            } catch (e) {
+                console.warn('Failed to load Hartsy versions:', e);
+                return [];
+            }
+        },
+
+        findGroupFor: function (groups, modelId) {
+            const id = `${modelId}`;
+            return groups.find(g => (g.primary && `${g.primary.id}` === id)
+                || (Array.isArray(g.variants) && g.variants.some(v => `${v.id}` === id))) || groups[0] || null;
+        },
+
+        /** Precision picker for the card: the same weights in other encodings, fetched lazily. */
+        getSecondaryOptionsLazy: async function (item) {
+            const groups = await this.getVersionGroups(item.modelId);
+            const group = this.findGroupFor(groups, item.modelId);
+            if (!group) return null;
+            const entries = [group.primary, ...(Array.isArray(group.variants) ? group.variants : [])].filter(v => v && v.id);
+            // The API blanks model_url on a precision this account can't have; list those disabled, not hidden.
+            if (!entries.some(v => v.downloadUrl)) return null;
+            return entries.map(v => {
+                const parts = [v.precisionLabel || v.precision, v.specialFormat].filter(Boolean);
+                const sizeStr = v.fileSize && typeof fileSizeStringify === 'function' ? fileSizeStringify(v.fileSize) : '';
+                const gatedBy = v.downloadUrl ? '' : (v.subscriptionRequired || 'a subscription');
+                const suffix = gatedBy ? ` (requires ${gatedBy})` : (sizeStr ? ` (${sizeStr})` : '');
+                return {
+                    value: v.downloadUrl || `gated:${v.id}`,
+                    label: `${parts.length ? parts.join(' ') : (v.fileName || 'File')}${suffix}`,
+                    downloadUrl: v.downloadUrl,
+                    fileName: v.fileName || '',
+                    fileSize: v.fileSize || null,
+                    modelVersionId: v.id,
+                    disabled: !v.downloadUrl,
+                    primary: !!v.isPrimaryVariant && !!v.downloadUrl
+                };
+            });
+        },
+
+        handleDownload: function (item) {
             const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
             if (!utils) return;
-            if (item.modelId && utils.genericRequestAsync) {
-                try {
-                    const resp = await utils.genericRequestAsync('EnhancedDownloaderHartsyDownload', {
-                        modelId: `${item.modelId}`
-                    });
-                    if (resp && resp.success && resp.downloadUrl) {
-                        const finalUrl = utils.appendExtensionHint ? utils.appendExtensionHint(resp.downloadUrl, resp.fileName) : resp.downloadUrl;
-                        utils.loadUrlIntoManualDownloader(finalUrl);
-                        return;
-                    }
-                } catch (e) {
-                    console.warn('Hartsy download endpoint failed, falling back:', e);
-                }
-            }
-            const bestUrl = item.downloadUrl || item.openUrl || '';
-            if (bestUrl) {
-                utils.loadUrlIntoManualDownloader(bestUrl);
+            const targetId = item.modelVersionId || item.modelId;
+            // The page link, not a resolved file URL: the manual downloader's resolver fills in name, type and
+            // metadata from it, and resolving here too would bill a second download event per click.
+            const url = targetId
+                ? `https://hartsy.ai/Home?type=models&id=${encodeURIComponent(targetId)}`
+                : (item.downloadUrl || item.openUrl || '');
+            if (url) {
+                utils.loadUrlIntoManualDownloader(url);
             }
         },
 
@@ -144,18 +181,18 @@
                 versionsBtn.innerText = 'Loading...';
                 versionsBtn.style.pointerEvents = 'none';
                 try {
-                    const resp = await utils.genericRequestAsync('EnhancedDownloaderHartsyVersions', {
-                        modelId: `${item.modelId}`
-                    });
-                    if (!resp || !resp.success || !Array.isArray(resp.versions) || resp.versions.length === 0) {
+                    const groups = await this.getVersionGroups(item.modelId);
+                    const current = this.findGroupFor(groups, item.modelId);
+                    const others = groups.filter(g => g !== current && g.primary && g.primary.downloadUrl);
+                    if (others.length === 0) {
                         versionsBtn.innerText = 'No other versions';
                         return;
                     }
                     versionsBtn.style.display = 'none';
-                    for (const ver of resp.versions) {
-                        if (ver.id === item.modelId) continue;
-                        const label = ver.versionLabel || ver.architecture || ver.title || 'Version';
-                        const sizeStr = ver.fileSize ? ` (${(ver.fileSize / (1024 * 1024)).toFixed(0)} MB)` : '';
+                    for (const group of others) {
+                        const ver = group.primary;
+                        const label = group.label || ver.versionLabel || ver.architecture || ver.title || 'Version';
+                        const sizeStr = ver.fileSize && typeof fileSizeStringify === 'function' ? ` (${fileSizeStringify(ver.fileSize)})` : '';
                         const verBtn = document.createElement('div');
                         verBtn.className = 'sui_popover_model_button';
                         verBtn.innerText = `Download: ${label}${sizeStr}`;

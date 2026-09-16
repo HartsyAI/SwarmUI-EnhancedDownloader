@@ -40,19 +40,23 @@
                         const optEl = document.createElement('option');
                         optEl.value = f.value;
                         optEl.textContent = f.label;
+                        optEl.disabled = !!f.disabled;
                         formatSelect.appendChild(optEl);
                     }
-                    const defaultFormat = formats.find(f => f.primary) || formats[0];
+                    const defaultFormat = formats.find(f => f.primary && !f.disabled) || formats.find(f => !f.disabled) || formats[0];
                     formatSelect.value = defaultFormat.value;
                     selection.downloadUrl = defaultFormat.downloadUrl || defaultFormat.value;
                     selection.fileName = defaultFormat.fileName || selection.fileName;
                     selection.fileSize = defaultFormat.fileSize || selection.fileSize;
+                    // Hartsy's formats are separate model rows, so a pick changes the id to download by.
+                    selection.modelVersionId = defaultFormat.modelVersionId !== undefined ? defaultFormat.modelVersionId : selection.modelVersionId;
                     formatSelect.onchange = () => {
                         const chosen = formats.find(f => f.value === formatSelect.value);
                         if (!chosen) return;
                         selection.downloadUrl = chosen.downloadUrl || chosen.value;
                         selection.fileName = chosen.fileName || selection.fileName;
                         selection.fileSize = chosen.fileSize || selection.fileSize;
+                        selection.modelVersionId = chosen.modelVersionId !== undefined ? chosen.modelVersionId : selection.modelVersionId;
                         applySelectionToDom();
                     };
                     formatHolder.innerHTML = '';

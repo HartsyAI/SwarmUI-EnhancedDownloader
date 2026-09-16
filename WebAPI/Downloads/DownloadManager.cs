@@ -185,6 +185,19 @@ public static class DownloadManager
             authHint = hasToken ? "Civitai refused this download despite your API key. Make sure your Civitai API key in the User Settings page is valid, and that your Civitai account has access to this model (early access may require a purchase or subscription)."
                 : "Civitai refused this download, and you do not have a Civitai API key set. If this model is gated or early-access, set your Civitai API key in the User Settings page to download it.";
         }
+        else if (url.StartsWith("https://hartsy.ai/"))
+        {
+            string key = session.User.GetGenericData("hartsy_api", "key");
+            if (!string.IsNullOrEmpty(key))
+            {
+                headers["X-API-Key"] = SanitizeKey(key);
+                authHint = "Hartsy refused this download despite your API key. Make sure your Hartsy API key in the User Settings page is valid, and that your account's subscription tier covers this model.";
+            }
+            else
+            {
+                authHint = "Hartsy refused this download, and you do not have a Hartsy API key set. If this model requires a subscription, set your Hartsy API key in the User Settings page to download it.";
+            }
+        }
         else if (url.StartsWith("https://huggingface.co/"))
         {
             string key = session.User.GetGenericData("huggingface_api", "key");

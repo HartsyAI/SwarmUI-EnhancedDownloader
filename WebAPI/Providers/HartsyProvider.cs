@@ -138,16 +138,18 @@ public class HartsyProvider : IEnhancedDownloaderProvider
                 string subscriptionRequired = item.Value<string>("subscription_required") ?? "";
                 JArray itemTags = item["tags"] as JArray ?? [];
                 string openUrl = $"https://hartsy.ai/Home?type=models&id={modelId}";
+                string versionLabel = item.Value<string>("version_label") ?? "";
                 JObject resultItem = new()
                 {
                     ["modelId"] = modelId,
-                    ["modelVersionId"] = "",
+                    // A row is already one version in one precision, so it is its own version id.
+                    ["modelVersionId"] = modelId,
                     ["name"] = name,
                     ["type"] = "Checkpoint",
                     ["description"] = description,
                     ["creator"] = creator,
                     ["downloads"] = downloads,
-                    ["versionName"] = "",
+                    ["versionName"] = versionLabel,
                     ["baseModel"] = itemBaseModel,
                     ["image"] = image,
                     ["downloadUrl"] = modelUrl,
@@ -158,6 +160,14 @@ public class HartsyProvider : IEnhancedDownloaderProvider
                     ["uploadSource"] = uploadSource,
                     ["isNsfw"] = isNsfw,
                     ["subscriptionRequired"] = subscriptionRequired,
+                    ["precision"] = item.Value<string>("precision") ?? "",
+                    ["precisionLabel"] = item.Value<string>("precision_label") ?? "",
+                    ["specialFormat"] = item.Value<string>("special_format") ?? "",
+                    ["modelKind"] = item.Value<string>("model_kind") ?? "",
+                    ["versionLabel"] = versionLabel,
+                    ["isPrimaryVariant"] = item.Value<bool?>("is_primary_variant") ?? true,
+                    ["familyId"] = item.Value<string>("family_id") ?? modelId,
+                    ["isApiModel"] = item.Value<bool?>("is_api_model") ?? false,
                     ["tags"] = itemTags
                 };
                 if (item["torrent"] is JObject torrentObj)
@@ -311,6 +321,14 @@ public class HartsyProvider : IEnhancedDownloaderProvider
                 ["isNsfw"] = data.Value<bool?>("is_nsfw") ?? false,
                 ["subscriptionRequired"] = data.Value<string>("subscription_required") ?? "",
                 ["downloads"] = data.Value<long?>("downloads_count") ?? 0,
+                ["precision"] = data.Value<string>("precision") ?? "",
+                ["precisionLabel"] = data.Value<string>("precision_label") ?? "",
+                ["specialFormat"] = data.Value<string>("special_format") ?? "",
+                ["modelKind"] = data.Value<string>("model_kind") ?? "",
+                ["versionLabel"] = data.Value<string>("version_label") ?? "",
+                ["isPrimaryVariant"] = data.Value<bool?>("is_primary_variant") ?? true,
+                ["familyId"] = data.Value<string>("family_id") ?? modelId,
+                ["isApiModel"] = data.Value<bool?>("is_api_model") ?? false,
                 ["tags"] = data["tags"] as JArray ?? []
             };
             DetailsCache.Set(cacheKey, result);
@@ -386,7 +404,33 @@ public class HartsyProvider : IEnhancedDownloaderProvider
         }
     }
 
-    /// <summary>Fetches version variants (different architectures) for a specific model from the Hartsy API.</summary>
+    /// <summary>Maps one model entry from a versions response into the camelCase shape the UI consumes.</summary>
+    private static JObject MapVersionEntry(JObject entry)
+    {
+        long? entrySize = entry.Value<long?>("file_size");
+        return new JObject()
+        {
+            ["id"] = entry.Value<string>("id") ?? "",
+            ["title"] = entry.Value<string>("title") ?? "",
+            ["fileName"] = entry.Value<string>("file_name") ?? "",
+            ["fileSize"] = entrySize is null ? null : (JToken)entrySize,
+            ["downloadUrl"] = entry.Value<string>("model_url") ?? "",
+            ["architecture"] = entry.Value<string>("architecture") ?? "",
+            ["thumbnailUrl"] = entry.Value<string>("thumbnail_url") ?? "",
+            ["description"] = entry.Value<string>("description") ?? "",
+            ["precision"] = entry.Value<string>("precision") ?? "",
+            ["precisionLabel"] = entry.Value<string>("precision_label") ?? "",
+            ["specialFormat"] = entry.Value<string>("special_format") ?? "",
+            ["modelKind"] = entry.Value<string>("model_kind") ?? "",
+            ["versionLabel"] = entry.Value<string>("version_label") ?? "",
+            ["isPrimaryVariant"] = entry.Value<bool?>("is_primary_variant") ?? false,
+            ["subscriptionRequired"] = entry.Value<string>("subscription_required") ?? "",
+            ["isApiModel"] = entry.Value<bool?>("is_api_model") ?? false
+        };
+    }
+
+    /// <summary>Fetches a model family's versions. One group per version, each holding the site's own file
+    /// (<c>primary</c>) plus <c>variants</c>, the same weights in other precisions.</summary>
     public async Task<JObject> GetModelVersionsAsync(Session session, string modelId)
     {
         if (string.IsNullOrWhiteSpace(modelId))
@@ -398,15 +442,12 @@ public class HartsyProvider : IEnhancedDownloaderProvider
         await RateLimiter.WaitAsync();
         try
         {
-            using HttpRequestMessage request = new(HttpMethod.Get, url);
-            AddApiKeyHeader(request, apiKey);
-            using HttpResponseMessage response = await ProviderHttpClient.Client.SendAsync(request);
-            string resp = await response.Content.ReadAsStringAsync();
-            if (!response.IsSuccessStatusCode)
+            (HttpStatusCode status, string resp) = await GetWithKeyFallbackAsync(url, apiKey);
+            if ((int)status is < 200 or >= 300)
             {
                 string trimmed = resp.Length > 500 ? resp[..500] : resp;
-                Logs.Warning($"EnhancedDownloader Hartsy versions failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
-                return new JObject() { ["success"] = false, ["error"] = $"Hartsy error {(int)response.StatusCode}: {trimmed}" };
+                Logs.Warning($"EnhancedDownloader Hartsy versions failed: {(int)status} - {trimmed}");
+                return new JObject() { ["success"] = false, ["error"] = $"Hartsy error {(int)status}: {trimmed}" };
             }
             JObject responseJson = resp.ParseToJson();
             if (responseJson.Value<bool?>("success") != true)
@@ -415,28 +456,30 @@ public class HartsyProvider : IEnhancedDownloaderProvider
                 return new JObject() { ["success"] = false, ["error"] = $"Hartsy API error: {errorMsg}" };
             }
             JObject data = responseJson["data"] as JObject ?? [];
-            JArray versions = data["versions"] as JArray ?? [];
+            JArray groups = data["groups"] as JArray ?? [];
             JArray results = [];
-            foreach (JObject ver in versions.OfType<JObject>())
+            foreach (JObject group in groups.OfType<JObject>())
             {
+                JArray variants = [];
+                foreach (JObject variant in (group["variants"] as JArray ?? []).OfType<JObject>())
+                {
+                    variants.Add(MapVersionEntry(variant));
+                }
                 results.Add(new JObject()
                 {
-                    ["id"] = ver.Value<string>("id") ?? "",
-                    ["title"] = ver.Value<string>("title") ?? "",
-                    ["versionLabel"] = ver.Value<string>("version_label") ?? "",
-                    ["architecture"] = ver.Value<string>("architecture") ?? "",
-                    ["fileName"] = ver.Value<string>("file_name") ?? "",
-                    ["fileSize"] = ver.Value<long?>("file_size"),
-                    ["description"] = ver.Value<string>("description") ?? "",
-                    ["thumbnailUrl"] = ver.Value<string>("thumbnail_url") ?? "",
-                    ["createdAt"] = ver.Value<string>("created_at") ?? ""
+                    ["key"] = group.Value<string>("key") ?? "",
+                    ["label"] = group.Value<string>("label") ?? "",
+                    ["precisions"] = group["precisions"] as JArray ?? [],
+                    ["primary"] = group["primary"] is JObject primary ? MapVersionEntry(primary) : null,
+                    ["variants"] = variants
                 });
             }
             return new JObject()
             {
                 ["success"] = true,
-                ["parentModelId"] = data.Value<string>("parent_model_id") ?? modelId,
-                ["versions"] = results
+                ["familyId"] = data.Value<string>("family_id") ?? modelId,
+                ["title"] = data.Value<string>("title") ?? "",
+                ["groups"] = results
             };
         }
         catch (Exception ex)

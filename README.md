@@ -131,6 +131,8 @@ Finished downloads turn green and can be **Dismiss**ed. They are hidden by defau
 
 **Notes:**
 - Hartsy is the default provider when the browser loads
+- **More formats** on a card lists every precision that version ships in (bf16, fp8, int8, GGUF quants like Q4_K_S), with its file size, so you pick the encoding you want before downloading. A precision your account can't fetch is listed but greyed out, labelled with the tier it needs, so you can still see it exists
+- The card menu's **Load versions...** lists the model's other versions (v1.0, v2.0), which is a separate axis from precision: a version is different weights, a precision is the same weights encoded differently
 - A pasted Hartsy model link (either `hartsy.ai/models/<id>` or `hartsy.ai/Home?type=models&id=<id>`) resolves through the Hartsy API automatically, the same way a CivitAI link does, so you don't need to use the browser for it to work
 - If a specific model doesn't have a direct download link available yet, the manual downloader says so explicitly and disables the Download button, rather than failing silently
 - An optional Hartsy API key raises rate limits and unlocks anything gated; browsing works anonymously either way, and an invalid or missing key falls back to a public/anonymous request automatically instead of returning zero results
@@ -253,7 +255,7 @@ All require `enhanced_downloader_browse`.
 | `EnhancedDownloaderHartsyFilterOptions` | none | `{architectures, tags, uploadSources, subscriptionTiers}` |
 | `EnhancedDownloaderHartsyModelDetails` | `modelId` (required) | `{title, description, architecture, author, image, downloads, tags, ...}` (cached, no analytics recorded) |
 | `EnhancedDownloaderHartsyDownload` | `modelId` (required) | `{downloadUrl, fileName, fileSize, hashSha256, torrent?}` (records a download analytics event on Hartsy's side, not cached) |
-| `EnhancedDownloaderHartsyVersions` | `modelId` (required) | `{versions:[{id, title, versionLabel, architecture, ...}]}` |
+| `EnhancedDownloaderHartsyVersions` | `modelId` (required) | `{familyId, title, groups:[{key, label, precisions, primary, variants}]}`. One group per version; `primary` is the file the site generates with and `variants` are those same weights in other precisions |
 
 All require `enhanced_downloader_browse`.
 
