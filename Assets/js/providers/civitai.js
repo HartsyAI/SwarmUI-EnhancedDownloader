@@ -171,13 +171,13 @@
                 const warnings = [];
                 if (check.inEarlyAccess && check.earlyAccessEndsAt) {
                     const dateStr = new Date(check.earlyAccessEndsAt).toLocaleString();
-                    warnings.push(`This model is in Early Access until ${dateStr}. Downloading may require a CivitAI subscription.`);
+                    warnings.push(`${translate('This model is in Early Access until')} ${dateStr}. ${translate('Downloading may require a CivitAI subscription.')}`);
                 }
                 if (check.requireAuth && !check.hasApiKey) {
-                    warnings.push('This download requires login. Add your CivitAI API key in User Settings to authenticate.');
+                    warnings.push(translate('This download requires login. Add your CivitAI API key in User Settings to authenticate.'));
                 }
                 if (warnings.length > 0) {
-                    const message = warnings.join('\n\n') + '\n\nContinue anyway?';
+                    const message = warnings.join('\n\n') + '\n\n' + translate('Continue anyway?');
                     if (typeof window.confirm === 'function' && !window.confirm(message)) {
                         return;
                     }
@@ -203,11 +203,11 @@
                 const ends = new Date(item.earlyAccessEndsAt);
                 if (!isNaN(ends.getTime()) && ends.getTime() > Date.now()) {
                     const dateStr = ends.toLocaleDateString();
-                    badges.push({ label: `Early Access until ${dateStr}`, kind: 'warn' });
+                    badges.push({ label: `${translate('Early Access until')} ${dateStr}`, kind: 'warn' });
                 }
             }
-            if (item.mode === 'Archived') badges.push({ label: 'Archived', kind: 'muted' });
-            if (item.mode === 'TakenDown') badges.push({ label: 'Taken Down', kind: 'danger' });
+            if (item.mode === 'Archived') badges.push({ label: translate('Archived'), kind: 'muted' });
+            if (item.mode === 'TakenDown') badges.push({ label: translate('Taken Down'), kind: 'danger' });
             const nsfwLevel = typeof item.nsfwLevel === 'number' ? item.nsfwLevel : 0;
             if (nsfwLevel >= 16) badges.push({ label: 'XXX', kind: 'danger' });
             else if (nsfwLevel >= 8) badges.push({ label: 'X', kind: 'warn' });
@@ -224,7 +224,7 @@
             if (trainedWords.length > 0) {
                 const triggerBtn = document.createElement('div');
                 triggerBtn.className = 'sui_popover_model_button';
-                triggerBtn.innerText = `Copy Trigger Words (${trainedWords.length})`;
+                triggerBtn.innerText = `${translate('Copy Trigger Words')} (${trainedWords.length})`;
                 triggerBtn.onclick = () => {
                     if (typeof copyText === 'function') {
                         copyText(trainedWords.join(', '));
@@ -235,7 +235,7 @@
             if (item.air) {
                 const airBtn = document.createElement('div');
                 airBtn.className = 'sui_popover_model_button';
-                airBtn.innerText = 'Copy AIR URN';
+                airBtn.innerText = translate('Copy AIR URN');
                 airBtn.onclick = () => {
                     if (typeof copyText === 'function') {
                         copyText(`${item.air}`);
@@ -246,11 +246,11 @@
             if (item.modelVersionId) {
                 const examplesBtn = document.createElement('div');
                 examplesBtn.className = 'sui_popover_model_button';
-                examplesBtn.innerText = 'Load Example Prompts...';
+                examplesBtn.innerText = translate('Load Example Prompts...');
                 examplesBtn.onclick = async () => {
                     if (examplesBtn.dataset.loading === 'true') return;
                     examplesBtn.dataset.loading = 'true';
-                    examplesBtn.innerText = 'Loading...';
+                    examplesBtn.innerText = translate('Loading...');
                     try {
                         const versionId = selection && selection.modelVersionId
                             ? (typeof selection.modelVersionId === 'number' ? selection.modelVersionId : parseInt(selection.modelVersionId, 10))
@@ -261,7 +261,7 @@
                             includeNsfw: typeof item.nsfwLevel === 'number' && item.nsfwLevel >= 4
                         });
                         if (!resp || !resp.success || !Array.isArray(resp.images) || resp.images.length === 0) {
-                            examplesBtn.innerText = 'No example prompts found';
+                            examplesBtn.innerText = translate('No example prompts found');
                             return;
                         }
                         let added = 0;
@@ -271,7 +271,7 @@
                             const promptBtn = document.createElement('div');
                             promptBtn.className = 'sui_popover_model_button';
                             const short = prompt.length > 60 ? prompt.slice(0, 60) + '\u2026' : prompt;
-                            promptBtn.innerText = `Copy Prompt: ${short}`;
+                            promptBtn.innerText = `${translate('Copy Prompt:')} ${short}`;
                             promptBtn.title = prompt;
                             promptBtn.onclick = () => {
                                 if (typeof copyText === 'function') {
@@ -281,9 +281,9 @@
                             menuDiv.insertBefore(promptBtn, examplesBtn.nextSibling);
                             added++;
                         }
-                        examplesBtn.innerText = added > 0 ? `Loaded ${added} example prompts` : 'No example prompts found';
+                        examplesBtn.innerText = added > 0 ? `${translate('Loaded')} ${added} ${translate('example prompts')}` : translate('No example prompts found');
                     } catch {
-                        examplesBtn.innerText = 'Failed to load examples';
+                        examplesBtn.innerText = translate('Failed to load examples');
                     }
                 };
                 menuDiv.appendChild(examplesBtn);

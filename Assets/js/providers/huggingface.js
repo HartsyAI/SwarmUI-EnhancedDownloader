@@ -74,12 +74,12 @@
             const fileSizeStr = fileSize && typeof fileSizeStringify === 'function' ? fileSizeStringify(fileSize) : '';
 
             const infoHtml = `
-                <b>Hugging Face Metadata</b>
-                ${title ? `<br><b>Model</b>: ${escapeHtml(title)}` : ''}
-                ${modelId ? `<br><b>Model ID</b>: ${escapeHtml(modelId)}` : ''}
-                ${link ? `<br><b>Link</b>: <a href="${link}" target="_blank" rel="noreferrer">${escapeHtml(link)}</a>` : ''}
-                ${fileSizeStr ? `<br><b>File Size</b>: ${escapeHtml(fileSizeStr)}` : ''}
-                ${descText ? `<br><b>Description</b>: ${escapeHtml(descText)}` : ''}
+                <b>${translate('Hugging Face Metadata')}</b>
+                ${title ? `<br><b>${translate('Model')}</b>: ${escapeHtml(title)}` : ''}
+                ${modelId ? `<br><b>${translate('Model ID')}</b>: ${escapeHtml(modelId)}` : ''}
+                ${link ? `<br><b>${translate('Link')}</b>: <a href="${link}" target="_blank" rel="noreferrer">${escapeHtml(link)}</a>` : ''}
+                ${fileSizeStr ? `<br><b>${translate('File Size')}</b>: ${escapeHtml(fileSizeStr)}` : ''}
+                ${descText ? `<br><b>${translate('Description')}</b>: ${escapeHtml(descText)}` : ''}
             `;
 
             const rawMeta = JSON.stringify({
@@ -215,18 +215,18 @@
 
             const loadAllBtn = document.createElement('div');
             loadAllBtn.className = 'sui_popover_model_button';
-            loadAllBtn.innerText = 'Load all files...';
+            loadAllBtn.innerText = translate('Load all files...');
             loadAllBtn.onclick = async () => {
                 if (loadAllBtn.dataset.loading === 'true') return;
                 loadAllBtn.dataset.loading = 'true';
-                loadAllBtn.innerText = 'Loading...';
+                loadAllBtn.innerText = translate('Loading...');
                 try {
                     const resp = await utils.genericRequestAsync('EnhancedDownloaderHuggingFaceFiles', {
                         modelId: `${item.modelId}`,
                         limit: 2000
                     });
                     if (!resp || !resp.success || !Array.isArray(resp.files)) {
-                        loadAllBtn.innerText = 'Failed to load files';
+                        loadAllBtn.innerText = translate('Failed to load files');
                         return;
                     }
                     const downloadOptions = Array.isArray(item.downloadOptions) ? item.downloadOptions : [];
@@ -243,17 +243,17 @@
                         const optBtn = document.createElement('div');
                         optBtn.className = 'sui_popover_model_button';
                         const quant = opt.quantType ? `[${opt.quantType}] ` : '';
-                        optBtn.innerText = opt.fileName ? `Download: ${quant}${opt.fileName}` : 'Download File';
+                        optBtn.innerText = opt.fileName ? `${translate('Download:')} ${quant}${opt.fileName}` : translate('Download File');
                         optBtn.onclick = () => {
                             applyToManualDownloader(item, dl, item.openUrl || '');
                         };
                         menuDiv.insertBefore(optBtn, loadAllBtn.nextSibling);
                         added++;
                     }
-                    loadAllBtn.innerText = added > 0 ? `Loaded ${added} files` : 'No additional files';
+                    loadAllBtn.innerText = added > 0 ? `${translate('Loaded')} ${added} ${translate('files')}` : translate('No additional files');
                 }
                 catch {
-                    loadAllBtn.innerText = 'Failed to load files';
+                    loadAllBtn.innerText = translate('Failed to load files');
                 }
             };
             menuDiv.appendChild(loadAllBtn);
