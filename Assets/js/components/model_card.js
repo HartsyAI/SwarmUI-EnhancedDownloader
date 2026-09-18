@@ -21,16 +21,16 @@
             formatHolder.innerHTML = '';
             const toggle = document.createElement('span');
             toggle.className = 'basic-button enhanced-downloader-smallbtn ed-model-format-toggle';
-            toggle.textContent = 'More formats';
+            toggle.textContent = translate('More formats');
             toggle.onclick = async () => {
                 if (toggle.dataset.loading === 'true') return;
                 toggle.dataset.loading = 'true';
-                toggle.textContent = 'Loading...';
+                toggle.textContent = translate('Loading...');
                 try {
                     const currentPrimary = primarySelect ? primaryOptions.find(o => o.value === primarySelect.value) : null;
                     const formats = await provider.getSecondaryOptionsLazy(item, currentPrimary);
                     if (!Array.isArray(formats) || formats.length <= 1) {
-                        toggle.textContent = formats && formats.length === 1 ? 'Only one format available' : 'No formats found';
+                        toggle.textContent = formats && formats.length === 1 ? translate('Only one format available') : translate('No formats found');
                         return;
                     }
                     const formatSelect = document.createElement('select');
@@ -64,7 +64,7 @@
                     applySelectionToDom();
                 } catch (e) {
                     console.warn('Failed to load format options:', e);
-                    toggle.textContent = 'Failed to load formats';
+                    toggle.textContent = translate('Failed to load formats');
                 }
             };
             formatHolder.appendChild(toggle);
@@ -131,6 +131,7 @@
         div.className = 'model-block model-block-hoverable enhanced-downloader-model-card';
 
         const img = document.createElement('img');
+        img.classList.add('translate');
         img.dataset.renderId = `${renderId}`;
         img.src = item.image || 'imgs/model_placeholder.jpg';
         img.title = 'Click to load into Manual Download';
@@ -169,7 +170,7 @@
         textBlock.innerHTML = `
             <b>${escapeHtml(item.name || '')}</b>
             ${item.versionName ? `<br>${escapeHtml(item.versionName)}` : ''}
-            <br>${escapeHtml(item.type || '')}${baseStr ? ` | ${baseStr}` : ''}${creatorStr ? ` | ${creatorStr}` : ''}${downloadsStr ? ` | ${downloadsStr} downloads` : ''}
+            <br>${escapeHtml(item.type || '')}${baseStr ? ` | ${baseStr}` : ''}${creatorStr ? ` | ${creatorStr}` : ''}${downloadsStr ? ` | ${downloadsStr} ${translate('downloads')}` : ''}
             ${badgesHtml}
             ${descHtml}
             <div class="ed-model-variant-row"></div>

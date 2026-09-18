@@ -75,14 +75,14 @@
                 return false;
             }
             const fieldRow = prepareFolderRow(oldFolderDropdown);
-            const chipHTML = `<span id="model_downloader_selected_folder" class="folder-browser-selected" title="Click to pick a destination folder">Root Folder</span>`;
+            const chipHTML = `<span id="model_downloader_selected_folder" class="folder-browser-selected" title="${translate('Click to pick a destination folder')}">${translate('Root Folder')}</span>`;
             const treeHTML = `<div id="model_downloader_folder_browser" class="folder-browser" style="display: none;"></div>`;
             if (fieldRow) {
                 oldFolderDropdown.insertAdjacentHTML('afterend', chipHTML);
                 fieldRow.insertAdjacentHTML('afterend', treeHTML);
             }
             else {
-                oldFolderDropdown.insertAdjacentHTML('afterend', `<br><span style="font-weight: bold;">Destination Folder</span>: ${chipHTML}${treeHTML}`);
+                oldFolderDropdown.insertAdjacentHTML('afterend', `<br><span style="font-weight: bold;">${translate('Destination Folder')}</span>: ${chipHTML}${treeHTML}`);
             }
 
             folderBrowser = document.getElementById('model_downloader_folder_browser');
@@ -144,9 +144,9 @@
 
                 let html = '<div class="folder-browser-header">';
                 html += `<div class="folder-item ${this.selectedFolder === '(None)' ? 'selected' : ''}" onclick="modelDownloader.selectFolder('(None)')">`;
-                html += '<span class="folder-icon">\uD83D\uDCC1</span> <span class="folder-name">Root Folder</span>';
+                html += `<span class="folder-icon">\uD83D\uDCC1</span> <span class="folder-name">${translate('Root Folder')}</span>`;
                 html += '</div>';
-                html += '<button class="folder-new-btn" onclick="modelDownloader.createNewFolder()">+ New Folder</button>';
+                html += `<button class="folder-new-btn" onclick="modelDownloader.createNewFolder()">+ ${translate('New Folder')}</button>`;
                 html += '</div>';
                 html += '<div class="folder-tree">';
                 html += this.renderFolderTree(tree, '');
@@ -199,7 +199,7 @@
         };
 
         mdl.updateSelectedFolderDisplay = function() {
-            let displayText = this.selectedFolder === '(None)' ? 'Root Folder' : this.selectedFolder;
+            let displayText = this.selectedFolder === '(None)' ? translate('Root Folder') : this.selectedFolder;
             this.selectedFolderDisplay.innerText = displayText;
         };
 
@@ -220,7 +220,7 @@
         };
 
         mdl.createNewFolder = function() {
-            let folderName = prompt('Enter new folder name (use "/" for nested folders):');
+            let folderName = prompt(translate('Enter new folder name (use "/" for nested folders):'));
             if (!folderName) {
                 return;
             }

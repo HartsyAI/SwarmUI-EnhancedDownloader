@@ -122,13 +122,17 @@
         return card;
     }
 
-    function populateSelect(selectEl, options, selectedValue) {
+    // `translatable` must only be true for our own hardcoded generic UI vocabulary (eg sort-order labels).
+    // Provider-sourced options (model families, live API enums, format/pipeline taxonomy) must stay literal -
+    // they're technical identifiers, not prose, and running them through translate() risks mistranslating a
+    // value that's also meant to be recognized/matched elsewhere.
+    function populateSelect(selectEl, options, selectedValue, translatable = false) {
         const currentValue = selectedValue || selectEl.value;
         selectEl.innerHTML = '';
         for (const opt of options) {
             const optEl = document.createElement('option');
             optEl.value = opt.value;
-            optEl.textContent = opt.label;
+            optEl.textContent = translatable ? translate(opt.label) : opt.label;
             if (opt.value === currentValue) optEl.selected = true;
             selectEl.appendChild(optEl);
         }
@@ -201,25 +205,25 @@
                 const isNsfw = !!(prov && prov.supportsNsfw);
 
                 if (prov && prov.id === 'huggingface') {
-                    query.placeholder = 'Search Hugging Face...';
+                    query.placeholder = translate('Search Hugging Face...');
                 } else if (prov && prov.id === 'hartsy') {
-                    query.placeholder = 'Search Hartsy...';
+                    query.placeholder = translate('Search Hartsy...');
                 } else {
-                    query.placeholder = 'Search...';
+                    query.placeholder = translate('Search...');
                 }
 
                 // Hartsy has no type concept (checkpoint vs LoRA is an architecture distinction), so its type filter stays disabled.
                 typeFilter.disabled = !(prov && (prov.id === 'civitai' || prov.id === 'huggingface'));
                 baseModelFilter.disabled = !isFilterable;
                 if (prov && prov.id === 'hartsy' && prov.getArchitectureOptions) {
-                    populateSelect(typeFilter, [{ value: 'All', label: 'All' }], 'All');
+                    populateSelect(typeFilter, [{ value: 'All', label: 'All' }], 'All', true);
                     try {
                         const archOptions = await prov.getArchitectureOptions();
                         const formatted = archOptions.map(a => (typeof a === 'string') ? { value: a, label: a } : a);
                         const defaultArch = prov.getDefaultArchitecture ? await prov.getDefaultArchitecture() : 'All';
                         populateSelect(baseModelFilter, formatted, defaultArch);
                     } catch {
-                        populateSelect(baseModelFilter, [{ value: 'All', label: 'All' }], 'All');
+                        populateSelect(baseModelFilter, [{ value: 'All', label: 'All' }], 'All', true);
                     }
                 } else if (prov && prov.id === 'civitai') {
                     populateSelect(typeFilter, civitaiTypeOptions, state.lastType || 'LORA');
@@ -240,19 +244,19 @@
 
                 sortFilter.disabled = !isFilterable;
                 if (prov && prov.id === 'hartsy') {
-                    populateSelect(sortFilter, hartsySortOptions, 'downloads');
+                    populateSelect(sortFilter, hartsySortOptions, 'downloads', true);
                 } else if (prov && prov.id === 'civitai') {
                     const civitaiSorts = prov.getSortOptions ? prov.getSortOptions() : defaultSortOptions;
-                    populateSelect(sortFilter, civitaiSorts, state.lastSort || 'Most Downloaded');
+                    populateSelect(sortFilter, civitaiSorts, state.lastSort || 'Most Downloaded', true);
                 } else if (prov && prov.id === 'huggingface') {
-                    populateSelect(sortFilter, prov.getSortOptions ? prov.getSortOptions() : [], 'downloads');
+                    populateSelect(sortFilter, prov.getSortOptions ? prov.getSortOptions() : [], 'downloads', true);
                 }
 
                 const supportsPeriod = !!(prov && prov.supportsPeriod);
                 periodFilter.style.display = supportsPeriod ? '' : 'none';
                 periodFilter.disabled = !supportsPeriod;
                 if (supportsPeriod && prov.getPeriodOptions) {
-                    populateSelect(periodFilter, prov.getPeriodOptions(), state.lastPeriod || 'AllTime');
+                    populateSelect(periodFilter, prov.getPeriodOptions(), state.lastPeriod || 'AllTime', true);
                 }
 
                 civitaiRow.style.display = (prov && prov.id === 'civitai') ? '' : 'none';
@@ -264,15 +268,15 @@
             const updatePager = () => {
                 const prov = getProvider(state.providerId);
                 if (isProviderCursorPaged()) {
-                    pageInfo.textContent = `Page ${state.cursorStack.length + 1}`;
+                    pageInfo.textContent = `${translate('Page')} ${state.cursorStack.length + 1}`;
                     prevBtn.disabled = state.cursorStack.length <= 0 || state.inflight;
                     nextBtn.disabled = !state.hasNextCursor || state.inflight;
                 } else if (prov && prov.id === 'hartsy') {
-                    pageInfo.textContent = `Page ${state.page}`;
+                    pageInfo.textContent = `${translate('Page')} ${state.page}`;
                     prevBtn.disabled = state.page <= 1 || state.inflight;
                     nextBtn.disabled = !state.hasMore || state.inflight;
                 } else {
-                    pageInfo.textContent = `Page ${state.page} / ${state.totalPages}`;
+                    pageInfo.textContent = `${translate('Page')} ${state.page} / ${state.totalPages}`;
                     prevBtn.disabled = state.page <= 1 || state.inflight;
                     nextBtn.disabled = state.page >= state.totalPages || state.inflight;
                 }
@@ -354,7 +358,7 @@
                     state.totalPages = 1;
                 }
 
-                statusEl.textContent = 'Loading...';
+                statusEl.textContent = translate('Loading...');
                 state.inflight = true;
                 updatePager();
 
@@ -375,7 +379,7 @@
                     });
 
                     if (!resp || resp.error || !resp.success) {
-                        statusEl.textContent = resp && resp.error ? `${resp.error}` : 'Failed to load.';
+                        statusEl.textContent = resp && resp.error ? `${resp.error}` : translate('Failed to load.');
                         render([]);
                         state.totalPages = 1;
                         state.hasNextCursor = false;
@@ -393,15 +397,15 @@
                             state.nextCursor = '';
                         }
                         const total = resp.totalItems || 0;
-                        let statusText = `Found ${total} results`;
+                        let statusText = `${translate('Found')} ${total} ${translate('results')}`;
                         if (total === 0 && state.providerId === 'civitai' && !state.lastIncludeNsfw && prov.supportsNsfw && !nsfwToggle.disabled) {
-                            statusText += ', no SFW matches; enable NSFW to search civitai.red.';
+                            statusText += `, ${translate('no SFW matches; enable NSFW to search civitai.red.')}`;
                         }
                         statusEl.textContent = statusText;
                         render(resp.items || []);
                     }
                 } catch {
-                    statusEl.textContent = 'Failed to load.';
+                    statusEl.textContent = translate('Failed to load.');
                     render([]);
                     state.hasNextCursor = false;
                     state.nextCursor = '';

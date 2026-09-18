@@ -20,7 +20,7 @@
         }
 
         const badgeHtml = model.isRecommended
-            ? ' <span class="enhanced-downloader-featured-badge">Recommended</span>'
+            ? ' <span class="enhanced-downloader-featured-badge translate">Recommended</span>'
             : '';
 
         const chips = [model.architecture, model.scale, model.author].filter(Boolean);
@@ -84,13 +84,13 @@
 
         const header = document.createElement('div');
         header.className = 'enhanced-downloader-featured-group-header';
-        header.textContent = title;
+        header.textContent = translate(title);
         col.appendChild(header);
 
         if (models.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'enhanced-downloader-featured-empty';
-            empty.textContent = 'No models in this category.';
+            empty.textContent = translate('No models in this category.');
             col.appendChild(empty);
             return col;
         }
@@ -117,8 +117,8 @@
                     el.style.display = expanded ? '' : 'none';
                 }
                 toggleBtn.textContent = expanded
-                    ? 'Show less'
-                    : `Show ${models.length - 1} more`;
+                    ? translate('Show less')
+                    : `${translate('Show')} ${models.length - 1} ${translate('more')}`;
             };
 
             updateToggle(isExpanded);
@@ -159,13 +159,13 @@
                     </span>
                 </div>
                 <div class="card-body enhanced-downloader-featured-body-wrap">
-                    <div class="enhanced-downloader-featured-about">
+                    <div class="enhanced-downloader-featured-about translate">
                         Models recommended in the SwarmUI docs. Pick a version from the dropdown then hit Download to load it into the manual downloader.
                         See the <a href="https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Model%20Support.md" target="_blank" rel="noreferrer">Image Model Support</a>
                         <a href="https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Video%20Model%20Support.md" target="_blank" rel="noreferrer">Video Model Support</a>,
                         and <a href="https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Audio%20Model%20Support.md" target="_blank" rel="noreferrer">Audio Model Support</a> docs for more details.
                     </div>
-                    <div class="enhanced-downloader-featured-loading">Loading...</div>
+                    <div class="enhanced-downloader-featured-loading">${translate('Loading...')}</div>
                     <div class="enhanced-downloader-featured-columns"></div>
                 </div>
             `;
@@ -176,14 +176,14 @@
             const columnsEl = card.querySelector('.enhanced-downloader-featured-columns');
 
             const isCollapsed = localStorage.getItem(COLLAPSE_KEY) === 'true';
+            toggleBtn.textContent = translate(isCollapsed ? 'Show' : 'Hide');
             if (isCollapsed) {
                 bodyWrap.style.display = 'none';
-                toggleBtn.textContent = 'Show';
             }
             toggleBtn.onclick = () => {
                 const hidden = bodyWrap.style.display === 'none';
                 bodyWrap.style.display = hidden ? '' : 'none';
-                toggleBtn.textContent = hidden ? 'Hide' : 'Show';
+                toggleBtn.textContent = translate(hidden ? 'Hide' : 'Show');
                 localStorage.setItem(COLLAPSE_KEY, hidden ? 'false' : 'true');
             };
 
@@ -197,7 +197,14 @@
             utils.genericRequestAsync('EnhancedDownloaderGetFeaturedModels', {}).then(resp => {
                 loadingEl.style.display = 'none';
                 if (!resp || !resp.success || !Array.isArray(resp.models) || resp.models.length === 0) {
-                    columnsEl.innerHTML = '<div class="enhanced-downloader-featured-empty">No featured models available.</div>';
+                    columnsEl.textContent = '';
+                    const empty = document.createElement('div');
+                    empty.className = 'enhanced-downloader-featured-empty';
+                    empty.textContent = translate('No featured models available.');
+                    columnsEl.appendChild(empty);
+                    if (typeof applyTranslations === 'function') {
+                        applyTranslations(card);
+                    }
                     return;
                 }
 
@@ -215,7 +222,7 @@
                     applyTranslations(card);
                 }
             }).catch(() => {
-                loadingEl.textContent = 'Failed to load featured models.';
+                loadingEl.textContent = translate('Failed to load featured models.');
             });
 
             return true;

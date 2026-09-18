@@ -51,27 +51,27 @@
         if (rec.state === 'downloading') {
             const speed = rec.perSecond > 0 ? ` - ${formatBytes(rec.perSecond)}/s` : '';
             if (!known) {
-                return `Downloading... ${formatBytes(rec.downloadedBytes)}${speed}${noteHtml}`;
+                return `${translate('Downloading...')} ${formatBytes(rec.downloadedBytes)}${speed}${noteHtml}`;
             }
             const pct = Math.floor((rec.downloadedBytes / rec.totalBytes) * 100);
-            return `Downloading... ${formatBytes(rec.downloadedBytes)} / ${formatBytes(rec.totalBytes)} (${pct}%)${speed}${noteHtml}`;
+            return `${translate('Downloading...')} ${formatBytes(rec.downloadedBytes)} / ${formatBytes(rec.totalBytes)} (${pct}%)${speed}${noteHtml}`;
         }
         if (rec.state === 'paused') {
-            return `Paused at ${formatBytes(rec.downloadedBytes)}${known ? ` / ${formatBytes(rec.totalBytes)}` : ''}. The partial file is kept - Resume to continue.`;
+            return `${translate('Paused at')} ${formatBytes(rec.downloadedBytes)}${known ? ` / ${formatBytes(rec.totalBytes)}` : ''}. ${translate('The partial file is kept - Resume to continue.')}`;
         }
         if (rec.state === 'errored') {
-            const msg = rec.error || 'Unknown error.';
-            let html = `Error: ${escapeHtml(msg)}`;
+            const msg = rec.error || translate('Unknown error.');
+            let html = `${translate('Error:')} ${escapeHtml(msg)}`;
             if (msg.includes('got response code 401') || msg.includes('got response code 403')) {
-                html += `<br>Set or check your <a href="#" onclick="getRequiredElementById('usersettingstabbutton').click();getRequiredElementById('userinfotabbutton').click();">API Key</a> in User Settings.`;
+                html += `<br>${translate('Set or check your')} <a href="#" onclick="getRequiredElementById('usersettingstabbutton').click();getRequiredElementById('userinfotabbutton').click();">${translate('API Key')}</a> ${translate('in User Settings.')}`;
             }
             else if (rec.downloadedBytes > 0) {
-                html += `<br>${formatBytes(rec.downloadedBytes)} was already saved and will resume from there.`;
+                html += `<br>${formatBytes(rec.downloadedBytes)} ${translate('was already saved and will resume from there.')}`;
             }
             return html;
         }
         if (rec.state === 'completed') {
-            return `Done! ${formatBytes(rec.totalBytes || rec.downloadedBytes)}`;
+            return `${translate('Done!')} ${formatBytes(rec.totalBytes || rec.downloadedBytes)}`;
         }
         return '';
     }
@@ -91,15 +91,15 @@
     function renderActions(container, rec) {
         container.replaceChildren();
         if (rec.state === 'downloading') {
-            container.appendChild(makeButton('Cancel', 'Pause this download - the partial file is kept so it can be resumed.', () => cancelDownload(rec.id)));
+            container.appendChild(makeButton(translate('Cancel'), translate('Pause this download - the partial file is kept so it can be resumed.'), () => cancelDownload(rec.id)));
         }
         else if (rec.state === 'paused' || rec.state === 'errored') {
-            const label = rec.state === 'errored' ? 'Retry' : 'Resume';
-            container.appendChild(makeButton(label, 'Continue this download from where it left off.', () => resumeDownload(rec.id)));
-            container.appendChild(makeButton('Clear', 'Delete the partial file and remove this download from the list.', () => clearDownload(rec.id)));
+            const label = rec.state === 'errored' ? translate('Retry') : translate('Resume');
+            container.appendChild(makeButton(label, translate('Continue this download from where it left off.'), () => resumeDownload(rec.id)));
+            container.appendChild(makeButton(translate('Clear'), translate('Delete the partial file and remove this download from the list.'), () => clearDownload(rec.id)));
         }
         else if (rec.state === 'completed') {
-            container.appendChild(makeButton('Dismiss', 'Remove this from the list. The downloaded model is not affected.', () => clearDownload(rec.id)));
+            container.appendChild(makeButton(translate('Dismiss'), translate('Remove this from the list. The downloaded model is not affected.'), () => clearDownload(rec.id)));
         }
     }
 
@@ -271,12 +271,12 @@
             return;
         }
         mdl.button.disabled = false;
-        const errorMsg = (resp && resp.error) || 'unknown error';
+        const errorMsg = (resp && resp.error) || translate('unknown error');
         if (mdl.urlStatusArea) {
-            mdl.urlStatusArea.innerText = `Failed to start download: ${errorMsg}`;
+            mdl.urlStatusArea.innerText = `${translate('Failed to start download:')} ${errorMsg}`;
         }
         if (typeof showError === 'function') {
-            showError(`Failed to start download: ${errorMsg}`);
+            showError(`${translate('Failed to start download:')} ${errorMsg}`);
         }
     }
 

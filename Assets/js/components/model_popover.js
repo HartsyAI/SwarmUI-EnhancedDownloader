@@ -28,7 +28,7 @@
 
         const btnDownload = document.createElement('div');
         btnDownload.className = 'sui_popover_model_button';
-        btnDownload.innerText = 'Download';
+        btnDownload.innerText = translate('Download');
         btnDownload.onclick = () => {
             const merged = Object.assign({}, item, sel);
             if (provider && provider.handleDownload) {
@@ -46,7 +46,7 @@
         if (sel.openUrl) {
             const btnOpen = document.createElement('div');
             btnOpen.className = 'sui_popover_model_button';
-            btnOpen.innerText = 'Open';
+            btnOpen.innerText = translate('Open');
             btnOpen.onclick = () => window.open(sel.openUrl, '_blank', 'noreferrer');
             menuDiv.appendChild(btnOpen);
         }
@@ -55,7 +55,7 @@
         const addCopy = (label, valueOrGetter) => {
             const btn = document.createElement('div');
             btn.className = 'sui_popover_model_button';
-            btn.innerText = label;
+            btn.innerText = translate(label);
             btn.onclick = () => {
                 const value = typeof valueOrGetter === 'function' ? valueOrGetter() : valueOrGetter;
                 if (typeof copyText === 'function' && value) {

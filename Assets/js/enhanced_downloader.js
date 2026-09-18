@@ -91,7 +91,7 @@
         const noneOpt = select.querySelector('option');
         const firstChild = noneOpt || select.firstChild;
         const group = document.createElement('optgroup');
-        group.label = 'Recent';
+        group.label = translate('Recent');
         for (const path of recents) {
             if (existing.has(path)) {
                 continue;
@@ -149,10 +149,10 @@
             newWrap = document.createElement('div');
             newWrap.className = 'enhanced-downloader-new-folder';
             newWrap.innerHTML = `
-                <button type="button" class="basic-button enhanced-downloader-smallbtn">New Folder</button>
+                <button type="button" class="basic-button enhanced-downloader-smallbtn translate">New Folder</button>
                 <span class="enhanced-downloader-new-folder-inline" style="display:none">
                     <input type="text" class="auto-text" placeholder="SDXL/LoRAs/Characters" />
-                    <button type="button" class="basic-button enhanced-downloader-smallbtn">Add</button>
+                    <button type="button" class="basic-button enhanced-downloader-smallbtn translate">Add</button>
                 </span>
             `;
             toggleBtn = newWrap.querySelector('button');
@@ -270,6 +270,7 @@
             else {
                 newWrap.insertAdjacentElement('afterend', destination);
             }
+            applyTranslations(newWrap);
         }
         else {
             if (modelDownloader.name) {
@@ -279,6 +280,7 @@
                 folders.insertAdjacentElement('afterend', destination);
             }
         }
+        applyTranslations(destination);
 
         modelDownloader.reloadFolders();
         updatePreview();
@@ -351,7 +353,7 @@
             delete modelDownloader.metadataZone.dataset.image;
             modelDownloader.imageSide.innerHTML = '';
             clearCoreVersionFileSelectors();
-            modelDownloader.urlStatusArea.innerText = 'URL appears to be a Hartsy model link. Resolving download info...';
+            modelDownloader.urlStatusArea.innerText = translate('URL appears to be a Hartsy model link. Resolving download info...');
             modelDownloader.button.disabled = true;
             const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
             if (!utils || typeof utils.genericRequestAsync !== 'function') {
@@ -383,12 +385,12 @@
                 if (hasDetails) {
                     const descText = stripHtmlToText(details.description || '');
                     const infoHtml = `
-                        <b>Hartsy Metadata</b>
-                        <br><b>Model</b>: ${escapeHtml(title)}
-                        ${details.architecture ? `<br><b>Architecture</b>: ${escapeHtml(details.architecture)}` : ''}
-                        ${details.author ? `<br><b>Author</b>: ${escapeHtml(details.author)}` : ''}
-                        ${Array.isArray(details.tags) && details.tags.length ? `<br><b>Tags</b>: ${escapeHtml(details.tags.join(', '))}` : ''}
-                        ${descText ? `<br><b>Description</b>: ${escapeHtml(descText)}` : ''}
+                        <b>${translate('Hartsy Metadata')}</b>
+                        <br><b>${translate('Model')}</b>: ${escapeHtml(title)}
+                        ${details.architecture ? `<br><b>${translate('Architecture')}</b>: ${escapeHtml(details.architecture)}` : ''}
+                        ${details.author ? `<br><b>${translate('Author')}</b>: ${escapeHtml(details.author)}` : ''}
+                        ${Array.isArray(details.tags) && details.tags.length ? `<br><b>${translate('Tags')}</b>: ${escapeHtml(details.tags.join(', '))}` : ''}
+                        ${descText ? `<br><b>${translate('Description')}</b>: ${escapeHtml(descText)}` : ''}
                     `;
                     const rawMeta = JSON.stringify({
                         'modelspec.title': title,
@@ -401,19 +403,19 @@
                 }
 
                 if (!resp || !resp.success || !resp.downloadUrl) {
-                    modelDownloader.urlStatusArea.innerText = `Resolved "${title}" from Hartsy, but Hartsy has no direct download link available for this model yet.${resp && resp.error ? ` (${resp.error})` : ''}`;
+                    modelDownloader.urlStatusArea.innerText = `${translate('Resolved')} "${title}" ${translate('from Hartsy, but Hartsy has no direct download link available for this model yet.')}${resp && resp.error ? ` (${resp.error})` : ''}`;
                     modelDownloader.button.disabled = true;
                     return;
                 }
 
                 modelDownloader.url.value = utils.appendExtensionHint ? utils.appendExtensionHint(resp.downloadUrl, resp.fileName) : resp.downloadUrl;
-                modelDownloader.urlStatusArea.innerText = 'URL appears to be a Hartsy model link, and has been resolved to a direct download link.';
+                modelDownloader.urlStatusArea.innerText = translate('URL appears to be a Hartsy model link, and has been resolved to a direct download link.');
                 modelDownloader.nameInput();
             }).catch(() => {
                 if (myToken !== requestToken) {
                     return;
                 }
-                modelDownloader.urlStatusArea.innerText = 'Failed to contact Hartsy to resolve this model link.';
+                modelDownloader.urlStatusArea.innerText = translate('Failed to contact Hartsy to resolve this model link.');
                 modelDownloader.button.disabled = true;
             });
         };
@@ -435,8 +437,8 @@
         const btnWrap = document.createElement('span');
         btnWrap.className = 'enhanced-downloader-url-actions';
         btnWrap.innerHTML = `
-            <button type="button" class="basic-button enhanced-downloader-smallbtn">Paste</button>
-            <button type="button" class="basic-button enhanced-downloader-smallbtn">Clear</button>
+            <button type="button" class="basic-button enhanced-downloader-smallbtn translate">Paste</button>
+            <button type="button" class="basic-button enhanced-downloader-smallbtn translate">Clear</button>
         `;
         const [pasteBtn, clearBtn] = btnWrap.querySelectorAll('button');
         pasteBtn.title = 'Reads your clipboard. Some browsers (e.g. Firefox) show their own "Paste" confirmation popup to allow this - click that popup, or just press Ctrl+V in the field instead.';
@@ -444,7 +446,7 @@
             const statusArea = window.modelDownloader ? modelDownloader.urlStatusArea : null;
             if (!navigator.clipboard || !navigator.clipboard.readText) {
                 if (statusArea) {
-                    statusArea.innerText = 'Clipboard access is not available in this browser. Paste into the URL field directly (Ctrl+V) instead.';
+                    statusArea.innerText = translate('Clipboard access is not available in this browser. Paste into the URL field directly (Ctrl+V) instead.');
                 }
                 return;
             }
@@ -455,13 +457,13 @@
                     modelDownloader.urlInput();
                 }
                 else if (statusArea) {
-                    statusArea.innerText = 'Clipboard is empty.';
+                    statusArea.innerText = translate('Clipboard is empty.');
                 }
             }
             catch (e) {
                 console.warn('Clipboard read failed:', e);
                 if (statusArea) {
-                    statusArea.innerText = 'Clipboard access was blocked. If your browser showed a permission prompt, click Paste again, or paste into the URL field directly (Ctrl+V).';
+                    statusArea.innerText = translate('Clipboard access was blocked. If your browser showed a permission prompt, click Paste again, or paste into the URL field directly (Ctrl+V).');
                 }
             }
         };
@@ -470,6 +472,7 @@
             modelDownloader.urlInput();
         };
         url.insertAdjacentElement('afterend', btnWrap);
+        applyTranslations(btnWrap);
         return true;
     }
 
@@ -510,25 +513,27 @@
             const leftInfo = document.createElement('div');
             leftInfo.className = 'enhanced-downloader-section-info ed-info-left';
             leftInfo.innerHTML = `
-<div class="ed-info-title">Manual Download</div>
+<div class="ed-info-title translate">Manual Download</div>
 <ul class="ed-info-list">
-  <li><b>Purpose:</b> Download a model from a direct URL into Swarm’s model folders.</li>
-  <li><b>Allowed files:</b> <code>.safetensors</code>, <code>.gguf</code>, <code>.ckpt</code>, <code>.pt</code>, <code>.sft</code>.</li>
-  <li><b>Metadata:</b> CivitAI, Hugging Face and Hartsy links load their details automatically.</li>
-  <li><b>Anything else:</b> Must be a direct download URL, not the HTML page around it.</li>
+  <li><b class="translate">Purpose:</b> <span class="translate">Download a model from a direct URL into Swarm's model folders.</span></li>
+  <li><b class="translate">Allowed files:</b> <code>.safetensors</code>, <code>.gguf</code>, <code>.ckpt</code>, <code>.pt</code>, <code>.sft</code>.</li>
+  <li><b class="translate">Metadata:</b> <span class="translate">CivitAI, Hugging Face and Hartsy links load their details automatically.</span></li>
+  <li><b class="translate">Anything else:</b> <span class="translate">Must be a direct download URL, not the HTML page around it.</span></li>
 </ul>`;
 
             const rightInfo = document.createElement('div');
             rightInfo.className = 'enhanced-downloader-section-info ed-info-right';
             rightInfo.innerHTML = `
-<div class="ed-info-title">Model Browser</div>
+<div class="ed-info-title translate">Model Browser</div>
 <ul class="ed-info-list">
-  <li><b>Sources:</b> Search Hartsy, CivitAI or Hugging Face, each with its own filters.</li>
-  <li><b>Recommended:</b> The panel below tracks the models the SwarmUI docs recommend.</li>
-  <li><b>Download:</b> Pick a result to load its URL into the manual downloader on the left.</li>
-  <li><b>Gated models:</b> If a download is refused, the error says which provider refused it and why; add that provider's API key in User Settings.</li>
+  <li><b class="translate">Sources:</b> <span class="translate">Search Hartsy, CivitAI or Hugging Face, each with its own filters.</span></li>
+  <li><b class="translate">Recommended:</b> <span class="translate">The panel below tracks the models the SwarmUI docs recommend.</span></li>
+  <li><b class="translate">Download:</b> <span class="translate">Pick a result to load its URL into the manual downloader on the left.</span></li>
+  <li><b class="translate">Gated models:</b> <span class="translate">If a download is refused, the error says which provider refused it and why; add that provider's API key in User Settings.</span></li>
 </ul>`;
             layout.append(leftInfo, left, rightInfo, right);
+            applyTranslations(leftInfo);
+            applyTranslations(rightInfo);
 
             wrapper.dataset.enhancedDownloaderLayoutDone = 'true';
         }
@@ -560,6 +565,7 @@
         };
 
         leftCol.appendChild(card);
+        applyTranslations(card);
         return true;
     }
 

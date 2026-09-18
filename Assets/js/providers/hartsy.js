@@ -147,8 +147,8 @@
             return entries.map(v => {
                 const parts = [v.precisionLabel || v.precision, v.specialFormat].filter(Boolean);
                 const sizeStr = v.fileSize && typeof fileSizeStringify === 'function' ? fileSizeStringify(v.fileSize) : '';
-                const gatedBy = v.downloadUrl ? '' : (v.subscriptionRequired || 'a subscription');
-                const suffix = gatedBy ? ` (requires ${gatedBy})` : (sizeStr ? ` (${sizeStr})` : '');
+                const gatedBy = v.downloadUrl ? '' : (v.subscriptionRequired || translate('a subscription'));
+                const suffix = gatedBy ? ` (${translate('requires')} ${gatedBy})` : (sizeStr ? ` (${sizeStr})` : '');
                 return {
                     value: v.downloadUrl || `gated:${v.id}`,
                     label: `${parts.length ? parts.join(' ') : (v.fileName || 'File')}${suffix}`,
@@ -186,7 +186,7 @@
             if (item.torrent && item.torrent.magnetLink) {
                 const magnetBtn = document.createElement('div');
                 magnetBtn.className = 'sui_popover_model_button';
-                magnetBtn.innerText = 'Copy Magnet Link';
+                magnetBtn.innerText = translate('Copy Magnet Link');
                 magnetBtn.onclick = () => {
                     if (typeof copyText === 'function') {
                         copyText(item.torrent.magnetLink);
@@ -196,33 +196,33 @@
             }
             const versionsBtn = document.createElement('div');
             versionsBtn.className = 'sui_popover_model_button';
-            versionsBtn.innerText = 'Load versions...';
+            versionsBtn.innerText = translate('Load versions...');
             versionsBtn.onclick = async () => {
-                versionsBtn.innerText = 'Loading...';
+                versionsBtn.innerText = translate('Loading...');
                 versionsBtn.style.pointerEvents = 'none';
                 try {
                     const groups = await this.getVersionGroups(item.modelId);
                     const current = this.findGroupFor(groups, item.modelId);
                     const others = groups.filter(g => g !== current && g.primary && g.primary.downloadUrl);
                     if (others.length === 0) {
-                        versionsBtn.innerText = 'No other versions';
+                        versionsBtn.innerText = translate('No other versions');
                         return;
                     }
                     versionsBtn.style.display = 'none';
                     for (const group of others) {
                         const ver = group.primary;
-                        const label = group.label || ver.versionLabel || ver.architecture || ver.title || 'Version';
+                        const label = group.label || ver.versionLabel || ver.architecture || ver.title || translate('Version');
                         const sizeStr = ver.fileSize && typeof fileSizeStringify === 'function' ? ` (${fileSizeStringify(ver.fileSize)})` : '';
                         const verBtn = document.createElement('div');
                         verBtn.className = 'sui_popover_model_button';
-                        verBtn.innerText = `Download: ${label}${sizeStr}`;
+                        verBtn.innerText = `${translate('Download:')} ${label}${sizeStr}`;
                         verBtn.onclick = () => {
                             this.handleDownload({ modelId: ver.id, downloadUrl: '', openUrl: `https://hartsy.ai/Home?type=models&id=${ver.id}` });
                         };
                         menuDiv.appendChild(verBtn);
                     }
                 } catch {
-                    versionsBtn.innerText = 'Failed to load versions';
+                    versionsBtn.innerText = translate('Failed to load versions');
                 }
             };
             menuDiv.appendChild(versionsBtn);
