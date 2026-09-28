@@ -34,8 +34,8 @@ public static class DownloadManager
     /// <summary>If a read produces no data for this long, the download is treated as stalled and errors out (resumable).</summary>
     private static readonly TimeSpan IdleReadTimeout = TimeSpan.FromMinutes(5);
 
-    /// <summary>Minimum spacing between manifest writes triggered by in-progress byte-count updates, to avoid hammering disk on fast links.</summary>
-    private const long ProgressPersistIntervalMs = 2000;
+    /// <summary>Minimum spacing between user-DB writes of in-progress byte counts. Kept long: the UI reads in-memory records and Init trusts the part file.</summary>
+    private const long ProgressPersistIntervalMs = 30_000;
 
     private const int ReadBufferSize = 256 * 1024;
 
