@@ -1,8 +1,8 @@
 (function () {
     'use strict';
 
-    window.EnhancedDownloader = window.EnhancedDownloader || {};
-    window.EnhancedDownloader.Providers = window.EnhancedDownloader.Providers || {};
+    window.ModelBrowser = window.ModelBrowser || {};
+    window.ModelBrowser.Providers = window.ModelBrowser.Providers || {};
 
     const imageCache = new Map();
     const imageInflight = new Map();
@@ -38,11 +38,11 @@
         if (!key) return '';
         if (imageCache.has(key)) return imageCache.get(key) || '';
         if (imageInflight.has(key)) return await imageInflight.get(key);
-        const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+        const utils = window.ModelBrowser && window.ModelBrowser.Utils;
         if (!utils || !utils.genericRequestAsync) return '';
         const p = (async () => {
             try {
-                const resp = await utils.genericRequestAsync('EnhancedDownloaderHuggingFaceImage', { modelId: key });
+                const resp = await utils.genericRequestAsync('ModelBrowserHuggingFaceImage', { modelId: key });
                 const img = resp && resp.success ? (resp.image || '') : '';
                 imageCache.set(key, img);
                 evictOldestCacheEntries();
@@ -63,7 +63,7 @@
 
     const applyToManualDownloader = async (item, bestDownloadUrl, openUrl) => {
         try {
-            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            const utils = window.ModelBrowser && window.ModelBrowser.Utils;
             if (!utils || typeof utils.setManualDownloaderInfo !== 'function') return;
 
             const title = `${item && item.name ? item.name : (item && item.modelId ? item.modelId : '')}`;
@@ -139,7 +139,7 @@
         { value: 'createdAt', label: 'Newest' }
     ];
 
-    window.EnhancedDownloader.Providers.huggingface = {
+    window.ModelBrowser.Providers.huggingface = {
         id: 'huggingface',
         displayName: 'Hugging Face',
         supportsFilters: true,
@@ -166,11 +166,11 @@
         },
 
         search: async function (params) {
-            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            const utils = window.ModelBrowser && window.ModelBrowser.Utils;
             if (!utils || !utils.genericRequestAsync) {
-                throw new Error('EnhancedDownloader utils not loaded');
+                throw new Error('ModelBrowser utils not loaded');
             }
-            return await utils.genericRequestAsync('EnhancedDownloaderHuggingFaceSearch', {
+            return await utils.genericRequestAsync('ModelBrowserHuggingFaceSearch', {
                 query: params.query || '',
                 limit: params.limit || 24,
                 cursor: params.cursor || '',
@@ -210,7 +210,7 @@
 
         /** Return extra popover buttons for HuggingFace models. */
         getPopoverExtras: function (item, menuDiv) {
-            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            const utils = window.ModelBrowser && window.ModelBrowser.Utils;
             if (!item || !item.modelId) return;
 
             const loadAllBtn = document.createElement('div');
@@ -221,7 +221,7 @@
                 loadAllBtn.dataset.loading = 'true';
                 loadAllBtn.innerText = translate('Loading...');
                 try {
-                    const resp = await utils.genericRequestAsync('EnhancedDownloaderHuggingFaceFiles', {
+                    const resp = await utils.genericRequestAsync('ModelBrowserHuggingFaceFiles', {
                         modelId: `${item.modelId}`,
                         limit: 2000
                     });

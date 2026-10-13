@@ -1,13 +1,13 @@
 (function () {
     'use strict';
 
-    window.EnhancedDownloader = window.EnhancedDownloader || {};
-    window.EnhancedDownloader.Components = window.EnhancedDownloader.Components || {};
+    window.ModelBrowser = window.ModelBrowser || {};
+    window.ModelBrowser.Components = window.ModelBrowser.Components || {};
 
     let cardRenderId = 0;
 
     function getProvider(id) {
-        return (window.EnhancedDownloader.Providers && window.EnhancedDownloader.Providers[id]) || null;
+        return (window.ModelBrowser.Providers && window.ModelBrowser.Providers[id]) || null;
     }
 
     /** Builds the (optional) version select and lazy format picker row for a card, wired into the shared selection object. */
@@ -20,7 +20,7 @@
             if (!formatHolder) return;
             formatHolder.innerHTML = '';
             const toggle = document.createElement('span');
-            toggle.className = 'basic-button enhanced-downloader-smallbtn ed-model-format-toggle';
+            toggle.className = 'basic-button model-browser-smallbtn ed-model-format-toggle';
             toggle.textContent = translate('More formats');
             toggle.onclick = async () => {
                 if (toggle.dataset.loading === 'true') return;
@@ -125,10 +125,10 @@
         cardRenderId++;
         const renderId = cardRenderId;
         const provider = getProvider(providerId);
-        const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+        const utils = window.ModelBrowser && window.ModelBrowser.Utils;
 
         const div = document.createElement('div');
-        div.className = 'model-block model-block-hoverable enhanced-downloader-model-card';
+        div.className = 'model-block model-block-hoverable model-browser-model-card';
 
         const img = document.createElement('img');
         img.classList.add('translate');
@@ -162,8 +162,8 @@
 
         const actionsHtml = `
             <div class="ed-model-actions">
-                <button type="button" class="basic-button enhanced-downloader-smallbtn ed-model-download"><span class="translate">Download</span></button>
-                ${openUrl ? `<a class="basic-button enhanced-downloader-smallbtn ed-model-open" href="${openUrl}" target="_blank" rel="noreferrer"><span class="translate">Open</span></a>` : ''}
+                <button type="button" class="basic-button model-browser-smallbtn ed-model-download"><span class="translate">Download</span></button>
+                ${openUrl ? `<a class="basic-button model-browser-smallbtn ed-model-open" href="${openUrl}" target="_blank" rel="noreferrer"><span class="translate">Open</span></a>` : ''}
             </div>
         `;
 
@@ -223,7 +223,7 @@
         return { card: div, renderId, selection };
     }
 
-    window.EnhancedDownloader.Components.ModelCard = {
+    window.ModelBrowser.Components.ModelCard = {
         create: createModelCard
     };
 })();

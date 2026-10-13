@@ -8,39 +8,39 @@ using Hartsy.Extensions.Providers;
 
 namespace Hartsy.Extensions;
 
-/// <summary>Registers and routes all Enhanced Downloader API endpoints.</summary>
-public static class EnhancedDownloaderAPI
+/// <summary>Registers and routes all Model Browser API endpoints.</summary>
+public static class ModelBrowserAPI
 {
     public static JObject CachedDownloadRoots;
     public static long CachedDownloadRootsTimestamp;
     public const long DownloadRootsCacheTtlMs = 30_000;
     public static readonly object RootsLock = new();
 
-    /// <summary>Registers all Enhanced Downloader API call handlers with the SwarmUI API system.</summary>
+    /// <summary>Registers all Model Browser API call handlers with the SwarmUI API system.</summary>
     public static void Register()
     {
-        API.RegisterAPICall(ListProviders, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
-        API.RegisterAPICall(EnhancedDownloaderGetDownloadRoots, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
-        API.RegisterAPICall(EnhancedDownloaderGetFeaturedModels, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
-        API.RegisterAPICall(EnhancedDownloaderCivitaiSearch, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderCivitaiTags, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderCivitaiImages, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderCivitaiVersionCheck, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderCivitaiFilterOptions, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderCivitaiVersionFiles, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderHuggingFaceSearch, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderHuggingFaceFiles, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderHuggingFaceImage, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderHartsySearch, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderHartsyFilterOptions, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderHartsyDownload, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderHartsyVersions, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderHartsyModelDetails, false, EnhancedDownloaderExtension.PermEnhancedDownloaderBrowse);
-        API.RegisterAPICall(EnhancedDownloaderListDownloads, false, EnhancedDownloaderExtension.PermEnhancedDownloader);
-        API.RegisterAPICall(EnhancedDownloaderStartDownload, false, Permissions.DownloadModels);
-        API.RegisterAPICall(EnhancedDownloaderResumeDownload, false, Permissions.DownloadModels);
-        API.RegisterAPICall(EnhancedDownloaderCancelDownload, false, Permissions.DownloadModels);
-        API.RegisterAPICall(EnhancedDownloaderClearDownload, false, Permissions.DownloadModels);
+        API.RegisterAPICall(ListProviders, false, ModelBrowser.PermModelBrowser);
+        API.RegisterAPICall(ModelBrowserGetDownloadRoots, false, ModelBrowser.PermModelBrowser);
+        API.RegisterAPICall(ModelBrowserGetFeaturedModels, false, ModelBrowser.PermModelBrowser);
+        API.RegisterAPICall(ModelBrowserCivitaiSearch, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserCivitaiTags, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserCivitaiImages, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserCivitaiVersionCheck, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserCivitaiFilterOptions, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserCivitaiVersionFiles, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserHuggingFaceSearch, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserHuggingFaceFiles, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserHuggingFaceImage, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserHartsySearch, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserHartsyFilterOptions, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserHartsyDownload, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserHartsyVersions, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserHartsyModelDetails, false, ModelBrowser.PermModelBrowserBrowse);
+        API.RegisterAPICall(ModelBrowserListDownloads, false, ModelBrowser.PermModelBrowser);
+        API.RegisterAPICall(ModelBrowserStartDownload, false, Permissions.DownloadModels);
+        API.RegisterAPICall(ModelBrowserResumeDownload, false, Permissions.DownloadModels);
+        API.RegisterAPICall(ModelBrowserCancelDownload, false, Permissions.DownloadModels);
+        API.RegisterAPICall(ModelBrowserClearDownload, false, Permissions.DownloadModels);
     }
 
     /// <summary>Returns a list of all registered download providers with their capabilities.</summary>
@@ -48,7 +48,7 @@ public static class EnhancedDownloaderAPI
     public static Task<JObject> ListProviders(Session session)
     {
         JArray providers = [];
-        foreach (IEnhancedDownloaderProvider p in EnhancedDownloaderProviderRegistry.Providers)
+        foreach (IModelBrowserProvider p in ModelBrowserProviderRegistry.Providers)
         {
             providers.Add(new JObject()
             {
@@ -67,7 +67,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Returns a cached mapping of model type keys to their filesystem download folder paths.</summary>
     [API.APIDescription("Returns a cached mapping of model type keys to their filesystem download folder paths.", "\"success\": true, \"roots\": { \"Stable-Diffusion\": \"path/to/models\", ... }")]
-    public static Task<JObject> EnhancedDownloaderGetDownloadRoots(Session session)
+    public static Task<JObject> ModelBrowserGetDownloadRoots(Session session)
     {
         if (CachedDownloadRoots is not null && Environment.TickCount64 - CachedDownloadRootsTimestamp < DownloadRootsCacheTtlMs)
         {
@@ -97,7 +97,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Searches CivitAI for models matching the given query and filters.</summary>
     [API.APIDescription("Searches CivitAI for models matching the given query and filters.", "\"success\": true, \"items\": [...]")]
-    public static async Task<JObject> EnhancedDownloaderCivitaiSearch(Session session,
+    public static async Task<JObject> ModelBrowserCivitaiSearch(Session session,
         [API.APIParameter("Search query text. Prefix with @username to filter by creator.")] string query = "",
         [API.APIParameter("Page number for pagination.")] int page = 1,
         [API.APIParameter("Maximum results per page.")] int limit = 24,
@@ -117,7 +117,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Searches CivitAI tag names for autocomplete suggestions.</summary>
     [API.APIDescription("Searches CivitAI tag names for autocomplete suggestions.", "\"success\": true, \"tags\": [{ \"name\": \"...\", \"modelCount\": 123 }]")]
-    public static async Task<JObject> EnhancedDownloaderCivitaiTags(Session session,
+    public static async Task<JObject> ModelBrowserCivitaiTags(Session session,
         [API.APIParameter("Tag query prefix.")] string query = "",
         [API.APIParameter("Maximum suggestions to return.")] int limit = 20)
     {
@@ -126,7 +126,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Fetches example images with prompt metadata for a CivitAI model version.</summary>
     [API.APIDescription("Fetches example images with prompt metadata for a CivitAI model version.", "\"success\": true, \"images\": [{ \"url\": \"...\", \"prompt\": \"...\", ... }]")]
-    public static async Task<JObject> EnhancedDownloaderCivitaiImages(Session session,
+    public static async Task<JObject> ModelBrowserCivitaiImages(Session session,
         [API.APIParameter("CivitAI model version ID.")] long modelVersionId = 0,
         [API.APIParameter("Maximum images to return.")] int limit = 6,
         [API.APIParameter("Whether to include NSFW image results.")] bool includeNsfw = false)
@@ -136,7 +136,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Pre-flight check for a CivitAI model version: returns auth and early-access state.</summary>
     [API.APIDescription("Pre-flight check for a CivitAI model version.", "\"success\": true, \"requireAuth\": false, \"inEarlyAccess\": false, ...")]
-    public static async Task<JObject> EnhancedDownloaderCivitaiVersionCheck(Session session,
+    public static async Task<JObject> ModelBrowserCivitaiVersionCheck(Session session,
         [API.APIParameter("CivitAI model version ID.")] long modelVersionId = 0)
     {
         return await CivitAIProvider.Instance.CheckVersionAsync(session, modelVersionId);
@@ -144,14 +144,14 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Returns CivitAI's live model-type and base-model enum values, used to keep the type/base-model filter dropdowns current.</summary>
     [API.APIDescription("Returns CivitAI's live model-type and base-model enum values.", "\"success\": true, \"types\": [...], \"baseModels\": [...]")]
-    public static async Task<JObject> EnhancedDownloaderCivitaiFilterOptions(Session session)
+    public static async Task<JObject> ModelBrowserCivitaiFilterOptions(Session session)
     {
         return await CivitAIProvider.Instance.GetFilterOptionsAsync(session);
     }
 
     /// <summary>Fetches every downloadable file (all format/precision variants) for a specific CivitAI model version.</summary>
     [API.APIDescription("Fetches every downloadable file for a specific CivitAI model version.", "\"success\": true, \"files\": [{ \"fileName\": \"...\", \"downloadUrl\": \"...\", \"format\": \"SafeTensor\", \"precision\": \"fp8\" }]")]
-    public static async Task<JObject> EnhancedDownloaderCivitaiVersionFiles(Session session,
+    public static async Task<JObject> ModelBrowserCivitaiVersionFiles(Session session,
         [API.APIParameter("CivitAI model version ID.")] long modelVersionId = 0)
     {
         return await CivitAIProvider.Instance.GetVersionFilesAsync(session, modelVersionId);
@@ -159,7 +159,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Searches Hugging Face for models matching the given query and filters.</summary>
     [API.APIDescription("Searches Hugging Face for models matching the given query and filters.", "\"success\": true, \"items\": [...]")]
-    public static async Task<JObject> EnhancedDownloaderHuggingFaceSearch(Session session,
+    public static async Task<JObject> ModelBrowserHuggingFaceSearch(Session session,
         [API.APIParameter("Search query text.")] string query = "",
         [API.APIParameter("Maximum results per page.")] int limit = 24,
         [API.APIParameter("Cursor for pagination.")] string cursor = "",
@@ -173,7 +173,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Lists downloadable files for a specific Hugging Face model repository.</summary>
     [API.APIDescription("Lists downloadable files for a specific Hugging Face model repository.", "\"success\": true, \"files\": [{ \"fileName\": \"...\", \"downloadUrl\": \"...\", \"fileSize\": 123 }]")]
-    public static async Task<JObject> EnhancedDownloaderHuggingFaceFiles(Session session,
+    public static async Task<JObject> ModelBrowserHuggingFaceFiles(Session session,
         [API.APIParameter("The Hugging Face model ID (e.g. user/repo).")] string modelId,
         [API.APIParameter("Maximum number of files to return.")] int limit = 500)
     {
@@ -182,7 +182,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Fetches a preview image for a Hugging Face model.</summary>
     [API.APIDescription("Fetches a preview image for a Hugging Face model.", "\"success\": true, \"image\": \"data:image/png;base64,...\"")]
-    public static async Task<JObject> EnhancedDownloaderHuggingFaceImage(Session session,
+    public static async Task<JObject> ModelBrowserHuggingFaceImage(Session session,
         [API.APIParameter("The Hugging Face model ID (e.g. user/repo).")] string modelId)
     {
         return await HuggingFaceProvider.Instance.GetPreviewImageAsync(session, modelId);
@@ -190,7 +190,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Searches Hartsy for models matching the given query, architecture, and tags.</summary>
     [API.APIDescription("Searches Hartsy for models matching the given query, architecture, and tags.", "\"success\": true, \"items\": [...]")]
-    public static async Task<JObject> EnhancedDownloaderHartsySearch(Session session,
+    public static async Task<JObject> ModelBrowserHartsySearch(Session session,
         [API.APIParameter("Search query text.")] string query = "",
         [API.APIParameter("Page number for pagination.")] int page = 1,
         [API.APIParameter("Maximum results per page.")] int limit = 24,
@@ -203,21 +203,21 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Returns available filter options (architectures, tags) from the Hartsy API.</summary>
     [API.APIDescription("Returns available filter options (architectures, tags) from the Hartsy API.", "\"success\": true, \"architectures\": [...], \"tags\": [...]")]
-    public static async Task<JObject> EnhancedDownloaderHartsyFilterOptions(Session session)
+    public static async Task<JObject> ModelBrowserHartsyFilterOptions(Session session)
     {
         return await HartsyProvider.Instance.GetFilterOptionsAsync(session);
     }
 
     /// <summary>Returns the curated list of featured/recommended models.</summary>
     [API.APIDescription("Returns the curated list of featured/recommended models.", "\"success\": true, \"models\": [...]")]
-    public static Task<JObject> EnhancedDownloaderGetFeaturedModels(Session session)
+    public static Task<JObject> ModelBrowserGetFeaturedModels(Session session)
     {
         return Task.FromResult(FeaturedModels.GetFeatured());
     }
 
     /// <summary>Fetches download info for a Hartsy model, recording analytics and providing hash/torrent data.</summary>
     [API.APIDescription("Fetches download info for a Hartsy model.", "\"success\": true, \"downloadUrl\": \"...\", \"hashSha256\": \"...\", \"torrent\": { ... }")]
-    public static async Task<JObject> EnhancedDownloaderHartsyDownload(Session session,
+    public static async Task<JObject> ModelBrowserHartsyDownload(Session session,
         [API.APIParameter("The Hartsy model ID.")] string modelId)
     {
         return await HartsyProvider.Instance.GetModelDownloadAsync(session, modelId);
@@ -225,7 +225,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Fetches a Hartsy model family's versions, each with the precision variants that version ships in.</summary>
     [API.APIDescription("Fetches a Hartsy model family's versions, each with its precision variants.", "\"success\": true, \"familyId\": \"...\", \"groups\": [{ \"key\": \"...\", \"label\": \"Original\", \"precisions\": [\"q4_k_s\"], \"primary\": { ... }, \"variants\": [{ ... }] }]")]
-    public static async Task<JObject> EnhancedDownloaderHartsyVersions(Session session,
+    public static async Task<JObject> ModelBrowserHartsyVersions(Session session,
         [API.APIParameter("The Hartsy model ID.")] string modelId)
     {
         return await HartsyProvider.Instance.GetModelVersionsAsync(session, modelId);
@@ -233,7 +233,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Fetches full details (title, description, architecture, thumbnail) for a single Hartsy model.</summary>
     [API.APIDescription("Fetches full details for a single Hartsy model.", "\"success\": true, \"title\": \"...\", \"image\": \"...\", \"description\": \"...\", \"architecture\": \"...\"")]
-    public static async Task<JObject> EnhancedDownloaderHartsyModelDetails(Session session,
+    public static async Task<JObject> ModelBrowserHartsyModelDetails(Session session,
         [API.APIParameter("The Hartsy model ID.")] string modelId)
     {
         return await HartsyProvider.Instance.GetModelDetailsAsync(session, modelId);
@@ -242,14 +242,14 @@ public static class EnhancedDownloaderAPI
     /// <summary>Lists every download (in progress, paused, errored, or recently completed) owned by the calling user.</summary>
     [API.APIDescription("Lists every download owned by the calling user, in any state.",
         "\"success\": true, \"downloads\": [{ \"id\": \"...\", \"state\": \"downloading\", \"downloadedBytes\": 123, \"totalBytes\": 456, \"perSecond\": 78, ... }]")]
-    public static Task<JObject> EnhancedDownloaderListDownloads(Session session)
+    public static Task<JObject> ModelBrowserListDownloads(Session session)
     {
         return Task.FromResult(DownloadManager.ListForUser(session));
     }
 
     /// <summary>Starts a new resumable model download. Progress, pause, and resume state are tracked server-side and survive page reloads.</summary>
     [API.APIDescription("Starts a new resumable model download.", "\"success\": true, \"download\": { \"id\": \"...\", \"state\": \"downloading\", ... }")]
-    public static Task<JObject> EnhancedDownloaderStartDownload(Session session,
+    public static Task<JObject> ModelBrowserStartDownload(Session session,
         [API.APIParameter("The URL to download a model from.")] string url,
         [API.APIParameter("The model's sub-type, eg `Stable-Diffusion`, `LoRA`, etc.")] string type,
         [API.APIParameter("The filename to use for the model.")] string name,
@@ -261,7 +261,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Resumes a paused or errored download from its last saved byte offset.</summary>
     [API.APIDescription("Resumes a paused or errored download from its last saved byte offset.", "\"success\": true, \"download\": { \"id\": \"...\", \"state\": \"downloading\", ... }")]
-    public static Task<JObject> EnhancedDownloaderResumeDownload(Session session,
+    public static Task<JObject> ModelBrowserResumeDownload(Session session,
         [API.APIParameter("The download ID to resume.")] string id)
     {
         return Task.FromResult(DownloadManager.Resume(session, id));
@@ -269,7 +269,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Cancels an in-progress download. The partial file is kept on disk so it can be resumed later.</summary>
     [API.APIDescription("Cancels an in-progress download, keeping the partial file for a later resume.", "\"success\": true, \"download\": { \"id\": \"...\", \"state\": \"paused\", ... }")]
-    public static async Task<JObject> EnhancedDownloaderCancelDownload(Session session,
+    public static async Task<JObject> ModelBrowserCancelDownload(Session session,
         [API.APIParameter("The download ID to cancel.")] string id)
     {
         return await DownloadManager.CancelAsync(session, id);
@@ -277,7 +277,7 @@ public static class EnhancedDownloaderAPI
 
     /// <summary>Deletes a paused/errored download's partial file and forgets it, or just dismisses a completed one (the finished model file is untouched).</summary>
     [API.APIDescription("Deletes a paused/errored download's partial file and forgets it, or dismisses a completed one without touching the finished model file.", "\"success\": true")]
-    public static Task<JObject> EnhancedDownloaderClearDownload(Session session,
+    public static Task<JObject> ModelBrowserClearDownload(Session session,
         [API.APIParameter("The download ID to clear.")] string id)
     {
         return Task.FromResult(DownloadManager.Clear(session, id));

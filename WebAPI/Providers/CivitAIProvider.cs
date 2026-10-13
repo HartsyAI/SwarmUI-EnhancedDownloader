@@ -11,7 +11,7 @@ using System.Web;
 namespace Hartsy.Extensions.Providers;
 
 /// <summary>Provider implementation for searching and fetching models from the CivitAI API.</summary>
-public class CivitAIProvider : IEnhancedDownloaderProvider
+public class CivitAIProvider : IModelBrowserProvider
 {
     public static readonly CivitAIProvider Instance = new();
 
@@ -53,7 +53,7 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
     /// <summary>Searches CivitAI with the complete filter set including tag, generation-ready, and trained-on-Civitai filters.</summary>
     public async Task<JObject> SearchAsync(Session session, string query, int page, int limit, string cursor, string type, string baseModel, string sort, bool includeNsfw, string period, string username, string tag, bool supportsGeneration, bool fromPlatform)
     {
-        if (includeNsfw && !session.User.HasPermission(EnhancedDownloaderExtension.PermEnhancedDownloaderNSFW))
+        if (includeNsfw && !session.User.HasPermission(ModelBrowser.PermModelBrowserNSFW))
         {
             includeNsfw = false;
         }
@@ -207,7 +207,7 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         }
         catch (Exception ex)
         {
-            Logs.Verbose($"EnhancedDownloader CivitAI ExtractNextCursor failed for '{nextPage}': {ex.ReadableString()}");
+            Logs.Verbose($"ModelBrowser CivitAI ExtractNextCursor failed for '{nextPage}': {ex.ReadableString()}");
             return null;
         }
     }
@@ -228,14 +228,14 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
             if (!response.IsSuccessStatusCode)
             {
                 string trimmed = resp.Length > 500 ? resp[..500] : resp;
-                Logs.Warning($"EnhancedDownloader {label} failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
+                Logs.Warning($"ModelBrowser {label} failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
                 return new JObject() { ["success"] = false, ["error"] = $"CivitAI error {(int)response.StatusCode}: {trimmed}" };
             }
             return resp.ParseToJson();
         }
         catch (Exception ex)
         {
-            Logs.Warning($"EnhancedDownloader {label} failed: {ex.ReadableString()}");
+            Logs.Warning($"ModelBrowser {label} failed: {ex.ReadableString()}");
             return new JObject() { ["success"] = false, ["error"] = "Failed to contact CivitAI." };
         }
         finally
@@ -297,7 +297,7 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         {
             return new JObject() { ["success"] = false, ["error"] = "Model version ID is required." };
         }
-        if (includeNsfw && !session.User.HasPermission(EnhancedDownloaderExtension.PermEnhancedDownloaderNSFW))
+        if (includeNsfw && !session.User.HasPermission(ModelBrowser.PermModelBrowserNSFW))
         {
             includeNsfw = false;
         }
@@ -503,7 +503,7 @@ public class CivitAIProvider : IEnhancedDownloaderProvider
         }
         catch (Exception ex)
         {
-            Logs.Warning($"EnhancedDownloader CivitAI by-ID fetch failed for '{modelId}': {ex.ReadableString()}");
+            Logs.Warning($"ModelBrowser CivitAI by-ID fetch failed for '{modelId}': {ex.ReadableString()}");
             return null;
         }
     }

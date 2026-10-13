@@ -1,13 +1,13 @@
 (function () {
     'use strict';
 
-    window.EnhancedDownloader = window.EnhancedDownloader || {};
-    window.EnhancedDownloader.Utils = window.EnhancedDownloader.Utils || {};
-    window.EnhancedDownloader.Providers = window.EnhancedDownloader.Providers || {};
-    window.EnhancedDownloader.Components = window.EnhancedDownloader.Components || {};
+    window.ModelBrowser = window.ModelBrowser || {};
+    window.ModelBrowser.Utils = window.ModelBrowser.Utils || {};
+    window.ModelBrowser.Providers = window.ModelBrowser.Providers || {};
+    window.ModelBrowser.Components = window.ModelBrowser.Components || {};
 
     /** Promise wrapper around SwarmUI's callback-based genericRequest. */
-    window.EnhancedDownloader.Utils.genericRequestAsync = function genericRequestAsync(url, in_data) {
+    window.ModelBrowser.Utils.genericRequestAsync = function genericRequestAsync(url, in_data) {
         return new Promise((resolve, reject) => {
             if (typeof genericRequest !== 'function') {
                 reject('genericRequest is not available');
@@ -19,7 +19,7 @@
 
     /** If fileName is a GGUF file but url doesn't already look like one, append the `#.gguf` hint core's
      * DoModelDownloadWS reads to pick the save extension (see civitai's getCivitaiMetadata for the same trick). */
-    window.EnhancedDownloader.Utils.appendExtensionHint = function appendExtensionHint(url, fileName) {
+    window.ModelBrowser.Utils.appendExtensionHint = function appendExtensionHint(url, fileName) {
         if (!url || !fileName) {
             return url;
         }
@@ -30,7 +30,7 @@
     };
 
     /** Load a URL into the manual downloader, trigger validation, and scroll to it. */
-    window.EnhancedDownloader.Utils.loadUrlIntoManualDownloader = function loadUrlIntoManualDownloader(url) {
+    window.ModelBrowser.Utils.loadUrlIntoManualDownloader = function loadUrlIntoManualDownloader(url) {
         try {
             if (!window.modelDownloader || !modelDownloader.url || typeof modelDownloader.urlInput !== 'function') {
                 return false;
@@ -53,7 +53,7 @@
      * `mdl.folderBrowser`, set only once folder_browser_injection.js has installed its tree UI over the select;
      * until then (or if it never loads), the select's own value is authoritative. Shared by the destination-path
      * preview and the download start handoff so both always agree on where a model is about to land. */
-    window.EnhancedDownloader.Utils.resolveSelectedFolder = function resolveSelectedFolder(mdl) {
+    window.ModelBrowser.Utils.resolveSelectedFolder = function resolveSelectedFolder(mdl) {
         if (!mdl) {
             return '';
         }
@@ -62,7 +62,7 @@
     };
 
     /** Set metadata info and optional preview image in the manual downloader panel. */
-    window.EnhancedDownloader.Utils.setManualDownloaderInfo = function setManualDownloaderInfo(infoHtml, rawMetadata, imageDataUrl) {
+    window.ModelBrowser.Utils.setManualDownloaderInfo = function setManualDownloaderInfo(infoHtml, rawMetadata, imageDataUrl) {
         try {
             if (!window.modelDownloader) {
                 return false;

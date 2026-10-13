@@ -9,12 +9,12 @@
     let downloadRoots = null;
 
     async function loadDownloadRoots() {
-        const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+        const utils = window.ModelBrowser && window.ModelBrowser.Utils;
         if (downloadRoots || !utils || typeof utils.genericRequestAsync !== 'function') {
             return;
         }
         try {
-            const resp = await utils.genericRequestAsync('EnhancedDownloaderGetDownloadRoots', {});
+            const resp = await utils.genericRequestAsync('ModelBrowserGetDownloadRoots', {});
             if (resp && resp.success && resp.roots) {
                 downloadRoots = resp.roots;
             }
@@ -118,10 +118,10 @@
             return true;
         }
         const folders = modelDownloader.folders;
-        if (folders.dataset.enhancedDownloaderDone) {
+        if (folders.dataset.modelBrowserDone) {
             return true;
         }
-        folders.dataset.enhancedDownloaderDone = 'true';
+        folders.dataset.modelBrowserDone = 'true';
 
         const origBuild = modelDownloader.buildFolderSelector.bind(modelDownloader);
         modelDownloader.buildFolderSelector = (selector) => {
@@ -130,10 +130,10 @@
         };
 
         const destination = document.createElement('div');
-        destination.className = 'enhanced-downloader-destination';
+        destination.className = 'model-browser-destination';
         destination.innerHTML = `
-            <div class="enhanced-downloader-destination-label"><span class="translate">Destination</span></div>
-            <div class="enhanced-downloader-destination-path"><span class="path"></span></div>
+            <div class="model-browser-destination-label"><span class="translate">Destination</span></div>
+            <div class="model-browser-destination-path"><span class="path"></span></div>
         `;
         const destinationPath = destination.querySelector('.path');
 
@@ -147,22 +147,22 @@
 
         if (isOldDropdown) {
             newWrap = document.createElement('div');
-            newWrap.className = 'enhanced-downloader-new-folder';
+            newWrap.className = 'model-browser-new-folder';
             newWrap.innerHTML = `
-                <button type="button" class="basic-button enhanced-downloader-smallbtn translate">New Folder</button>
-                <span class="enhanced-downloader-new-folder-inline" style="display:none">
+                <button type="button" class="basic-button model-browser-smallbtn translate">New Folder</button>
+                <span class="model-browser-new-folder-inline" style="display:none">
                     <input type="text" class="auto-text" placeholder="SDXL/LoRAs/Characters" />
-                    <button type="button" class="basic-button enhanced-downloader-smallbtn translate">Add</button>
+                    <button type="button" class="basic-button model-browser-smallbtn translate">Add</button>
                 </span>
             `;
             toggleBtn = newWrap.querySelector('button');
-            inline = newWrap.querySelector('.enhanced-downloader-new-folder-inline');
+            inline = newWrap.querySelector('.model-browser-new-folder-inline');
             input = inline.querySelector('input');
             addBtn = inline.querySelectorAll('button')[0];
         }
 
         const updatePreview = () => {
-            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            const utils = window.ModelBrowser && window.ModelBrowser.Utils;
             const type = modelDownloader.type ? modelDownloader.type.value : '';
             const rootRaw = downloadRoots && downloadRoots[type] ? `${downloadRoots[type]}` : '';
             const root = rootRaw ? toDisplayRoot(rootRaw) : normalizePath(type);
@@ -222,14 +222,14 @@
             });
         }
         else {
-            if (modelDownloader.selectFolder && !modelDownloader.selectFolder._enhancedDownloaderWrapped) {
+            if (modelDownloader.selectFolder && !modelDownloader.selectFolder._modelBrowserWrapped) {
                 const origSelectFolder = modelDownloader.selectFolder.bind(modelDownloader);
                 const wrapped = (folderPath) => {
                     origSelectFolder(folderPath);
                     addRecent(folderPath);
                     updatePreview();
                 };
-                wrapped._enhancedDownloaderWrapped = true;
+                wrapped._modelBrowserWrapped = true;
                 modelDownloader.selectFolder = wrapped;
             }
         }
@@ -242,23 +242,23 @@
             modelDownloader.name.addEventListener('change', updatePreview);
         }
 
-        if (modelDownloader.nameInput && !modelDownloader.nameInput._enhancedDownloaderWrapped) {
+        if (modelDownloader.nameInput && !modelDownloader.nameInput._modelBrowserWrapped) {
             const origNameInput = modelDownloader.nameInput.bind(modelDownloader);
             const wrapped = () => {
                 origNameInput();
                 updatePreview();
             };
-            wrapped._enhancedDownloaderWrapped = true;
+            wrapped._modelBrowserWrapped = true;
             modelDownloader.nameInput = wrapped;
         }
 
-        if (modelDownloader.urlInput && !modelDownloader.urlInput._enhancedDownloaderWrapped) {
+        if (modelDownloader.urlInput && !modelDownloader.urlInput._modelBrowserWrapped) {
             const origUrlInput = modelDownloader.urlInput.bind(modelDownloader);
             const wrapped = () => {
                 origUrlInput();
                 updatePreview();
             };
-            wrapped._enhancedDownloaderWrapped = true;
+            wrapped._modelBrowserWrapped = true;
             modelDownloader.urlInput = wrapped;
         }
 
@@ -336,7 +336,7 @@
     // carry no metadata core's urlInput() can parse - resolve them through the Hartsy API instead, mirroring how core
     // handles CivitAI links, so pasting one populates the real download URL, name, and info instead of going stale.
     function wrapUrlInputForHartsy() {
-        if (!window.modelDownloader || typeof modelDownloader.urlInput !== 'function' || modelDownloader.urlInput._enhancedDownloaderHartsy) {
+        if (!window.modelDownloader || typeof modelDownloader.urlInput !== 'function' || modelDownloader.urlInput._modelBrowserHartsy) {
             return;
         }
         const origUrlInput = modelDownloader.urlInput.bind(modelDownloader);
@@ -355,17 +355,17 @@
             clearCoreVersionFileSelectors();
             modelDownloader.urlStatusArea.innerText = translate('URL appears to be a Hartsy model link. Resolving download info...');
             modelDownloader.button.disabled = true;
-            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            const utils = window.ModelBrowser && window.ModelBrowser.Utils;
             if (!utils || typeof utils.genericRequestAsync !== 'function') {
                 origUrlInput();
                 return;
             }
             Promise.all([
-                utils.genericRequestAsync('EnhancedDownloaderHartsyDownload', { modelId }),
+                utils.genericRequestAsync('ModelBrowserHartsyDownload', { modelId }),
                 // Details carries the preview (image/description/architecture); fetched separately since it's cacheable
                 // and doesn't record a download analytics event the way the download-info call does. Best-effort - a
                 // details failure shouldn't block resolving the actual download link below.
-                utils.genericRequestAsync('EnhancedDownloaderHartsyModelDetails', { modelId }).catch(() => null)
+                utils.genericRequestAsync('ModelBrowserHartsyModelDetails', { modelId }).catch(() => null)
             ]).then(([resp, details]) => {
                 if (myToken !== requestToken) {
                     return;
@@ -419,7 +419,7 @@
                 modelDownloader.button.disabled = true;
             });
         };
-        wrapped._enhancedDownloaderHartsy = true;
+        wrapped._modelBrowserHartsy = true;
         modelDownloader.urlInput = wrapped;
     }
 
@@ -429,16 +429,16 @@
         }
         wrapUrlInputForHartsy();
         const url = modelDownloader.url;
-        if (url.dataset.enhancedDownloaderDone || url.nextElementSibling?.classList?.contains('enhanced-downloader-url-actions')) {
+        if (url.dataset.modelBrowserDone || url.nextElementSibling?.classList?.contains('model-browser-url-actions')) {
             return true;
         }
-        url.dataset.enhancedDownloaderDone = 'true';
+        url.dataset.modelBrowserDone = 'true';
 
         const btnWrap = document.createElement('span');
-        btnWrap.className = 'enhanced-downloader-url-actions';
+        btnWrap.className = 'model-browser-url-actions';
         btnWrap.innerHTML = `
-            <button type="button" class="basic-button enhanced-downloader-smallbtn translate">Paste</button>
-            <button type="button" class="basic-button enhanced-downloader-smallbtn translate">Clear</button>
+            <button type="button" class="basic-button model-browser-smallbtn translate">Paste</button>
+            <button type="button" class="basic-button model-browser-smallbtn translate">Clear</button>
         `;
         const [pasteBtn, clearBtn] = btnWrap.querySelectorAll('button');
         pasteBtn.title = 'Reads your clipboard. Some browsers (e.g. Firefox) show their own "Paste" confirmation popup to allow this - click that popup, or just press Ctrl+V in the field instead.';
@@ -483,35 +483,35 @@
         if (!wrapper || !main || !sidebar) {
             return false;
         }
-        if (wrapper.dataset.enhancedDownloaderDownloadsDone) {
+        if (wrapper.dataset.modelBrowserDownloadsDone) {
             return true;
         }
-        wrapper.dataset.enhancedDownloaderDownloadsDone = 'true';
+        wrapper.dataset.modelBrowserDownloadsDone = 'true';
 
-        if (!wrapper.dataset.enhancedDownloaderLayoutDone) {
+        if (!wrapper.dataset.modelBrowserLayoutDone) {
             const topCard = document.querySelector('#Utilities-ModelDownloader-Tab > .card.border-secondary');
             if (topCard) {
-                topCard.classList.add('enhanced-downloader-topcard');
+                topCard.classList.add('model-browser-topcard');
                 topCard.style.display = 'none';
             }
 
             const layout = document.createElement('div');
-            layout.className = 'enhanced-downloader-layout';
+            layout.className = 'model-browser-layout';
             const left = document.createElement('div');
-            left.className = 'enhanced-downloader-col enhanced-downloader-col-left';
+            left.className = 'model-browser-col model-browser-col-left';
             const right = document.createElement('div');
-            right.className = 'enhanced-downloader-col enhanced-downloader-col-right';
+            right.className = 'model-browser-col model-browser-col-right';
             wrapper.insertBefore(layout, wrapper.firstChild);
             left.appendChild(main);
             right.appendChild(sidebar);
 
-            main.classList.add('enhanced-downloader-manual');
+            main.classList.add('model-browser-manual');
             const mainInner = main.querySelector(':scope > div');
             if (mainInner) {
-                mainInner.classList.add('enhanced-downloader-manual-inner');
+                mainInner.classList.add('model-browser-manual-inner');
             }
             const leftInfo = document.createElement('div');
-            leftInfo.className = 'enhanced-downloader-section-info ed-info-left';
+            leftInfo.className = 'model-browser-section-info ed-info-left';
             leftInfo.innerHTML = `
 <div class="ed-info-title translate">Manual Download</div>
 <ul class="ed-info-list">
@@ -522,7 +522,7 @@
 </ul>`;
 
             const rightInfo = document.createElement('div');
-            rightInfo.className = 'enhanced-downloader-section-info ed-info-right';
+            rightInfo.className = 'model-browser-section-info ed-info-right';
             rightInfo.innerHTML = `
 <div class="ed-info-title translate">Model Browser</div>
 <ul class="ed-info-list">
@@ -535,33 +535,33 @@
             applyTranslations(leftInfo);
             applyTranslations(rightInfo);
 
-            wrapper.dataset.enhancedDownloaderLayoutDone = 'true';
+            wrapper.dataset.modelBrowserLayoutDone = 'true';
         }
 
-        const leftCol = wrapper.querySelector('.enhanced-downloader-col-left');
+        const leftCol = wrapper.querySelector('.model-browser-col-left');
         if (!leftCol) {
             return false;
         }
 
         const card = document.createElement('div');
-        card.className = 'card border-secondary mb-3 enhanced-downloader-downloads-card';
+        card.className = 'card border-secondary mb-3 model-browser-downloads-card';
         card.innerHTML = `
             <div class="card-header">
                 <span class="translate">Downloads</span>
-                <span class="enhanced-downloader-downloads-controls">
-                    <label class="enhanced-downloader-toggle"><input type="checkbox" class="ed-show-completed" /> <span class="translate">Show completed</span></label>
+                <span class="model-browser-downloads-controls">
+                    <label class="model-browser-toggle"><input type="checkbox" class="ed-show-completed" /> <span class="translate">Show completed</span></label>
                 </span>
             </div>
-            <div class="card-body enhanced-downloader-downloads-body"></div>
+            <div class="card-body model-browser-downloads-body"></div>
         `;
-        const body = card.querySelector('.enhanced-downloader-downloads-body');
+        const body = card.querySelector('.model-browser-downloads-body');
         const showCompleted = card.querySelector('.ed-show-completed');
 
-        sidebar.classList.add('enhanced-downloader-downloads-zone');
+        sidebar.classList.add('model-browser-downloads-zone');
         body.appendChild(sidebar);
 
         showCompleted.onchange = () => {
-            sidebar.classList.toggle('enhanced-downloader-show-completed', showCompleted.checked);
+            sidebar.classList.toggle('model-browser-show-completed', showCompleted.checked);
         };
 
         leftCol.appendChild(card);
@@ -570,7 +570,7 @@
     }
 
     function tryEmbedFeaturedModelsPanel() {
-        const comp = window.EnhancedDownloader && window.EnhancedDownloader.Components && window.EnhancedDownloader.Components.FeaturedModels;
+        const comp = window.ModelBrowser && window.ModelBrowser.Components && window.ModelBrowser.Components.FeaturedModels;
         if (!comp || typeof comp.tryEmbed !== 'function') {
             return false;
         }
@@ -578,7 +578,7 @@
     }
 
     function tryEmbedCivitaiBrowserPanel() {
-        const comp = window.EnhancedDownloader && window.EnhancedDownloader.Components && window.EnhancedDownloader.Components.ModelBrowser;
+        const comp = window.ModelBrowser && window.ModelBrowser.Components && window.ModelBrowser.Components.Browser;
         if (!comp || typeof comp.tryEmbed !== 'function') {
             return false;
         }
@@ -599,7 +599,7 @@
         if (modelDownloader.run._edTakeover) {
             return true;
         }
-        const downloads = window.EnhancedDownloader && window.EnhancedDownloader.Downloads;
+        const downloads = window.ModelBrowser && window.ModelBrowser.Downloads;
         if (!downloads || typeof downloads.startFromManualDownloader !== 'function') {
             return false;
         }
@@ -611,12 +611,12 @@
         return true;
     }
 
-    async function enhancedDownloaderInit() {
+    async function modelBrowserInit() {
         await loadDownloadRoots();
         const start = Date.now();
         let retryInterval = DOM_RETRY_INTERVAL_INITIAL_MS;
         while (Date.now() - start < DOM_READY_TIMEOUT_MS) {
-            const downloads = window.EnhancedDownloader && window.EnhancedDownloader.Downloads;
+            const downloads = window.ModelBrowser && window.ModelBrowser.Downloads;
             const downloadsReady = downloads ? await downloads.init() : false;
             if (tryEmbedDownloadsPanel() && tryEnhanceUrlUI() && tryEnhanceFolderUI() && tryTakeOverDownloadRun() && downloadsReady && tryEmbedCivitaiBrowserPanel() && tryEmbedFeaturedModelsPanel()) {
                 break;
@@ -627,9 +627,9 @@
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', enhancedDownloaderInit);
+        document.addEventListener('DOMContentLoaded', modelBrowserInit);
     }
     else {
-        enhancedDownloaderInit();
+        modelBrowserInit();
     }
 })();

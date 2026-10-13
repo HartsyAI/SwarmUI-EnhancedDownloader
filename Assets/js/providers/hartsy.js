@@ -1,8 +1,8 @@
 (function () {
     'use strict';
 
-    window.EnhancedDownloader = window.EnhancedDownloader || {};
-    window.EnhancedDownloader.Providers = window.EnhancedDownloader.Providers || {};
+    window.ModelBrowser = window.ModelBrowser || {};
+    window.ModelBrowser.Providers = window.ModelBrowser.Providers || {};
 
     let filterOptionsCache = null;
     let filterOptionsCacheTime = 0;
@@ -19,7 +19,7 @@
         'title': 'title'
     };
 
-    window.EnhancedDownloader.Providers.hartsy = {
+    window.ModelBrowser.Providers.hartsy = {
         id: 'hartsy',
         displayName: 'Hartsy',
         supportsFilters: true,
@@ -33,16 +33,16 @@
         ],
 
         search: async function (params) {
-            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            const utils = window.ModelBrowser && window.ModelBrowser.Utils;
             if (!utils || !utils.genericRequestAsync) {
-                throw new Error('EnhancedDownloader utils not loaded');
+                throw new Error('ModelBrowser utils not loaded');
             }
             // Hartsy has no CivitAI-style "type" concept; checkpoint vs LoRA is distinguished by
             // architecture (e.g. "qwen-image" vs "qwen-image/lora"), so the type filter is not folded
             // into the tag query here - doing so (e.g. tags=checkpoint) matches nothing.
             // The browser passes the tag box as `tag`; accept both spellings so the filter is not silently dropped.
             const tags = params.tags || params.tag || '';
-            return await utils.genericRequestAsync('EnhancedDownloaderHartsySearch', {
+            return await utils.genericRequestAsync('ModelBrowserHartsySearch', {
                 query: params.query || '',
                 page: params.page || 1,
                 limit: params.limit || 24,
@@ -57,12 +57,12 @@
             if (filterOptionsCache && (now - filterOptionsCacheTime) < filterOptionsCacheDuration) {
                 return filterOptionsCache;
             }
-            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            const utils = window.ModelBrowser && window.ModelBrowser.Utils;
             if (!utils || !utils.genericRequestAsync) {
                 return { architectures: [], tags: [], uploadSources: [], subscriptionTiers: [] };
             }
             try {
-                const resp = await utils.genericRequestAsync('EnhancedDownloaderHartsyFilterOptions', {});
+                const resp = await utils.genericRequestAsync('ModelBrowserHartsyFilterOptions', {});
                 if (resp && resp.success) {
                     filterOptionsCache = {
                         architectures: resp.architectures || [],
@@ -117,10 +117,10 @@
         },
 
         getVersionGroups: async function (modelId) {
-            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            const utils = window.ModelBrowser && window.ModelBrowser.Utils;
             if (!modelId || !utils || !utils.genericRequestAsync) return [];
             try {
-                const resp = await utils.genericRequestAsync('EnhancedDownloaderHartsyVersions', {
+                const resp = await utils.genericRequestAsync('ModelBrowserHartsyVersions', {
                     modelId: `${modelId}`
                 });
                 return (resp && resp.success && Array.isArray(resp.groups)) ? resp.groups : [];
@@ -163,7 +163,7 @@
         },
 
         handleDownload: function (item) {
-            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            const utils = window.ModelBrowser && window.ModelBrowser.Utils;
             if (!utils) return;
             const targetId = item.modelVersionId || item.modelId;
             // The page link, not a resolved file URL: the manual downloader's resolver fills in name, type and
@@ -181,7 +181,7 @@
         },
 
         getPopoverExtras: function (item, menuDiv) {
-            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            const utils = window.ModelBrowser && window.ModelBrowser.Utils;
             if (!item.modelId || !utils || !utils.genericRequestAsync) return;
             if (item.torrent && item.torrent.magnetLink) {
                 const magnetBtn = document.createElement('div');

@@ -7,7 +7,7 @@ using System.Web;
 
 namespace Hartsy.Extensions.Providers;
 
-/// <summary>Shared HTTP client for all Enhanced Downloader providers. Uses SwarmUI's configured client factory instead of the global singleton.</summary>
+/// <summary>Shared HTTP client for all Model Browser providers. Uses SwarmUI's configured client factory instead of the global singleton.</summary>
 public static class ProviderHttpClient
 {
     public static readonly HttpClient Client = NetworkBackendUtils.MakeHttpClient();

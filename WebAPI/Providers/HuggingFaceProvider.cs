@@ -12,7 +12,7 @@ using System.Net.Http.Headers;
 namespace Hartsy.Extensions.Providers;
 
 /// <summary>Provider implementation for searching models and fetching files/images from the Hugging Face API.</summary>
-public class HuggingFaceProvider : IEnhancedDownloaderProvider
+public class HuggingFaceProvider : IModelBrowserProvider
 {
     public static readonly HuggingFaceProvider Instance = new();
     public string ProviderId => "huggingface";
@@ -83,7 +83,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         }
         catch (Exception ex)
         {
-            Logs.Verbose($"EnhancedDownloader HuggingFace IsAllowedImageUrl failed for '{url}': {ex.ReadableString()}");
+            Logs.Verbose($"ModelBrowser HuggingFace IsAllowedImageUrl failed for '{url}': {ex.ReadableString()}");
             return false;
         }
     }
@@ -143,7 +143,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         }
         catch (Exception ex)
         {
-            Logs.Verbose($"EnhancedDownloader HuggingFace image fetch failed for '{url}': {ex.ReadableString()}");
+            Logs.Verbose($"ModelBrowser HuggingFace image fetch failed for '{url}': {ex.ReadableString()}");
             return "";
         }
     }
@@ -314,7 +314,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
             }
             catch (Exception ex)
             {
-                Logs.Verbose($"EnhancedDownloader HuggingFace README fetch failed for '{readmeUrl}': {ex.ReadableString()}");
+                Logs.Verbose($"ModelBrowser HuggingFace README fetch failed for '{readmeUrl}': {ex.ReadableString()}");
                 continue;
             }
             if (string.IsNullOrWhiteSpace(md))
@@ -405,7 +405,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         }
         catch (Exception ex)
         {
-            Logs.Verbose($"EnhancedDownloader HuggingFace preview image failed for '{modelId}': {ex.ReadableString()}");
+            Logs.Verbose($"ModelBrowser HuggingFace preview image failed for '{modelId}': {ex.ReadableString()}");
             return CacheAndReturn(cacheKey, "");
         }
     }
@@ -490,14 +490,14 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
             if (!response.IsSuccessStatusCode)
             {
                 string trimmed = resp.Length > 500 ? resp[..500] : resp;
-                Logs.Warning($"EnhancedDownloader HuggingFace search failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
+                Logs.Warning($"ModelBrowser HuggingFace search failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
                 return new JObject() { ["success"] = false, ["error"] = $"HuggingFace error {(int)response.StatusCode}: {trimmed}" };
             }
             nextCursor = ExtractNextCursorFromLink(response);
         }
         catch (Exception ex)
         {
-            Logs.Warning($"EnhancedDownloader HuggingFace search failed: {ex.ReadableString()}");
+            Logs.Warning($"ModelBrowser HuggingFace search failed: {ex.ReadableString()}");
             return new JObject() { ["success"] = false, ["error"] = "Failed to contact Hugging Face." };
         }
         finally
@@ -511,7 +511,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         }
         catch (Exception ex)
         {
-            Logs.Warning($"EnhancedDownloader HuggingFace search returned invalid JSON: {ex.ReadableString()}");
+            Logs.Warning($"ModelBrowser HuggingFace search returned invalid JSON: {ex.ReadableString()}");
             return new JObject() { ["success"] = false, ["error"] = "Hugging Face returned invalid data." };
         }
         JArray results = [];
@@ -615,7 +615,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
             if (!response.IsSuccessStatusCode)
             {
                 string trimmed = resp.Length > 500 ? resp[..500] : resp;
-                Logs.Warning($"EnhancedDownloader HuggingFace files failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
+                Logs.Warning($"ModelBrowser HuggingFace files failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
                 return new JObject() { ["success"] = false, ["error"] = $"HuggingFace error {(int)response.StatusCode}: {trimmed}" };
             }
             JObject data = resp.ParseToJson();
@@ -665,7 +665,7 @@ public class HuggingFaceProvider : IEnhancedDownloaderProvider
         }
         catch (Exception ex)
         {
-            Logs.Warning($"EnhancedDownloader HuggingFace files failed: {ex.ReadableString()}");
+            Logs.Warning($"ModelBrowser HuggingFace files failed: {ex.ReadableString()}");
             return new JObject() { ["success"] = false, ["error"] = "Failed to contact Hugging Face." };
         }
         finally

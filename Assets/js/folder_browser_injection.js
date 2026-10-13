@@ -25,7 +25,7 @@
             }
             node = prev;
         }
-        if (oldFolderDropdown.nextElementSibling && oldFolderDropdown.nextElementSibling.classList.contains('enhanced-downloader-new-folder')) {
+        if (oldFolderDropdown.nextElementSibling && oldFolderDropdown.nextElementSibling.classList.contains('model-browser-new-folder')) {
             oldFolderDropdown.nextElementSibling.style.display = 'none';
         }
     }

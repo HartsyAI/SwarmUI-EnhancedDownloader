@@ -1,8 +1,8 @@
 (function () {
     'use strict';
 
-    window.EnhancedDownloader = window.EnhancedDownloader || {};
-    window.EnhancedDownloader.Components = window.EnhancedDownloader.Components || {};
+    window.ModelBrowser = window.ModelBrowser || {};
+    window.ModelBrowser.Components = window.ModelBrowser.Components || {};
 
     const COLLAPSE_KEY = 'enhanced_downloader_featured_collapsed';
     const EXPAND_IMAGE_KEY = 'enhanced_downloader_featured_expand_image';
@@ -10,30 +10,30 @@
     const EXPAND_AUDIO_KEY = 'enhanced_downloader_featured_expand_audio';
 
     function createModelCard(model) {
-        const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+        const utils = window.ModelBrowser && window.ModelBrowser.Utils;
         const downloads = Array.isArray(model.downloads) ? model.downloads : [];
 
         const card = document.createElement('div');
-        card.className = 'model-block model-block-hoverable enhanced-downloader-featured-card';
+        card.className = 'model-block model-block-hoverable model-browser-featured-card';
         if (model.isRecommended) {
             card.classList.add('ed-featured-recommended');
         }
 
         const badgeHtml = model.isRecommended
-            ? ' <span class="enhanced-downloader-featured-badge translate">Recommended</span>'
+            ? ' <span class="model-browser-featured-badge translate">Recommended</span>'
             : '';
 
         const chips = [model.architecture, model.scale, model.author].filter(Boolean);
         const chipsStr = chips.map(t => escapeHtml(t)).join(' | ');
 
         const noteHtml = model.note
-            ? `<div class="enhanced-downloader-featured-note">${escapeHtml(model.note)}</div>`
+            ? `<div class="model-browser-featured-note">${escapeHtml(model.note)}</div>`
             : '';
 
         const header = document.createElement('div');
         header.innerHTML = `
             <div><b>${escapeHtml(model.name || '')}</b>${badgeHtml}</div>
-            <div class="enhanced-downloader-featured-chips">${chipsStr}</div>
+            <div class="model-browser-featured-chips">${chipsStr}</div>
             ${noteHtml}
         `;
         while (header.firstChild) card.appendChild(header.firstChild);
@@ -43,7 +43,7 @@
             actions.className = 'ed-model-actions';
 
             const select = document.createElement('select');
-            select.className = 'auto-dropdown enhanced-downloader-featured-select';
+            select.className = 'auto-dropdown model-browser-featured-select';
             select.autocomplete = 'off';
             for (const dl of downloads) {
                 const opt = document.createElement('option');
@@ -55,7 +55,7 @@
 
             const dlBtn = document.createElement('button');
             dlBtn.type = 'button';
-            dlBtn.className = 'basic-button enhanced-downloader-smallbtn';
+            dlBtn.className = 'basic-button model-browser-smallbtn';
             dlBtn.innerHTML = '<span class="translate">Download</span>';
             dlBtn.onclick = () => {
                 if (utils && select.value) utils.loadUrlIntoManualDownloader(select.value);
@@ -63,7 +63,7 @@
             actions.appendChild(dlBtn);
 
             const openBtn = document.createElement('a');
-            openBtn.className = 'basic-button enhanced-downloader-smallbtn';
+            openBtn.className = 'basic-button model-browser-smallbtn';
             openBtn.target = '_blank';
             openBtn.rel = 'noreferrer';
             openBtn.innerHTML = '<span class="translate">Open</span>';
@@ -80,23 +80,23 @@
 
     function buildColumn(title, models, expandKey) {
         const col = document.createElement('div');
-        col.className = 'enhanced-downloader-featured-column';
+        col.className = 'model-browser-featured-column';
 
         const header = document.createElement('div');
-        header.className = 'enhanced-downloader-featured-group-header';
+        header.className = 'model-browser-featured-group-header';
         header.textContent = translate(title);
         col.appendChild(header);
 
         if (models.length === 0) {
             const empty = document.createElement('div');
-            empty.className = 'enhanced-downloader-featured-empty';
+            empty.className = 'model-browser-featured-empty';
             empty.textContent = translate('No models in this category.');
             col.appendChild(empty);
             return col;
         }
 
         const list = document.createElement('div');
-        list.className = 'enhanced-downloader-featured-list';
+        list.className = 'model-browser-featured-list';
         col.appendChild(list);
 
         for (let i = 0; i < models.length; i++) {
@@ -108,7 +108,7 @@
         if (models.length > 1) {
             const toggleBtn = document.createElement('button');
             toggleBtn.type = 'button';
-            toggleBtn.className = 'basic-button enhanced-downloader-smallbtn enhanced-downloader-featured-expand-btn';
+            toggleBtn.className = 'basic-button model-browser-smallbtn model-browser-featured-expand-btn';
 
             const isExpanded = localStorage.getItem(expandKey) === 'true';
             const updateToggle = (expanded) => {
@@ -135,45 +135,45 @@
         return col;
     }
 
-    window.EnhancedDownloader.Components.FeaturedModels = {
+    window.ModelBrowser.Components.FeaturedModels = {
         tryEmbed: function tryEmbed() {
-            const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+            const utils = window.ModelBrowser && window.ModelBrowser.Utils;
             if (!utils || !utils.genericRequestAsync) return false;
 
             const wrapper = document.querySelector('.model-downloader-section-wrapper');
             if (!wrapper) return false;
-            if (wrapper.dataset.enhancedDownloaderFeaturedDone) return true;
+            if (wrapper.dataset.modelBrowserFeaturedDone) return true;
 
-            const rightCol = wrapper.querySelector('.enhanced-downloader-col-right');
+            const rightCol = wrapper.querySelector('.model-browser-col-right');
             if (!rightCol) return false;
 
-            wrapper.dataset.enhancedDownloaderFeaturedDone = 'true';
+            wrapper.dataset.modelBrowserFeaturedDone = 'true';
 
             const card = document.createElement('div');
-            card.className = 'card border-secondary mb-3 enhanced-downloader-featured-section';
+            card.className = 'card border-secondary mb-3 model-browser-featured-section';
             card.innerHTML = `
                 <div class="card-header">
                     <span class="translate">Recommended Models</span>
-                    <span class="enhanced-downloader-featured-toggle-wrap">
-                        <button type="button" class="basic-button enhanced-downloader-smallbtn ed-featured-toggle">Hide</button>
+                    <span class="model-browser-featured-toggle-wrap">
+                        <button type="button" class="basic-button model-browser-smallbtn ed-featured-toggle">Hide</button>
                     </span>
                 </div>
-                <div class="card-body enhanced-downloader-featured-body-wrap">
-                    <div class="enhanced-downloader-featured-about translate">
+                <div class="card-body model-browser-featured-body-wrap">
+                    <div class="model-browser-featured-about translate">
                         Models recommended in the SwarmUI docs. Pick a version from the dropdown then hit Download to load it into the manual downloader.
                         See the <a href="https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Model%20Support.md" target="_blank" rel="noreferrer">Image Model Support</a>
                         <a href="https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Video%20Model%20Support.md" target="_blank" rel="noreferrer">Video Model Support</a>,
                         and <a href="https://github.com/mcmonkeyprojects/SwarmUI/blob/master/docs/Audio%20Model%20Support.md" target="_blank" rel="noreferrer">Audio Model Support</a> docs for more details.
                     </div>
-                    <div class="enhanced-downloader-featured-loading">${translate('Loading...')}</div>
-                    <div class="enhanced-downloader-featured-columns"></div>
+                    <div class="model-browser-featured-loading">${translate('Loading...')}</div>
+                    <div class="model-browser-featured-columns"></div>
                 </div>
             `;
 
-            const bodyWrap = card.querySelector('.enhanced-downloader-featured-body-wrap');
+            const bodyWrap = card.querySelector('.model-browser-featured-body-wrap');
             const toggleBtn = card.querySelector('.ed-featured-toggle');
-            const loadingEl = card.querySelector('.enhanced-downloader-featured-loading');
-            const columnsEl = card.querySelector('.enhanced-downloader-featured-columns');
+            const loadingEl = card.querySelector('.model-browser-featured-loading');
+            const columnsEl = card.querySelector('.model-browser-featured-columns');
 
             const isCollapsed = localStorage.getItem(COLLAPSE_KEY) === 'true';
             toggleBtn.textContent = translate(isCollapsed ? 'Show' : 'Hide');
@@ -187,19 +187,19 @@
                 localStorage.setItem(COLLAPSE_KEY, hidden ? 'false' : 'true');
             };
 
-            const browseCard = rightCol.querySelector('.enhanced-downloader-browser-card');
+            const browseCard = rightCol.querySelector('.model-browser-browser-card');
             if (browseCard) {
                 rightCol.insertBefore(card, browseCard);
             } else {
                 rightCol.insertBefore(card, rightCol.firstChild);
             }
 
-            utils.genericRequestAsync('EnhancedDownloaderGetFeaturedModels', {}).then(resp => {
+            utils.genericRequestAsync('ModelBrowserGetFeaturedModels', {}).then(resp => {
                 loadingEl.style.display = 'none';
                 if (!resp || !resp.success || !Array.isArray(resp.models) || resp.models.length === 0) {
                     columnsEl.textContent = '';
                     const empty = document.createElement('div');
-                    empty.className = 'enhanced-downloader-featured-empty';
+                    empty.className = 'model-browser-featured-empty';
                     empty.textContent = translate('No featured models available.');
                     columnsEl.appendChild(empty);
                     if (typeof applyTranslations === 'function') {

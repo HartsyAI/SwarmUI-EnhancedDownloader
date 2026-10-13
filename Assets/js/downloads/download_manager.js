@@ -5,7 +5,7 @@
 (function () {
     'use strict';
 
-    window.EnhancedDownloader = window.EnhancedDownloader || {};
+    window.ModelBrowser = window.ModelBrowser || {};
 
     const POLL_INTERVAL_MS = 2000;
 
@@ -17,7 +17,7 @@
     let zone = null;
 
     function utils() {
-        return window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+        return window.ModelBrowser && window.ModelBrowser.Utils;
     }
 
     async function call(endpoint, payload) {
@@ -32,7 +32,7 @@
             // genericRequestAsync rejects with the raw `data.error` string (core's genericRequest() would
             // normally toast it itself, but genericRequestAsync passes its own errorHandle to suppress that
             // and reject instead) - repackage it into the `{error}` shape every call site here expects.
-            console.warn(`Enhanced Downloader: ${endpoint} failed:`, e);
+            console.warn(`Model Browser: ${endpoint} failed:`, e);
             const message = typeof e === 'string' ? e : (e && e.message) || 'Request failed.';
             return { error: message };
         }
@@ -213,42 +213,42 @@
     }
 
     async function pollOnce() {
-        const resp = await call('EnhancedDownloaderListDownloads', {});
+        const resp = await call('ModelBrowserListDownloads', {});
         if (resp && resp.success) {
             applyList(resp.downloads || []);
         }
     }
 
     async function cancelDownload(id) {
-        const resp = await call('EnhancedDownloaderCancelDownload', { id });
+        const resp = await call('ModelBrowserCancelDownload', { id });
         if (resp && resp.download) {
             setRecord(resp.download);
         }
     }
 
     async function resumeDownload(id) {
-        const resp = await call('EnhancedDownloaderResumeDownload', { id });
+        const resp = await call('ModelBrowserResumeDownload', { id });
         if (resp && resp.download) {
             setRecord(resp.download);
         }
         else if (resp && resp.error) {
-            console.warn(`Enhanced Downloader: resume failed: ${resp.error}`);
+            console.warn(`Model Browser: resume failed: ${resp.error}`);
         }
     }
 
     async function clearDownload(id) {
-        const resp = await call('EnhancedDownloaderClearDownload', { id });
+        const resp = await call('ModelBrowserClearDownload', { id });
         if (resp && resp.success) {
             records.delete(id);
             removeCard(id);
             reconcilePolling();
         }
         else if (resp && resp.error) {
-            console.warn(`Enhanced Downloader: clear failed: ${resp.error}`);
+            console.warn(`Model Browser: clear failed: ${resp.error}`);
         }
     }
 
-    /** Entry point for enhanced_downloader.js's replacement of modelDownloader.run(). Reads the same fields core's
+    /** Entry point for model_browser_main.js's replacement of modelDownloader.run(). Reads the same fields core's
      * ActiveModelDownload constructor would have, and hands them to the server-side resumable downloader instead. */
     async function startFromManualDownloader(mdl) {
         const u = utils();
@@ -265,7 +265,7 @@
             image: mdl.metadataZone ? (mdl.metadataZone.dataset.image || '') : ''
         };
         mdl.button.disabled = true;
-        const resp = await call('EnhancedDownloaderStartDownload', payload);
+        const resp = await call('ModelBrowserStartDownload', payload);
         if (resp && resp.success && resp.download) {
             setRecord(resp.download);
             return;
@@ -291,7 +291,7 @@
         if (!ensureZone()) {
             return false;
         }
-        const resp = await call('EnhancedDownloaderListDownloads', {});
+        const resp = await call('ModelBrowserListDownloads', {});
         if (resp && resp.success) {
             applyList(resp.downloads || []);
         }
@@ -299,5 +299,5 @@
         return true;
     }
 
-    window.EnhancedDownloader.Downloads = { init, startFromManualDownloader };
+    window.ModelBrowser.Downloads = { init, startFromManualDownloader };
 })();

@@ -67,7 +67,7 @@ public static class DownloadManager
             }
             catch (Exception ex)
             {
-                Logs.Warning($"Enhanced Downloader: failed to parse stored download record '{entry.ID}', skipping: {ex.ReadableString()}");
+                Logs.Warning($"Model Browser: failed to parse stored download record '{entry.ID}', skipping: {ex.ReadableString()}");
                 continue;
             }
             DownloadRecord rec = DownloadRecord.FromManifestObject(obj);
@@ -112,7 +112,7 @@ public static class DownloadManager
         User user = Program.Sessions.GetUser(rec.UserId, makeNew: false);
         if (user is null)
         {
-            Logs.Warning($"Enhanced Downloader: could not persist download '{rec.Id}' - user '{rec.UserId}' not found.");
+            Logs.Warning($"Model Browser: could not persist download '{rec.Id}' - user '{rec.UserId}' not found.");
             return;
         }
         user.SaveGenericData(GenericDataName, rec.Id, rec.ToManifestObject().ToString());
@@ -282,7 +282,7 @@ public static class DownloadManager
             }
             catch (Exception ex)
             {
-                Logs.Debug($"Enhanced Downloader: failed to inject thumbnail into metadata for '{name}': {ex.ReadableString()}");
+                Logs.Debug($"Model Browser: failed to inject thumbnail into metadata for '{name}': {ex.ReadableString()}");
             }
         }
         Directory.CreateDirectory(Path.GetDirectoryName(outPath));
@@ -445,7 +445,7 @@ public static class DownloadManager
                 // backward with no explanation just looks like another progress bug.
                 string reason = response.StatusCode == HttpStatusCode.PartialContent ? "returned a different byte range than requested" : "did not support resuming";
                 rec.TransientNote = $"The server {reason}, so this download restarted from the beginning.";
-                Logs.Info($"Enhanced Downloader: download '{rec.Name}' {reason}; restarting from scratch.");
+                Logs.Info($"Model Browser: download '{rec.Name}' {reason}; restarting from scratch.");
                 isResume = false;
                 rec.DownloadedBytes = 0;
             }
@@ -534,7 +534,7 @@ public static class DownloadManager
             SaveRecord(rec);
             if (ex is not SwarmReadableErrorException)
             {
-                Logs.Warning($"Enhanced Downloader: download '{rec.Name}' failed with internal exception: {ex.ReadableString()}");
+                Logs.Warning($"Model Browser: download '{rec.Name}' failed with internal exception: {ex.ReadableString()}");
             }
         }
         finally
@@ -555,7 +555,7 @@ public static class DownloadManager
         }
         if (!Program.T2IModelSets.TryGetValue(rec.Type, out T2IModelHandler handler))
         {
-            Logs.Warning($"Enhanced Downloader: model type '{rec.Type}' is no longer registered; skipping refresh for completed download '{rec.Name}'.");
+            Logs.Warning($"Model Browser: model type '{rec.Type}' is no longer registered; skipping refresh for completed download '{rec.Name}'.");
             return;
         }
         using (ManyReadOneWriteLock.WriteClaim claim = Program.RefreshLock.LockWrite())
@@ -571,7 +571,7 @@ public static class DownloadManager
             }
             else
             {
-                Logs.Warning($"Enhanced Downloader: could not resave model '{modelKey}' as it has not shown up in the backing handler.");
+                Logs.Warning($"Model Browser: could not resave model '{modelKey}' as it has not shown up in the backing handler.");
             }
         }
     }

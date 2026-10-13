@@ -4,7 +4,7 @@ using SwarmUI.Accounts;
 namespace Hartsy.Extensions.Providers;
 
 /// <summary>Defines the contract for a model download provider (CivitAI, Hugging Face, Hartsy, etc.).</summary>
-public interface IEnhancedDownloaderProvider
+public interface IModelBrowserProvider
 {
     /// <summary>Unique identifier for this provider (e.g. "civitai", "huggingface").</summary>
     string ProviderId { get; }
