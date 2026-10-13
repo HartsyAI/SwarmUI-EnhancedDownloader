@@ -154,7 +154,7 @@
 
                 this.folderBrowser.innerHTML = html;
             } catch (e) {
-                console.error('Error building folder browser:', e);
+                console.error('[ModelBrowser] Error building folder browser:', e);
             }
         };
 

@@ -207,7 +207,7 @@ public class CivitAIProvider : IModelBrowserProvider
         }
         catch (Exception ex)
         {
-            Logs.Verbose($"ModelBrowser CivitAI ExtractNextCursor failed for '{nextPage}': {ex.ReadableString()}");
+            Logs.Verbose($"[ModelBrowser] CivitAI ExtractNextCursor failed for '{nextPage}': {ex.ReadableString()}");
             return null;
         }
     }
@@ -228,14 +228,14 @@ public class CivitAIProvider : IModelBrowserProvider
             if (!response.IsSuccessStatusCode)
             {
                 string trimmed = resp.Length > 500 ? resp[..500] : resp;
-                Logs.Warning($"ModelBrowser {label} failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
+                Logs.Warning($"[ModelBrowser] {label} failed: {(int)response.StatusCode} {response.ReasonPhrase} - {trimmed}");
                 return new JObject() { ["success"] = false, ["error"] = $"CivitAI error {(int)response.StatusCode}: {trimmed}" };
             }
             return resp.ParseToJson();
         }
         catch (Exception ex)
         {
-            Logs.Warning($"ModelBrowser {label} failed: {ex.ReadableString()}");
+            Logs.Warning($"[ModelBrowser] {label} failed: {ex.ReadableString()}");
             return new JObject() { ["success"] = false, ["error"] = "Failed to contact CivitAI." };
         }
         finally
@@ -503,7 +503,7 @@ public class CivitAIProvider : IModelBrowserProvider
         }
         catch (Exception ex)
         {
-            Logs.Warning($"ModelBrowser CivitAI by-ID fetch failed for '{modelId}': {ex.ReadableString()}");
+            Logs.Warning($"[ModelBrowser] CivitAI by-ID fetch failed for '{modelId}': {ex.ReadableString()}");
             return null;
         }
     }

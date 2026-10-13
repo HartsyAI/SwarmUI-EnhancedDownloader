@@ -19,7 +19,7 @@ public static class ModelBrowserAPI
     /// <summary>Registers all Model Browser API call handlers with the SwarmUI API system.</summary>
     public static void Register()
     {
-        API.RegisterAPICall(ListProviders, false, ModelBrowser.PermModelBrowser);
+        API.RegisterAPICall(ModelBrowserListProviders, false, ModelBrowser.PermModelBrowser);
         API.RegisterAPICall(ModelBrowserGetDownloadRoots, false, ModelBrowser.PermModelBrowser);
         API.RegisterAPICall(ModelBrowserGetFeaturedModels, false, ModelBrowser.PermModelBrowser);
         API.RegisterAPICall(ModelBrowserCivitaiSearch, false, ModelBrowser.PermModelBrowserBrowse);
@@ -45,7 +45,7 @@ public static class ModelBrowserAPI
 
     /// <summary>Returns a list of all registered download providers with their capabilities.</summary>
     [API.APIDescription("Returns a list of all registered download providers with their capabilities.", "\"success\": true, \"providers\": [{ \"id\": \"civitai\", \"displayName\": \"CivitAI\", ... }]")]
-    public static Task<JObject> ListProviders(Session session)
+    public static Task<JObject> ModelBrowserListProviders(Session session)
     {
         JArray providers = [];
         foreach (IModelBrowserProvider p in ModelBrowserProviderRegistry.Providers)

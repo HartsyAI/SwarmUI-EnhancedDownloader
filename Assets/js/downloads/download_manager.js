@@ -32,7 +32,7 @@
             // genericRequestAsync rejects with the raw `data.error` string (core's genericRequest() would
             // normally toast it itself, but genericRequestAsync passes its own errorHandle to suppress that
             // and reject instead) - repackage it into the `{error}` shape every call site here expects.
-            console.warn(`Model Browser: ${endpoint} failed:`, e);
+            console.warn(`[ModelBrowser] ${endpoint} failed:`, e);
             const message = typeof e === 'string' ? e : (e && e.message) || 'Request failed.';
             return { error: message };
         }
@@ -232,7 +232,7 @@
             setRecord(resp.download);
         }
         else if (resp && resp.error) {
-            console.warn(`Model Browser: resume failed: ${resp.error}`);
+            console.warn(`[ModelBrowser] resume failed: ${resp.error}`);
         }
     }
 
@@ -244,7 +244,7 @@
             reconcilePolling();
         }
         else if (resp && resp.error) {
-            console.warn(`Model Browser: clear failed: ${resp.error}`);
+            console.warn(`[ModelBrowser] clear failed: ${resp.error}`);
         }
     }
 

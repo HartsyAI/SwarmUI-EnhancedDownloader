@@ -75,7 +75,7 @@
                 }
             }
             catch (e) {
-                console.warn('Failed to load Hartsy filter options:', e);
+                console.warn('[ModelBrowser] Failed to load Hartsy filter options:', e);
             }
             return { architectures: [], tags: [], uploadSources: [], subscriptionTiers: [] };
         },
@@ -125,7 +125,7 @@
                 });
                 return (resp && resp.success && Array.isArray(resp.groups)) ? resp.groups : [];
             } catch (e) {
-                console.warn('Failed to load Hartsy versions:', e);
+                console.warn('[ModelBrowser] Failed to load Hartsy versions:', e);
                 return [];
             }
         },

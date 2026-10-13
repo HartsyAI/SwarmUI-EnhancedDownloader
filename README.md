@@ -220,7 +220,7 @@ All endpoints are SwarmUI `API.RegisterAPICall` handlers (POST, JSON in/out), re
 
 | Endpoint | Permission | Params | Returns |
 |---|---|---|---|
-| `ListProviders` | `enhanced_downloader` | none | `{providers:[{id, displayName, supportsFilters, supportsNsfw}]}` |
+| `ModelBrowserListProviders` | `enhanced_downloader` | none | `{providers:[{id, displayName, supportsFilters, supportsNsfw}]}` |
 | `ModelBrowserGetDownloadRoots` | `enhanced_downloader` | none | `{roots:{modelType: folderPath}}` |
 | `ModelBrowserGetFeaturedModels` | `enhanced_downloader` | none | `{models:[{name, category, note, architecture, author, scale, isRecommended, downloads:[{label, url}]}]}` |
 

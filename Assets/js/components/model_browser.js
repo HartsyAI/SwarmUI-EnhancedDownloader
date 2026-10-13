@@ -234,7 +234,7 @@
                             populateSelect(typeFilter, typeOpts, state.lastType || 'LORA');
                             populateSelect(baseModelFilter, baseOpts, state.lastBaseModel || 'All');
                         } catch (e) {
-                            console.warn('Failed to load live CivitAI filter options, using fallback list:', e);
+                            console.warn('[ModelBrowser] Failed to load live CivitAI filter options, using fallback list:', e);
                         }
                     }
                 } else if (prov && prov.id === 'huggingface') {

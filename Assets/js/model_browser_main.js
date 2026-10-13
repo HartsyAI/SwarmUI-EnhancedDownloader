@@ -461,7 +461,7 @@
                 }
             }
             catch (e) {
-                console.warn('Clipboard read failed:', e);
+                console.warn('[ModelBrowser] Clipboard read failed:', e);
                 if (statusArea) {
                     statusArea.innerText = translate('Clipboard access was blocked. If your browser showed a permission prompt, click Paste again, or paste into the URL field directly (Ctrl+V).');
                 }

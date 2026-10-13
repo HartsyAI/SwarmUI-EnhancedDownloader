@@ -44,6 +44,6 @@ public class ModelBrowser : Extension
         {
             UserUpstreamApiKeys.Register(new("hartsy", "hartsy", "Hartsy", "https://hartsy.ai", new HtmlString("To browse and download models from Hartsy, you must set your Hartsy API key.")));
         }
-        Logs.Verbose("SwarmUI-ModelBrowser loaded.");
+        Logs.Verbose("[ModelBrowser] Loaded.");
     }
 }

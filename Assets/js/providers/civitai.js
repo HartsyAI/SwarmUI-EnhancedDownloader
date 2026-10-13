@@ -107,7 +107,7 @@
                 const resp = await utils.genericRequestAsync('ModelBrowserCivitaiVersionFiles', { modelVersionId: id });
                 return (resp && resp.success && Array.isArray(resp.files)) ? resp.files : [];
             } catch (e) {
-                console.warn('Failed to load CivitAI version files:', e);
+                console.warn('[ModelBrowser] Failed to load CivitAI version files:', e);
                 return [];
             }
         },

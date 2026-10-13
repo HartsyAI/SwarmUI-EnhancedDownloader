@@ -63,7 +63,7 @@
                     formatHolder.appendChild(formatSelect);
                     applySelectionToDom();
                 } catch (e) {
-                    console.warn('Failed to load format options:', e);
+                    console.warn('[ModelBrowser] Failed to load format options:', e);
                     toggle.textContent = translate('Failed to load formats');
                 }
             };

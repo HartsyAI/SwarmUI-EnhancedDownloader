@@ -53,7 +53,7 @@ public class HartsyProvider : IModelBrowserProvider
         (HttpStatusCode status, string body) = await Send(apiKey);
         if (!string.IsNullOrEmpty(apiKey) && (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden))
         {
-            Logs.Debug($"ModelBrowser Hartsy: API key rejected ({(int)status}), retrying as public.");
+            Logs.Debug($"[ModelBrowser] Hartsy: API key rejected ({(int)status}), retrying as public.");
             (status, body) = await Send("");
         }
         return (status, body);
@@ -105,7 +105,7 @@ public class HartsyProvider : IModelBrowserProvider
             if ((int)status is < 200 or >= 300)
             {
                 string trimmed = resp.Length > 500 ? resp[..500] : resp;
-                Logs.Warning($"ModelBrowser Hartsy search failed: {(int)status} - {trimmed}");
+                Logs.Warning($"[ModelBrowser] Hartsy search failed: {(int)status} - {trimmed}");
                 return new JObject() { ["success"] = false, ["error"] = $"Hartsy error {(int)status}: {trimmed}" };
             }
             JObject responseJson = resp.ParseToJson();
@@ -198,7 +198,7 @@ public class HartsyProvider : IModelBrowserProvider
         }
         catch (Exception ex)
         {
-            Logs.Warning($"ModelBrowser Hartsy search failed: {ex.ReadableString()}");
+            Logs.Warning($"[ModelBrowser] Hartsy search failed: {ex.ReadableString()}");
             return new JObject() { ["success"] = false, ["error"] = "Failed to contact Hartsy." };
         }
         finally
@@ -223,7 +223,7 @@ public class HartsyProvider : IModelBrowserProvider
             (HttpStatusCode status, string resp) = await GetWithKeyFallbackAsync(url, apiKey);
             if ((int)status is < 200 or >= 300)
             {
-                Logs.Warning($"ModelBrowser Hartsy filter options failed: {(int)status}");
+                Logs.Warning($"[ModelBrowser] Hartsy filter options failed: {(int)status}");
                 return new JObject() { ["success"] = false, ["error"] = "Failed to load filter options." };
             }
             JObject responseJson = resp.ParseToJson();
@@ -262,7 +262,7 @@ public class HartsyProvider : IModelBrowserProvider
         }
         catch (Exception ex)
         {
-            Logs.Warning($"ModelBrowser Hartsy filter options failed: {ex.ReadableString()}");
+            Logs.Warning($"[ModelBrowser] Hartsy filter options failed: {ex.ReadableString()}");
             return new JObject() { ["success"] = false, ["error"] = "Failed to contact Hartsy." };
         }
         finally
@@ -296,7 +296,7 @@ public class HartsyProvider : IModelBrowserProvider
             if ((int)status is < 200 or >= 300)
             {
                 string trimmed = resp.Length > 500 ? resp[..500] : resp;
-                Logs.Warning($"ModelBrowser Hartsy model details failed: {(int)status} - {trimmed}");
+                Logs.Warning($"[ModelBrowser] Hartsy model details failed: {(int)status} - {trimmed}");
                 return new JObject() { ["success"] = false, ["error"] = $"Hartsy error {(int)status}: {trimmed}" };
             }
             JObject responseJson = resp.ParseToJson();
@@ -336,7 +336,7 @@ public class HartsyProvider : IModelBrowserProvider
         }
         catch (Exception ex)
         {
-            Logs.Warning($"ModelBrowser Hartsy model details failed: {ex.ReadableString()}");
+            Logs.Warning($"[ModelBrowser] Hartsy model details failed: {ex.ReadableString()}");
             return new JObject() { ["success"] = false, ["error"] = "Failed to contact Hartsy." };
         }
         finally
@@ -361,7 +361,7 @@ public class HartsyProvider : IModelBrowserProvider
             if ((int)status is < 200 or >= 300)
             {
                 string trimmed = resp.Length > 500 ? resp[..500] : resp;
-                Logs.Warning($"ModelBrowser Hartsy download info failed: {(int)status} - {trimmed}");
+                Logs.Warning($"[ModelBrowser] Hartsy download info failed: {(int)status} - {trimmed}");
                 return new JObject() { ["success"] = false, ["error"] = $"Hartsy error {(int)status}: {trimmed}" };
             }
             JObject responseJson = resp.ParseToJson();
@@ -395,7 +395,7 @@ public class HartsyProvider : IModelBrowserProvider
         }
         catch (Exception ex)
         {
-            Logs.Warning($"ModelBrowser Hartsy download info failed: {ex.ReadableString()}");
+            Logs.Warning($"[ModelBrowser] Hartsy download info failed: {ex.ReadableString()}");
             return new JObject() { ["success"] = false, ["error"] = "Failed to contact Hartsy." };
         }
         finally
@@ -446,7 +446,7 @@ public class HartsyProvider : IModelBrowserProvider
             if ((int)status is < 200 or >= 300)
             {
                 string trimmed = resp.Length > 500 ? resp[..500] : resp;
-                Logs.Warning($"ModelBrowser Hartsy versions failed: {(int)status} - {trimmed}");
+                Logs.Warning($"[ModelBrowser] Hartsy versions failed: {(int)status} - {trimmed}");
                 return new JObject() { ["success"] = false, ["error"] = $"Hartsy error {(int)status}: {trimmed}" };
             }
             JObject responseJson = resp.ParseToJson();
@@ -484,7 +484,7 @@ public class HartsyProvider : IModelBrowserProvider
         }
         catch (Exception ex)
         {
-            Logs.Warning($"ModelBrowser Hartsy versions failed: {ex.ReadableString()}");
+            Logs.Warning($"[ModelBrowser] Hartsy versions failed: {ex.ReadableString()}");
             return new JObject() { ["success"] = false, ["error"] = "Failed to contact Hartsy." };
         }
         finally
