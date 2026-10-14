@@ -1,11 +1,11 @@
 (function () {
     'use strict';
 
-    window.EnhancedDownloader = window.EnhancedDownloader || {};
-    window.EnhancedDownloader.Components = window.EnhancedDownloader.Components || {};
+    window.ModelBrowser = window.ModelBrowser || {};
+    window.ModelBrowser.Components = window.ModelBrowser.Components || {};
 
     function getProvider(id) {
-        return (window.EnhancedDownloader.Providers && window.EnhancedDownloader.Providers[id]) || null;
+        return (window.ModelBrowser.Providers && window.ModelBrowser.Providers[id]) || null;
     }
 
     /**
@@ -19,10 +19,10 @@
      */
     function createModelPopover(item, providerId, renderId, cardDiv, selection) {
         const provider = getProvider(providerId);
-        const utils = window.EnhancedDownloader && window.EnhancedDownloader.Utils;
+        const utils = window.ModelBrowser && window.ModelBrowser.Utils;
         const sel = selection || item;
 
-        const popoverId = `enhanced-downloader-model-${renderId}`;
+        const popoverId = `model-browser-model-${renderId}`;
         // scrollable_tall caps height, or a long menu measures taller than the viewport and renders off-screen.
         const menuDiv = createDiv(`popover_${popoverId}`, 'sui-popover sui_popover_model sui_popover_scrollable_tall');
 
@@ -85,7 +85,7 @@
         return menuDiv;
     }
 
-    window.EnhancedDownloader.Components.ModelPopover = {
+    window.ModelBrowser.Components.ModelPopover = {
         create: createModelPopover
     };
 })();

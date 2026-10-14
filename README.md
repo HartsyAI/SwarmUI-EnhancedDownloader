@@ -1,6 +1,6 @@
-# SwarmUI Enhanced Downloader
+# SwarmUI Model Browser
 
-![Enhanced Downloader overview](Assets/screenshots/overview.png)
+![Model Browser overview](Assets/screenshots/overview.png)
 
 A full-featured model browser for [SwarmUI](https://github.com/mcmonkeyprojects/SwarmUI)'s **Utilities > Model Downloader** tab. Search, preview, and download models from **CivitAI**, **Hugging Face**, and **Hartsy** without leaving SwarmUI or hand-typing a URL.
 
@@ -65,13 +65,13 @@ A full-featured model browser for [SwarmUI](https://github.com/mcmonkeyprojects/
 
 1. Open your SwarmUI instance
 2. Go to `Server` > `Extensions`
-3. Find **Enhanced Downloader** and click **Install**
+3. Find **ModelBrowser** and click **Install**
 4. Restart SwarmUI when prompted
 
 ### Manual Installation
 
 1. Close SwarmUI
-2. Clone this repo into `SwarmUI/src/Extensions/SwarmUI-EnhancedDownloader/`:
+2. Clone this repo into `SwarmUI/src/Extensions/SwarmUI-ModelBrowser/`:
    ```bash
    cd SwarmUI/src/Extensions/
    git clone https://github.com/HartsyAI/SwarmUI-EnhancedDownloader.git
@@ -214,26 +214,26 @@ Starting, resuming, canceling, or clearing an actual download uses SwarmUI core'
 
 ## API Reference
 
-All endpoints are SwarmUI `API.RegisterAPICall` handlers (POST, JSON in/out), registered in `WebAPI/EnhancedDownloaderAPI.cs`.
+All endpoints are SwarmUI `API.RegisterAPICall` handlers (POST, JSON in/out), registered in `WebAPI/ModelBrowserAPI.cs`.
 
 ### Discovery
 
 | Endpoint | Permission | Params | Returns |
 |---|---|---|---|
-| `ListProviders` | `enhanced_downloader` | none | `{providers:[{id, displayName, supportsFilters, supportsNsfw}]}` |
-| `EnhancedDownloaderGetDownloadRoots` | `enhanced_downloader` | none | `{roots:{modelType: folderPath}}` |
-| `EnhancedDownloaderGetFeaturedModels` | `enhanced_downloader` | none | `{models:[{name, category, note, architecture, author, scale, isRecommended, downloads:[{label, url}]}]}` |
+| `ModelBrowserListProviders` | `enhanced_downloader` | none | `{providers:[{id, displayName, supportsFilters, supportsNsfw}]}` |
+| `ModelBrowserGetDownloadRoots` | `enhanced_downloader` | none | `{roots:{modelType: folderPath}}` |
+| `ModelBrowserGetFeaturedModels` | `enhanced_downloader` | none | `{models:[{name, category, note, architecture, author, scale, isRecommended, downloads:[{label, url}]}]}` |
 
 ### CivitAI
 
 | Endpoint | Params | Returns |
 |---|---|---|
-| `EnhancedDownloaderCivitaiSearch` | `query`, `page`, `limit`, `cursor`, `type`, `baseModel`, `sort`, `includeNsfw`, `period`, `username`, `tag`, `supportsGeneration`, `fromPlatform` | `{mode:"cursor"\|"page", page, totalPages, totalItems, nextCursor, items}` |
-| `EnhancedDownloaderCivitaiFilterOptions` | none | `{types, baseModels}` (live from CivitAI's `/api/v1/enums`) |
-| `EnhancedDownloaderCivitaiTags` | `query`, `limit` | `{tags:[{name, modelCount}]}` |
-| `EnhancedDownloaderCivitaiImages` | `modelVersionId`, `limit`, `includeNsfw` | `{images:[{url, width, height, nsfwLevel, prompt, ...}]}` |
-| `EnhancedDownloaderCivitaiVersionFiles` | `modelVersionId` | `{files:[{fileName, downloadUrl, fileSize, format, precision, primary}]}` |
-| `EnhancedDownloaderCivitaiVersionCheck` | `modelVersionId` | `{requireAuth, canGenerate, earlyAccessEndsAt, hasApiKey, ...}` |
+| `ModelBrowserCivitaiSearch` | `query`, `page`, `limit`, `cursor`, `type`, `baseModel`, `sort`, `includeNsfw`, `period`, `username`, `tag`, `supportsGeneration`, `fromPlatform` | `{mode:"cursor"\|"page", page, totalPages, totalItems, nextCursor, items}` |
+| `ModelBrowserCivitaiFilterOptions` | none | `{types, baseModels}` (live from CivitAI's `/api/v1/enums`) |
+| `ModelBrowserCivitaiTags` | `query`, `limit` | `{tags:[{name, modelCount}]}` |
+| `ModelBrowserCivitaiImages` | `modelVersionId`, `limit`, `includeNsfw` | `{images:[{url, width, height, nsfwLevel, prompt, ...}]}` |
+| `ModelBrowserCivitaiVersionFiles` | `modelVersionId` | `{files:[{fileName, downloadUrl, fileSize, format, precision, primary}]}` |
+| `ModelBrowserCivitaiVersionCheck` | `modelVersionId` | `{requireAuth, canGenerate, earlyAccessEndsAt, hasApiKey, ...}` |
 
 All CivitAI endpoints require `enhanced_downloader_browse`.
 
@@ -241,9 +241,9 @@ All CivitAI endpoints require `enhanced_downloader_browse`.
 
 | Endpoint | Params | Returns |
 |---|---|---|
-| `EnhancedDownloaderHuggingFaceSearch` | `query`, `limit`, `cursor`, `pipelineTag`, `library`, `sort`, `author` | `{mode:"cursor", nextCursor, totalItems, items}` |
-| `EnhancedDownloaderHuggingFaceFiles` | `modelId` (required), `limit` | `{files:[{fileName, downloadUrl, fileSize, quantType}], truncated}` |
-| `EnhancedDownloaderHuggingFaceImage` | `modelId` (required) | `{image:"data:image/...;base64,..."}` |
+| `ModelBrowserHuggingFaceSearch` | `query`, `limit`, `cursor`, `pipelineTag`, `library`, `sort`, `author` | `{mode:"cursor", nextCursor, totalItems, items}` |
+| `ModelBrowserHuggingFaceFiles` | `modelId` (required), `limit` | `{files:[{fileName, downloadUrl, fileSize, quantType}], truncated}` |
+| `ModelBrowserHuggingFaceImage` | `modelId` (required) | `{image:"data:image/...;base64,..."}` |
 
 All require `enhanced_downloader_browse`.
 
@@ -251,11 +251,11 @@ All require `enhanced_downloader_browse`.
 
 | Endpoint | Params | Returns |
 |---|---|---|
-| `EnhancedDownloaderHartsySearch` | `query`, `page`, `limit`, `architecture`, `sort`, `tags` | `{mode:"page", page, totalPages, totalItems, hasMore, items}` |
-| `EnhancedDownloaderHartsyFilterOptions` | none | `{architectures, tags, uploadSources, subscriptionTiers}` |
-| `EnhancedDownloaderHartsyModelDetails` | `modelId` (required) | `{title, description, architecture, author, image, downloads, tags, ...}` (cached, no analytics recorded) |
-| `EnhancedDownloaderHartsyDownload` | `modelId` (required) | `{downloadUrl, fileName, fileSize, hashSha256, torrent?}` (records a download analytics event on Hartsy's side, not cached) |
-| `EnhancedDownloaderHartsyVersions` | `modelId` (required) | `{familyId, title, groups:[{key, label, precisions, primary, variants}]}`. One group per version; `primary` is the file the site generates with and `variants` are those same weights in other precisions |
+| `ModelBrowserHartsySearch` | `query`, `page`, `limit`, `architecture`, `sort`, `tags` | `{mode:"page", page, totalPages, totalItems, hasMore, items}` |
+| `ModelBrowserHartsyFilterOptions` | none | `{architectures, tags, uploadSources, subscriptionTiers}` |
+| `ModelBrowserHartsyModelDetails` | `modelId` (required) | `{title, description, architecture, author, image, downloads, tags, ...}` (cached, no analytics recorded) |
+| `ModelBrowserHartsyDownload` | `modelId` (required) | `{downloadUrl, fileName, fileSize, hashSha256, torrent?}` (records a download analytics event on Hartsy's side, not cached) |
+| `ModelBrowserHartsyVersions` | `modelId` (required) | `{familyId, title, groups:[{key, label, precisions, primary, variants}]}`. One group per version; `primary` is the file the site generates with and `variants` are those same weights in other precisions |
 
 All require `enhanced_downloader_browse`.
 
@@ -263,11 +263,11 @@ All require `enhanced_downloader_browse`.
 
 | Endpoint | Permission | Params | Returns |
 |---|---|---|---|
-| `EnhancedDownloaderListDownloads` | `enhanced_downloader` | none | `{downloads:[DownloadRecord]}` |
-| `EnhancedDownloaderStartDownload` | `Permissions.DownloadModels` | `url`, `type`, `name` (all required), `metadata`, `image` | `{download: DownloadRecord}` |
-| `EnhancedDownloaderResumeDownload` | `Permissions.DownloadModels` | `id` (required) | `{download: DownloadRecord}` |
-| `EnhancedDownloaderCancelDownload` | `Permissions.DownloadModels` | `id` (required) | `{download: DownloadRecord}` |
-| `EnhancedDownloaderClearDownload` | `Permissions.DownloadModels` | `id` (required) | `{success: true}` |
+| `ModelBrowserListDownloads` | `enhanced_downloader` | none | `{downloads:[DownloadRecord]}` |
+| `ModelBrowserStartDownload` | `Permissions.DownloadModels` | `url`, `type`, `name` (all required), `metadata`, `image` | `{download: DownloadRecord}` |
+| `ModelBrowserResumeDownload` | `Permissions.DownloadModels` | `id` (required) | `{download: DownloadRecord}` |
+| `ModelBrowserCancelDownload` | `Permissions.DownloadModels` | `id` (required) | `{download: DownloadRecord}` |
+| `ModelBrowserClearDownload` | `Permissions.DownloadModels` | `id` (required) | `{success: true}` |
 
 A `DownloadRecord` looks like:
 ```json

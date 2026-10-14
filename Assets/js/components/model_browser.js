@@ -1,15 +1,15 @@
 (function () {
     'use strict';
 
-    window.EnhancedDownloader = window.EnhancedDownloader || {};
-    window.EnhancedDownloader.Components = window.EnhancedDownloader.Components || {};
+    window.ModelBrowser = window.ModelBrowser || {};
+    window.ModelBrowser.Components = window.ModelBrowser.Components || {};
 
     function getProvider(id) {
-        return (window.EnhancedDownloader.Providers && window.EnhancedDownloader.Providers[id]) || null;
+        return (window.ModelBrowser.Providers && window.ModelBrowser.Providers[id]) || null;
     }
 
     function listProvidersInOrder() {
-        const providers = window.EnhancedDownloader.Providers || {};
+        const providers = window.ModelBrowser.Providers || {};
         const order = ['hartsy', 'civitai', 'huggingface'];
         const result = [];
         for (const id of order) {
@@ -59,20 +59,20 @@
 
     function createBrowserCard() {
         const card = document.createElement('div');
-        card.className = 'card border-secondary mb-3 enhanced-downloader-browser-card';
+        card.className = 'card border-secondary mb-3 model-browser-browser-card';
         card.innerHTML = `
             <div class="card-header">
                 <span class="translate">Browse Models</span>
             </div>
             <div class="card-body">
-                <div class="enhanced-downloader-browser-controls">
-                    <div class="enhanced-downloader-browser-row">
+                <div class="model-browser-browser-controls">
+                    <div class="model-browser-browser-row">
                         <span class="translate">Source</span>:
                         <select class="auto-dropdown ed-provider" autocomplete="off"></select>
                         <input type="text" class="auto-text ed-query" placeholder="Search..." autocomplete="off" />
-                        <button type="button" class="basic-button enhanced-downloader-smallbtn ed-search"><span class="translate">Search</span></button>
+                        <button type="button" class="basic-button model-browser-smallbtn ed-search"><span class="translate">Search</span></button>
                     </div>
-                    <div class="enhanced-downloader-browser-row">
+                    <div class="model-browser-browser-row">
                         <span class="translate">Filters</span>:
                         <select class="auto-dropdown ed-type" autocomplete="off">
                             <option value="All" class="translate">All</option>
@@ -100,22 +100,22 @@
                         <select class="auto-dropdown ed-period" autocomplete="off" style="display:none">
                             <option value="AllTime" selected>All Time</option>
                         </select>
-                        <label class="enhanced-downloader-toggle"><input type="checkbox" class="ed-nsfw" /> <span class="translate">NSFW</span></label>
+                        <label class="model-browser-toggle"><input type="checkbox" class="ed-nsfw" /> <span class="translate">NSFW</span></label>
                     </div>
-                    <div class="enhanced-downloader-browser-row ed-civitai-row" style="display:none">
+                    <div class="model-browser-browser-row ed-civitai-row" style="display:none">
                         <span class="translate">Tag</span>:
                         <input type="text" class="auto-text ed-tag" list="ed-tag-suggestions" placeholder="Type a tag..." autocomplete="off" />
                         <datalist id="ed-tag-suggestions"></datalist>
-                        <label class="enhanced-downloader-toggle"><input type="checkbox" class="ed-gen-only" /> <span class="translate">Generation-Ready</span></label>
-                        <label class="enhanced-downloader-toggle"><input type="checkbox" class="ed-from-platform" /> <span class="translate">Trained on Civitai</span></label>
+                        <label class="model-browser-toggle"><input type="checkbox" class="ed-gen-only" /> <span class="translate">Generation-Ready</span></label>
+                        <label class="model-browser-toggle"><input type="checkbox" class="ed-from-platform" /> <span class="translate">Trained on Civitai</span></label>
                     </div>
                 </div>
-                <div class="enhanced-downloader-browser-status"></div>
-                <div class="enhanced-downloader-browser-results browser-content-container"></div>
-                <div class="enhanced-downloader-browser-pager">
-                    <button type="button" class="basic-button enhanced-downloader-smallbtn ed-prev"><span class="translate">Prev</span></button>
+                <div class="model-browser-browser-status"></div>
+                <div class="model-browser-browser-results browser-content-container"></div>
+                <div class="model-browser-browser-pager">
+                    <button type="button" class="basic-button model-browser-smallbtn ed-prev"><span class="translate">Prev</span></button>
                     <span class="ed-pageinfo"></span>
-                    <button type="button" class="basic-button enhanced-downloader-smallbtn ed-next"><span class="translate">Next</span></button>
+                    <button type="button" class="basic-button model-browser-smallbtn ed-next"><span class="translate">Next</span></button>
                 </div>
             </div>
         `;
@@ -138,17 +138,17 @@
         }
     }
 
-    window.EnhancedDownloader.Components.ModelBrowser = {
+    window.ModelBrowser.Components.Browser = {
         tryEmbed: function tryEmbed() {
-            const utils = window.EnhancedDownloader.Utils;
-            const ModelCard = window.EnhancedDownloader.Components.ModelCard;
-            const ModelPopover = window.EnhancedDownloader.Components.ModelPopover;
+            const utils = window.ModelBrowser.Utils;
+            const ModelCard = window.ModelBrowser.Components.ModelCard;
+            const ModelPopover = window.ModelBrowser.Components.ModelPopover;
             if (!utils || !ModelCard || !ModelPopover) return false;
 
             const wrapper = document.querySelector('.model-downloader-section-wrapper');
             const main = document.querySelector('.model-downloader-main-section');
             if (!wrapper || !main) return false;
-            if (wrapper.dataset.enhancedDownloaderBrowserDone) return true;
+            if (wrapper.dataset.modelBrowserBrowserDone) return true;
 
             const providers = listProvidersInOrder();
             if (!providers.length) return false;
@@ -167,8 +167,8 @@
             const tagSuggestions = card.querySelector('#ed-tag-suggestions');
             const genOnlyToggle = card.querySelector('.ed-gen-only');
             const fromPlatformToggle = card.querySelector('.ed-from-platform');
-            const statusEl = card.querySelector('.enhanced-downloader-browser-status');
-            const resultsEl = card.querySelector('.enhanced-downloader-browser-results');
+            const statusEl = card.querySelector('.model-browser-browser-status');
+            const resultsEl = card.querySelector('.model-browser-browser-results');
             const prevBtn = card.querySelector('.ed-prev');
             const nextBtn = card.querySelector('.ed-next');
             const pageInfo = card.querySelector('.ed-pageinfo');
@@ -234,7 +234,7 @@
                             populateSelect(typeFilter, typeOpts, state.lastType || 'LORA');
                             populateSelect(baseModelFilter, baseOpts, state.lastBaseModel || 'All');
                         } catch (e) {
-                            console.warn('Failed to load live CivitAI filter options, using fallback list:', e);
+                            console.warn('[ModelBrowser] Failed to load live CivitAI filter options, using fallback list:', e);
                         }
                     }
                 } else if (prov && prov.id === 'huggingface') {
@@ -485,8 +485,8 @@
                 }
             };
 
-            wrapper.dataset.enhancedDownloaderBrowserDone = 'true';
-            const rightCol = wrapper.querySelector('.enhanced-downloader-col-right');
+            wrapper.dataset.modelBrowserBrowserDone = 'true';
+            const rightCol = wrapper.querySelector('.model-browser-col-right');
             (rightCol || main).appendChild(card);
             applyTranslations(card);
             updateProviderUI().then(() => {

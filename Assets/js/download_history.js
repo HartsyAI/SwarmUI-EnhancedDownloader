@@ -2,7 +2,7 @@
 // ============================================================================
 // This file is a placeholder for a future feature that will provide:
 //
-// 1. **Download History** — Track every model downloaded through the Enhanced
+// 1. **Download History** — Track every model downloaded through the Model
 //    Downloader (name, URL, provider, timestamp, destination folder).
 //
 // 2. **Duplicate Detection** — Before downloading, check if the user already
@@ -29,6 +29,6 @@
 (function () {
     'use strict';
 
-    window.EnhancedDownloader = window.EnhancedDownloader || {};
-    window.EnhancedDownloader.DownloadHistory = {};
+    window.ModelBrowser = window.ModelBrowser || {};
+    window.ModelBrowser.DownloadHistory = {};
 })();

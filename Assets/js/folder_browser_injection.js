@@ -25,7 +25,7 @@
             }
             node = prev;
         }
-        if (oldFolderDropdown.nextElementSibling && oldFolderDropdown.nextElementSibling.classList.contains('enhanced-downloader-new-folder')) {
+        if (oldFolderDropdown.nextElementSibling && oldFolderDropdown.nextElementSibling.classList.contains('model-browser-new-folder')) {
             oldFolderDropdown.nextElementSibling.style.display = 'none';
         }
     }
@@ -154,7 +154,7 @@
 
                 this.folderBrowser.innerHTML = html;
             } catch (e) {
-                console.error('Error building folder browser:', e);
+                console.error('[ModelBrowser] Error building folder browser:', e);
             }
         };
 
