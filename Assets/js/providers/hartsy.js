@@ -59,7 +59,7 @@
             }
             const utils = window.ModelBrowser && window.ModelBrowser.Utils;
             if (!utils || !utils.genericRequestAsync) {
-                return { architectures: [], tags: [], uploadSources: [], subscriptionTiers: [] };
+                return { architectures: [], tags: [], uploadSources: [], generateTiers: [] };
             }
             try {
                 const resp = await utils.genericRequestAsync('ModelBrowserHartsyFilterOptions', {});
@@ -68,7 +68,7 @@
                         architectures: resp.architectures || [],
                         tags: resp.tags || [],
                         uploadSources: resp.uploadSources || [],
-                        subscriptionTiers: resp.subscriptionTiers || []
+                        generateTiers: resp.generateTiers || []
                     };
                     filterOptionsCacheTime = now;
                     return filterOptionsCache;
@@ -77,7 +77,7 @@
             catch (e) {
                 console.warn('[ModelBrowser] Failed to load Hartsy filter options:', e);
             }
-            return { architectures: [], tags: [], uploadSources: [], subscriptionTiers: [] };
+            return { architectures: [], tags: [], uploadSources: [], generateTiers: [] };
         },
 
         // Hartsy has no type concept; a LoRA is an architecture suffix, so "every LoRA" is a comma-joined
@@ -136,19 +136,37 @@
                 || (Array.isArray(g.variants) && g.variants.some(v => `${v.id}` === id))) || groups[0] || null;
         },
 
+        /** Why a file can't be downloaded from this account, from its `download` access record. Empty when no reason is known. */
+        blockedReason: function (download) {
+            if (!download) {
+                return '';
+            }
+            if (download.mode === 'tier' && download.tier) {
+                const tier = `${download.tier}`;
+                return `${translate('requires')} ${tier.charAt(0).toUpperCase()}${tier.slice(1)}`;
+            }
+            if (download.mode === 'purchase') {
+                return translate('buyers only');
+            }
+            if (download.mode === 'off') {
+                return translate('website only');
+            }
+            return '';
+        },
+
         /** Precision picker for the card: the same weights in other encodings, fetched lazily. */
         getSecondaryOptionsLazy: async function (item) {
             const groups = await this.getVersionGroups(item.modelId);
             const group = this.findGroupFor(groups, item.modelId);
             if (!group) return null;
             const entries = [group.primary, ...(Array.isArray(group.variants) ? group.variants : [])].filter(v => v && v.id);
-            // The API blanks model_url on a precision this account can't have; list those disabled, not hidden.
+            // The API blanks model_url on a file this account can't download, or that has no file; list those disabled, not hidden.
             if (!entries.some(v => v.downloadUrl)) return null;
             return entries.map(v => {
                 const parts = [v.precisionLabel || v.precision, v.specialFormat].filter(Boolean);
                 const sizeStr = v.fileSize && typeof fileSizeStringify === 'function' ? fileSizeStringify(v.fileSize) : '';
-                const gatedBy = v.downloadUrl ? '' : (v.subscriptionRequired || translate('a subscription'));
-                const suffix = gatedBy ? ` (${translate('requires')} ${gatedBy})` : (sizeStr ? ` (${sizeStr})` : '');
+                const blocked = v.downloadUrl ? '' : (this.blockedReason(v.download) || translate('unavailable'));
+                const suffix = blocked ? ` (${blocked})` : (sizeStr ? ` (${sizeStr})` : '');
                 return {
                     value: v.downloadUrl || `gated:${v.id}`,
                     label: `${parts.length ? parts.join(' ') : (v.fileName || 'File')}${suffix}`,

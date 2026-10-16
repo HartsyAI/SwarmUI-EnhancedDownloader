@@ -23,6 +23,18 @@ public class HartsyProvider : IModelBrowserProvider
     public static readonly SemaphoreSlim RateLimiter = new(3, 3);
     public static readonly HashSet<string> AllowedSorts = ["created_at", "updated_at", "title", "downloads"];
 
+    /// <summary>Maps one half of a model's access record (<c>generate</c> or <c>download</c>) to camelCase. The API sends
+    /// <c>{ mode, tier }</c> with <c>tier</c> null unless <c>mode</c> is <c>tier</c>; a missing record maps to empty strings.</summary>
+    public static JObject MapAccess(JToken token)
+    {
+        JObject access = token as JObject;
+        return new JObject()
+        {
+            ["mode"] = access?.Value<string>("mode") ?? "",
+            ["tier"] = access?.Value<string>("tier") ?? ""
+        };
+    }
+
     /// <summary>Retrieves the Hartsy API key from the user's stored credentials.</summary>
     public static string GetApiKey(Session session)
     {
@@ -135,7 +147,6 @@ public class HartsyProvider : IModelBrowserProvider
                 string fileName = item.Value<string>("file_name") ?? "";
                 long downloads = item.Value<long?>("downloads_count") ?? 0;
                 bool isNsfw = item.Value<bool?>("is_nsfw") ?? false;
-                string subscriptionRequired = item.Value<string>("subscription_required") ?? "";
                 JArray itemTags = item["tags"] as JArray ?? [];
                 string openUrl = $"https://hartsy.ai/Home?type=models&id={modelId}";
                 string versionLabel = item.Value<string>("version_label") ?? "";
@@ -159,7 +170,8 @@ public class HartsyProvider : IModelBrowserProvider
                     ["openUrl"] = openUrl,
                     ["uploadSource"] = uploadSource,
                     ["isNsfw"] = isNsfw,
-                    ["subscriptionRequired"] = subscriptionRequired,
+                    ["generate"] = MapAccess(item["generate"]),
+                    ["download"] = MapAccess(item["download"]),
                     ["precision"] = item.Value<string>("precision") ?? "",
                     ["precisionLabel"] = item.Value<string>("precision_label") ?? "",
                     ["specialFormat"] = item.Value<string>("special_format") ?? "",
@@ -255,7 +267,7 @@ public class HartsyProvider : IModelBrowserProvider
                 ["architectures"] = architectures,
                 ["tags"] = data["tags"] as JArray ?? [],
                 ["uploadSources"] = data["upload_sources"] as JArray ?? [],
-                ["subscriptionTiers"] = data["subscription_tiers"] as JArray ?? []
+                ["generateTiers"] = data["generate_tiers"] as JArray ?? []
             };
             FilterCache.Set(cacheKey, result);
             return result;
@@ -319,7 +331,8 @@ public class HartsyProvider : IModelBrowserProvider
                 ["fileSize"] = data.Value<long?>("file_size"),
                 ["downloadUrl"] = data.Value<string>("model_url") ?? "",
                 ["isNsfw"] = data.Value<bool?>("is_nsfw") ?? false,
-                ["subscriptionRequired"] = data.Value<string>("subscription_required") ?? "",
+                ["generate"] = MapAccess(data["generate"]),
+                ["download"] = MapAccess(data["download"]),
                 ["downloads"] = data.Value<long?>("downloads_count") ?? 0,
                 ["precision"] = data.Value<string>("precision") ?? "",
                 ["precisionLabel"] = data.Value<string>("precision_label") ?? "",
@@ -424,7 +437,8 @@ public class HartsyProvider : IModelBrowserProvider
             ["modelKind"] = entry.Value<string>("model_kind") ?? "",
             ["versionLabel"] = entry.Value<string>("version_label") ?? "",
             ["isPrimaryVariant"] = entry.Value<bool?>("is_primary_variant") ?? false,
-            ["subscriptionRequired"] = entry.Value<string>("subscription_required") ?? "",
+            ["generate"] = MapAccess(entry["generate"]),
+            ["download"] = MapAccess(entry["download"]),
             ["isApiModel"] = entry.Value<bool?>("is_api_model") ?? false
         };
     }

@@ -252,7 +252,7 @@ All require `enhanced_downloader_browse`.
 | Endpoint | Params | Returns |
 |---|---|---|
 | `ModelBrowserHartsySearch` | `query`, `page`, `limit`, `architecture`, `sort`, `tags` | `{mode:"page", page, totalPages, totalItems, hasMore, items}` |
-| `ModelBrowserHartsyFilterOptions` | none | `{architectures, tags, uploadSources, subscriptionTiers}` |
+| `ModelBrowserHartsyFilterOptions` | none | `{architectures, tags, uploadSources, generateTiers}` |
 | `ModelBrowserHartsyModelDetails` | `modelId` (required) | `{title, description, architecture, author, image, downloads, tags, ...}` (cached, no analytics recorded) |
 | `ModelBrowserHartsyDownload` | `modelId` (required) | `{downloadUrl, fileName, fileSize, hashSha256, torrent?}` (records a download analytics event on Hartsy's side, not cached) |
 | `ModelBrowserHartsyVersions` | `modelId` (required) | `{familyId, title, groups:[{key, label, precisions, primary, variants}]}`. One group per version; `primary` is the file the site generates with and `variants` are those same weights in other precisions |
